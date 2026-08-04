@@ -173,7 +173,7 @@ body.teamopen #teamPanel{display:block}
 <div id="toast"></div>
 <div id="hovercard"></div>
 <script src="core.js?v=20260731-02"></script>
-<script src="k.js"></script>
+<script src="k.js?v=20260804-02"></script>
 <script>
 /* Keys: the link's #hash wins, else the small k.js file served alongside the page (window.__POD_KEYS)
    so the plain address works with no link — same trick the resident board uses. */
@@ -608,45 +608,20 @@ function renderFair(){
 
 
 /* How the log is being read. Outside renderLog so the choice survives a redraw. */
-let logBy = "made", logFilter = "all";
 
-/* Every entry in cdata.log IS a consultant change now the store is separated — this used to
-   pattern-match the message text for the word "consultant" to guess, which quietly hid the
-   admin and PIN entries. The store is the filter; the text is not. */
+/* The log is now drawn by the shared renderer in core.js — the resident board and this page had
+   two implementations of the same thing and they were already diverging. Consultant entries are
+   messages rather than pod moves, so most rows take the renderer's plain-row branch, which is
+   exactly what it is there for. */
 function renderLog(){
+  const box = $("#logBox"); if (!box) return;
+  box.innerHTML = "";
   const all = (cdata && cdata.log) || [];
-  if (!all.length) { $("#logBox").innerHTML = "<p style='color:var(--muted);font-size:.85rem'>No consultant changes logged yet.</p>"; return; }
-
-  const segs = [
-    [["made", "When changed"], ["affects", "Rota day"]],
-    [["all", "All"], ["manual", "Manual"], ["auto", "Automatic"]]
-  ];
-  let html = "<div class='logbar'>";
-  segs.forEach((opts, i) => {
-    html += "<div class='seg'>" + opts.map(([v, l]) =>
-      "<button class='segbtn" + (v === (i ? logFilter : logBy) ? " on" : "") + "' data-seg='" + i + "' data-v='" + v + "'>" + esc(l) + "</button>").join("") + "</div>";
-  });
-  html += "</div>";
-
-  const today = new Date().toISOString().slice(0, 10);
-  const groups = groupLog(all.slice(0, 300), logBy, logFilter);
-  if (!groups.length) html += "<p style='color:var(--muted);font-size:.85rem'>Nothing to show.</p>";
-  for (const g of groups) {
-    html += "<div class='loghead'>" + esc(logDayLabel(g.date, today)) + "<b>" + g.entries.length + "</b></div>";
-    for (const x of g.entries) {
-      const other = (logBy === "made") ? logOn(x) : logMade(x);
-      const tag = (other && other !== g.date)
-        ? "<span class='logon'>" + esc((logBy === "made" ? "rota " : "changed ") + shortDate(other)) + "</span>" : "";
-      html += "<div class='logrow" + (logKind(x) === "auto" ? " auto" : "") + "'><span class='lt'>" +
-        esc(new Date(x.t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })) +
-        "</span><span><b style='font-weight:600'>" + esc(x.who || "") + "</b> — " + esc(x.msg) + tag + "</span></div>";
-    }
+  if (!all.length) {
+    box.innerHTML = "<p style='color:var(--muted);font-size:.85rem'>No consultant changes logged yet.</p>";
+    return;
   }
-  $("#logBox").innerHTML = html;
-  $("#logBox").querySelectorAll("button[data-seg]").forEach(b => b.onclick = () => {
-    if (b.dataset.seg === "0") logBy = b.dataset.v; else logFilter = b.dataset.v;
-    renderLog();
-  });
+  box.append(logControls(renderLog), logGroups(all, 300));
 }
 function shortDate(iso){
   try { return new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
