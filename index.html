@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cover — TEST</title>
+<title>Cover</title>
 <link rel="stylesheet" href="core.css?v=20260731-02">
 <style>
 :root{
@@ -240,6 +240,12 @@ try {
    fetch to SAVE or COVER_SAVE; call postLive. */
 const TESTMODE = window.__POD_TEST === true;
 const TEST_KEY = "coverTestStore";
+/* Can an edit go anywhere? On the live site that means a save key; on the test site it means
+   the browser's own sandbox, which is always there. Written once because it was written four
+   times as "!COVER_SAVE" and every one of them was wrong on staging — staging has never had a
+   save key, so every edit returned before doing anything and a dragged badge snapped straight
+   back (Ali, 6 Aug). Nothing said why, because the guard fired before the toast could. */
+const canSave = () => !!cdata && (TESTMODE || !!COVER_SAVE);
 /* On the test site, saves go to THIS BROWSER and nowhere else. Until 6 Aug they went nowhere at
    all — the page said "saved nowhere" and threw the change away, which meant staging could not
    be used to try anything: you made a change, it vanished, and you learned nothing. The resident
