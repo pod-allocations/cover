@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cover</title>
+<title>Cover — TEST</title>
 <link rel="stylesheet" href="core.css?v=20260731-02">
 <style>
 :root{
@@ -48,6 +48,29 @@ body.testmode main{padding-bottom:3.4rem}
 .stalebar{background:#fdf4f6;border:1px solid var(--podEb);border-radius:10px;padding:.7rem .9rem;
   margin:0 0 .8rem;font-size:.85rem;line-height:1.5;color:var(--ink)}
 .stalebar .why{display:block;margin-top:.4rem;font-size:.75rem;color:var(--muted)}
+/* Look ahead. A published week and a draft week must never look alike at a glance — the whole
+   point of the page is that everything past the fourth week is still free to move. Published
+   weeks carry the normal card; draft weeks are tinted and wear a DRAFT chip in the heading. */
+.ahwk{margin-bottom:1rem}
+.ahwk .ahhd{display:flex;align-items:center;gap:.55rem;margin:0 0 .5rem;font-size:.9rem;font-weight:700}
+.ahwk .ahhd .sub{font-weight:600;color:var(--muted);font-size:.72rem}
+.ahchip{font-size:.58rem;font-weight:800;letter-spacing:.08em;border-radius:999px;padding:.15rem .45rem;
+  border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg)}
+.ahchip.pub{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.ahwk.draft > .card{background:var(--amber-bg);border-style:dashed}
+/* The rota-team lock, copied rule-for-rule from the resident board (Ali, 6 Aug: "why does the
+   rota team password gate look different to residents"). It was a floating modal here and a
+   page-of-its-own there — the resident board's note explains why that is the right one: "The
+   lock is a page of its own, not a dialog: click the shield, the whole pane becomes the password
+   box, and only when it clears do the menu and the pages appear behind it." A modal implies you
+   can dismiss it and carry on; this says plainly that there is nothing behind it until you're in.
+   These belong in core.css next time the two pages are reconciled — they are duplicated for now
+   because the resident board is frozen until go-live and must not be touched to make this move. */
+.gatebox{max-width:340px;margin:4rem auto;text-align:center}
+.gatebox input{width:100%;font-size:1rem;padding:.65rem;margin:.6rem 0;text-align:center}
+.gatebox b{display:block;margin-top:.4rem}
+.gatebox .sub{font-size:.78rem;color:var(--muted);line-height:1.45;margin-top:.35rem}
+body.teamlocked #teamPanel{display:none}
 .hbtn.hicon{padding:.42rem;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center}
 .hbtn.hicon svg{width:19px;height:19px;display:block}
 .hbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -120,18 +143,35 @@ table.fair{border-collapse:collapse;width:100%}
 .fbar{height:6px;background:var(--hair);border-radius:99px;width:64px;display:inline-block;margin-left:.45rem;vertical-align:middle;overflow:hidden}
 .fbar-fill{height:100%;border-radius:99px;background:var(--accent);display:block}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2c2c2a;color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;display:none;z-index:50}
-.logrow{display:flex;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--hair);font-size:.8rem}
-.logrow .lt{color:var(--muted);white-space:nowrap;font-size:.72rem;margin-top:.1rem}
-.seg{display:flex;gap:.3rem;flex:1;min-width:190px}
-.segbtn{flex:1;font-size:.78rem;font-weight:600;background:var(--card,#fff);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:.45rem .3rem;cursor:pointer;font-family:inherit}
-.segbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.logbar{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 .9rem}
-.loghead{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:1.1rem 0 .4rem;padding-bottom:.25rem;border-bottom:1px solid var(--line)}
-.loghead:first-child{margin-top:.2rem}
-.loghead b{font-size:.7rem;letter-spacing:0;font-weight:700}
-/* The software's own changes sit behind a rule so a person's decisions read as the foreground. */
-.logrow.auto{border-left:2px solid var(--hair);padding-left:.55rem}
-.logrow.auto .lt{font-style:italic}
+/* The log's own rules moved to core.css on 6 Aug, where the renderer that emits those class names
+   already lives. Nothing about the change log is this page's to style; only its container is.
+   Ali, 6 Aug: "Parity has nothing to do with the residents page." Quite right — the two pages
+   share core.js and core.css and nothing else, and the log looking wrong here was never a
+   question of matching that page, it was this page having drifted away from the shared renderer. */
+/* logPanel's "Nothing to show" / "Nothing matches that". SCOPED to the log deliberately: the
+   resident board can afford a bare `.empty` because nothing else there uses the name, but this
+   page draws every unfilled pod as `.cell.empty`, and an unscoped rule would put 1.6rem of
+   padding inside all thirty-five of them. */
+#logBox .empty{color:var(--muted);font-size:.86rem;padding:1.6rem;text-align:center}
+/* Below, and only below, is what this page's own container needs — the rest is in core.css.
+   The narrow-screen log: a five-column table stays a five-column table on a phone and turns into
+   the mess Ali photographed, so under 640px each row folds into two lines — rota day and person
+   on top, the move and who did it underneath — and the header is dropped, because an arrow
+   between two pod chips says From and To without needing labels. These are keyed on #logBox
+   because they restructure the table wholesale, and a page that draws a log somewhere else should
+   decide that for itself rather than inherit it. */
+@media (max-width:640px){
+  #logBox table{display:block}
+  #logBox tr{display:grid;grid-template-columns:auto auto 1fr;gap:.15rem .45rem;align-items:center;padding:.5rem 0;border-top:1px solid var(--hair)}
+  #logBox tr:first-child{display:none}
+  #logBox td{display:block;padding:0 !important;width:auto !important;text-align:left !important;vertical-align:middle}
+  #logBox td:nth-child(1){grid-column:1;grid-row:1}
+  #logBox td:nth-child(2){grid-column:2/4;grid-row:1;font-size:.9rem}
+  #logBox td:nth-child(3){grid-column:1;grid-row:2}
+  #logBox td:nth-child(4){grid-column:2;grid-row:2}
+  #logBox td:nth-child(5){grid-column:3;grid-row:2;text-align:right !important;font-size:.72rem;color:var(--muted)}
+  #logBox .loghead{margin-top:.9rem}
+}
 .logon{display:inline-block;margin-left:.45rem;font-size:.66rem;font-weight:600;color:var(--muted);background:var(--hair);border-radius:999px;padding:.05rem .42rem;white-space:nowrap}
 /* Desktop: the pod labels stay put while the week scrolls sideways. */
 @media(min-width:761px){
@@ -141,7 +181,12 @@ table.fair{border-collapse:collapse;width:100%}
 }
 #teamPanel{display:none;width:186px;flex-shrink:0;background:var(--card);border-right:.5px solid var(--line);padding:1rem .55rem;position:sticky;top:0;height:100vh;overflow-y:auto}
 body.teamopen #teamPanel{display:block}
-.tpback{display:flex;align-items:center;gap:.35rem;background:none;border:0;font:inherit;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;padding:.3rem .55rem .8rem;width:100%;text-align:left}
+/* "Menu" is a PHONE control and is hidden everywhere else — the resident board's rule, which this
+   page had drifted from by showing it always (Ali, 6 Aug: "why is there a random <menu at top, not
+   required"). On a phone the team panel slides over the icon rail, so something has to hand you
+   back; on a desktop the rail is right there beside the panel and a back button to a menu you can
+   already see is just noise. Revealed again in the max-width:760px block below. */
+.tpback{display:none;align-items:center;gap:.35rem;background:none;border:0;font:inherit;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;padding:.3rem .55rem .8rem;width:100%;text-align:left}
 .tpback svg{width:15px;height:15px}
 .tpttl{font-size:.58rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0 .55rem;margin-bottom:.6rem}
 .tpi{display:flex;align-items:center;gap:.6rem;width:100%;background:none;border:0;font:inherit;font-size:.82rem;font-weight:600;color:#4a4f58;padding:.52rem .55rem;border-radius:10px;cursor:pointer;text-align:left}
@@ -154,7 +199,8 @@ body.teamopen #teamPanel{display:block}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
   /* The name is the first thing to give up room — the icons must not wrap. */
   #btnWho{font-size:.64rem;padding:.4rem .5rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#teamPanel{position:fixed;left:0;top:0;bottom:0;height:auto;z-index:60;box-shadow:0 0 40px rgba(23,24,28,.18)}}
+#teamPanel{position:fixed;left:0;top:0;bottom:0;height:auto;z-index:60;box-shadow:0 0 40px rgba(23,24,28,.18)}
+  .tpback{display:flex}}
 </style>
 
 </head>
@@ -169,6 +215,7 @@ body.teamopen #teamPanel{display:block}
 <nav id="teamPanel">
   <button id="tpBack" class="tpback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Menu</button>
   <div class="tpttl">Rota team</div>
+  <button data-tab="ahead" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M11 14l2.5 2.5L11 19"/></svg>Look ahead</button>
   <button data-tab="fair" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg>Fairness</button>
   <button data-tab="log" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Log</button>
   <button data-tab="setup" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 00-.15-1.44l2-1.55-2-3.46-2.37.95a7 7 0 00-2.49-1.44L13.6 2.5h-3.2l-.39 2.56a7 7 0 00-2.49 1.44l-2.37-.95-2 3.46 2 1.55A7 7 0 005 12c0 .49.05.97.15 1.44l-2 1.55 2 3.46 2.37-.95a7 7 0 002.49 1.44l.39 2.56h3.2l.39-2.56a7 7 0 002.49-1.44l2.37.95 2-3.46-2-1.55c.1-.47.15-.95.15-1.44z"/></svg>Setup</button>
@@ -193,6 +240,21 @@ body.teamopen #teamPanel{display:block}
       <button class="btn sec" id="btnToday" style="font-size:.78rem;padding:.35rem .7rem">This week</button>
     </div>
     <div class="rota-wrap"><div id="weekGrid"></div></div>
+  </section>
+  <section id="tab-lock" style="display:none">
+    <div class="gatebox">
+      <div class="card">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+        <b id="lockTitle">Rota team</b>
+        <div class="sub" id="lockSub"></div>
+        <input type="password" id="lockPw" placeholder="Password">
+        <button class="btn" id="lockBtn" style="width:100%">Unlock</button>
+        <div id="lockMsg" style="font-size:.78rem;color:var(--red);min-height:1em;margin-top:.3rem"></div>
+      </div>
+    </div>
+  </section>
+  <section id="tab-ahead" style="display:none">
+    <div id="aheadBox"></div>
   </section>
   <section id="tab-fair" style="display:none">
     <div class="card"><h2>Fairness</h2><div style="overflow-x:auto" id="fairBox"></div></div>
@@ -373,11 +435,25 @@ async function sha(s){
    Every writer on this page goes through here: three of them used to build the entry inline and
    drifted apart, which is why the Log tab had to guess what was a consultant change by pattern-
    matching the message text. */
-function clog(msg, kind, on, whoSuffix){
+/* `det` is the STRUCTURED half of an entry, and it is what makes the log readable (Ali, 6 Aug:
+   "nice coloured pod letter styling and things missing"). The shared table in core.js draws
+   Person / From / To — with the pods as coloured chips and an arrow between them — from `e.d`.
+   Failing that it tries to parse the message text, but those regexes were written for the
+   RESIDENT board's phrasings and match none of ours. So every row this page has ever written fell
+   through to the "one wide cell, no invented columns" fallback: three empty columns and a
+   sentence. Nothing about that was fixable with CSS, which is why the log kept looking wrong
+   however closely the stylesheet was matched.
+   Shape, from core.js: { act:"move", subj:<person>, from:<pod>, to:<pod> }, plus `bench: true`
+   for somebody arriving who was not on a pod. Anything that is not a pod move — a COD handover, a
+   finish-time swap — deliberately passes no det and stays a plain sentence, because inventing a
+   From and a To for it would be worse than leaving them empty. */
+function clog(msg, kind, on, whoSuffix, det){
   const who = (localStorage.getItem("consEditor") || "?") + (whoSuffix || "");
   cdata.log = cdata.log || [];
-  cdata.log.unshift({ t: new Date().toISOString(), who, msg,
-                      kind: kind === "auto" ? "auto" : "manual", on: on || null });
+  const e = { t: new Date().toISOString(), who, msg,
+              kind: kind === "auto" ? "auto" : "manual", on: on || null };
+  if (det) e.d = det;
+  cdata.log.unshift(e);
   if (cdata.log.length > 300) cdata.log.length = 300;
 }
 /* logKind, logOn, groupLog and logDayLabel come from core.js — the resident board reads its
@@ -558,9 +634,23 @@ const resPills = list => (list && list.length) ? "<div class='rpills'>" + list.m
 /* The whole horizon is computed (fairness needs it) but only FOUR WEEKS are published on this
    page — beyond that the allocation is still free to move, and showing it would break the
    promise that what people see doesn't change under them (Ali, 31 Jul). The ROTA TEAM sees the
-   whole horizon once they're through the shield: draft weeks, clearly not a promise. */
-const PUB_DAYS = 28;
-const pubUntil = () => addDays(new Date().toISOString().slice(0, 10), PUB_DAYS);
+   whole horizon once they're through the shield, on the Look ahead page: draft weeks, clearly
+   not a promise.
+
+   The window is WEEK-ALIGNED (Ali, 6 Aug): this week plus the next three, so it runs Monday to
+   Sunday and only moves on a Monday. It used to be a rolling today+28, which was wrong in two
+   ways nobody could have named but everybody would have felt — the fourth week was drawn half
+   in names and half in dashes, and the edge crept forward every single day, so the horizon you
+   looked at on Monday was not the one you got on Friday. Four whole weeks, changing once a
+   week, is what "published four weeks ahead" actually means.
+
+   Week-aligned is always INSIDE the allocator's four-week pin (a Monday is 27 days from the
+   Sunday of week+3, never more than 28), so nothing published can be reshuffled under anybody.
+   That relationship is the whole safety of this: if PUB_WEEKS ever grows past 4, the pin
+   horizon in consultant_rota.py must grow with it, or the page will publish days the allocator
+   still considers free. */
+const PUB_WEEKS = 4;
+const pubUntil = () => addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1);
 function teamUnlocked(){
   try { if (sessionStorage.getItem("consTeamUnlocked") === "1") return true; } catch(e){}
   return !!(data && !data.staffPw);
@@ -591,14 +681,18 @@ function cellHTML(rec, key, d){
     (cur && podCell ? " · drag onto another pod to swap" : "") + "'>" + (esc(cur) || "—") + "</span>" + pills + "</div>";
 }
 
-function renderRota(){
+/* One week as a table. Pods run across the top and days down the side — the same shape as the
+   resident board, so nobody has to rotate the rota in their head moving between the two pages.
+   Each pod column wears the identical solid colour bar. Residents, when shown, sit inside their
+   pod's cell for the day; night residents sit under the on-call consultant, who covers the same
+   hours.
+
+   Pulled out of renderRota on 6 Aug so the Look ahead page can draw the same week the same way.
+   A second, near-identical table builder is how two views of one rota start disagreeing about
+   what a COD pill looks like. */
+function weekTableHTML(mondayISO){
   const cons = (CR() || {}).days || {};
-  const dates = Array.from({length:7}, (_, i) => addDays(curWeek, i));
-  $("#weekTitle").textContent = fmt(curWeek) + " – " + fmt(dates[6]) + " " + new Date(dates[6] + "T12:00:00").getFullYear();
-  /* Pods run across the top and days down the side — the same shape as the resident board, so
-     nobody has to rotate the rota in their head moving between the two pages. Each pod column
-     wears the identical solid colour bar. Residents, when shown, sit inside their pod's cell for
-     the day; night residents sit under the on-call consultant, who covers the same hours. */
+  const dates = Array.from({length:7}, (_, i) => addDays(mondayISO, i));
   let h = "<table class='rota'><tr><th></th>";
   for (const [p, label, barcol] of PODROWS) h += "<th class='podth' style='border-top:3px solid " + barcol + "'>" + label + "</th>";
   h += "<th>On call</th><th>Fairfield</th></tr>";
@@ -610,7 +704,13 @@ function renderRota(){
     h += "<td data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
     h += "<td data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
-  h += "</table>";
+  return h + "</table>";
+}
+
+function renderRota(){
+  const dates = Array.from({length:7}, (_, i) => addDays(curWeek, i));
+  $("#weekTitle").textContent = fmt(curWeek) + " – " + fmt(dates[6]) + " " + new Date(dates[6] + "T12:00:00").getFullYear();
+  let h = weekTableHTML(curWeek);
   /* If the cover on screen was worked out from anything other than the live rota, that goes
      ABOVE the grid, not on a settings page nobody opens. Every name below is only as right as
      the workbook it came from, and a board built on a copy from last week looks identical to
@@ -626,26 +726,35 @@ function renderRota(){
         "</div>" + h;
   }
   $("#weekGrid").innerHTML = h;
-  $("#weekGrid").querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => editCell(c.dataset.d, c.dataset.k, c));
+  wireGrid($("#weekGrid"));
+}
+
+/* Every handler a drawn week needs, bound to whatever container it was drawn into. Pulled out
+   of renderRota on 6 Aug alongside weekTableHTML: the Look ahead page draws real, editable weeks
+   and must behave identically, and a copy of this block would drift the first time a drop rule
+   changed. Called after every innerHTML — the handlers are on the elements, not delegated, so
+   they die with the markup that carried them. */
+function wireGrid(root){
+  root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => editCell(c.dataset.d, c.dataset.k, c));
   /* Badge drag: a consultant carries their badge onto another pod and the two exchange pods.
      This is the ONE edit open to any consultant without unlocking — everything else is rota-master. */
-  $("#weekGrid").querySelectorAll(".cell[draggable='true']").forEach(c => {
+  root.querySelectorAll(".cell[draggable='true']").forEach(c => {
     c.ondragstart = e => { e.dataTransfer.setData("text/pod", c.dataset.d + "|" + c.dataset.k); e.dataTransfer.effectAllowed = "move"; };
   });
   /* COD pill drag: hand referrals to whoever covers the pod you drop it on (same day). */
-  $("#weekGrid").querySelectorAll(".codpill").forEach(pill => {
+  root.querySelectorAll(".codpill").forEach(pill => {
     pill.ondragstart = e => { e.dataTransfer.setData("text/cod", pill.dataset.d); e.dataTransfer.effectAllowed = "move"; };
   });
   /* Finish pill drag: swap who stays late without moving anybody between pods. */
-  $("#weekGrid").querySelectorAll(".finpill").forEach(pill => {
+  root.querySelectorAll(".finpill").forEach(pill => {
     pill.ondragstart = e => { e.dataTransfer.setData("text/fin", pill.dataset.d + "|" + pill.dataset.k); e.dataTransfer.effectAllowed = "move"; };
   });
   /* Resident profile cards on hover — text only, and only what the store actually holds. */
-  $("#weekGrid").querySelectorAll(".rpill[data-rid]").forEach(pl => {
+  root.querySelectorAll(".rpill[data-rid]").forEach(pl => {
     pl.onmouseenter = () => showCard(pl, pl.dataset.rid);
     pl.onmouseleave = hideCard;
   });
-  $("#weekGrid").querySelectorAll("td[data-pod]").forEach(td => {
+  root.querySelectorAll("td[data-pod]").forEach(td => {
     td.ondragover = e => {
       const t = e.dataTransfer.types;
       if (t.includes("text/cod") || t.includes("text/pod") || t.includes("text/fin")) { e.preventDefault(); td.classList.add("dropok"); }
@@ -684,6 +793,134 @@ function renderRota(){
       if (target === rec.cur.cod) return;
       requireEdit(() => applyEdit(d, "cod", target, "COD handed to " + target + " (Pod " + td.dataset.pod + ")"));
     };
+  });
+}
+
+/* ── LOOK AHEAD — the rota team's view past the published edge (Ali, 6 Aug) ────────────────────
+   "There should be 3 weeks visible for people plus the current week. Behind the rota team shield
+   there should be a separate admin page where admin can look past this to the end of the rota
+   date and see what's coming up."
+
+   Every week the COVER STORE holds, from this Monday to the last one, one after another. The
+   weeks come from the store's own days and NOT from weeksAvail(), which reads data.weeks — the
+   RESIDENT rota. That distinction is the entire reason this page exists: unlocking the shield
+   already revealed the draft cells, but the week arrows on the Pods grid are bounded by the
+   resident rota's weeks, so an admin could unlock and still not reach a single week the resident
+   rota hadn't been published for. The consultant workbook runs months further out. Nobody would
+   have called that a bug; it just quietly looked like the rota ended early.
+
+   Weeks are editable here, exactly as on the Pods grid — same cells, same drags, same Edit
+   button, because they ARE the same code. Worth knowing what that means: an edit to a draft week
+   is a manual override, so it survives the nightly re-run and pins that placement early, before
+   the allocator has finished balancing the year. Fine when you mean it. */
+function aheadWeeks(){
+  const days = Object.keys(((CR() || {}).days) || {}).sort();
+  if (!days.length) return [];
+  const from = mondayOf(new Date().toISOString().slice(0, 10));
+  const last = mondayOf(days[days.length - 1]);
+  const out = [];
+  for (let m = from; m <= last; m = addDays(m, 7)) out.push(m);
+  return out;
+}
+
+function renderAhead(){
+  const box = $("#aheadBox"); if (!box) return;
+  const wks = aheadWeeks();
+  const until = pubUntil();
+  if (!wks.length){
+    box.innerHTML = "<div class='card'><h2>Look ahead</h2><p style='color:var(--muted)'>The cover store holds no allocated days yet.</p></div>";
+    return;
+  }
+  const drafts = wks.filter(m => addDays(m, 6) > until).length;
+  const endsAt = addDays(wks[wks.length - 1], 6);
+  /* The heading says how far the rota actually reaches, because that is the question this page
+     is opened to answer and it is not something you should have to scroll to the bottom to find
+     out. Everything else on the page is the answer's detail. */
+  const held = draftOverrides().length;
+  let h = "<div class='card' style='margin-bottom:1rem'><h2>Look ahead</h2>" +
+    "<p style='margin:.2rem 0 0;font-size:.87rem;line-height:1.5'>The rota reaches <b>" +
+    fmt(endsAt) + " " + new Date(endsAt + "T12:00:00").getFullYear() + "</b> — " + wks.length +
+    " week" + (wks.length === 1 ? "" : "s") + " from this one. Everyone sees the first " +
+    PUB_WEEKS + "; the other " + drafts + " " + (drafts === 1 ? "is" : "are") +
+    " draft and still free to move.</p>" +
+    "<div style='margin-top:.9rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap'>" +
+    "<button class='btn sec' id='btnRedraft'" + (held ? "" : " disabled") + ">Re-run the algorithm on the draft weeks</button>" +
+    "<span style='font-size:.8rem;color:var(--muted);line-height:1.45;flex:1;min-width:200px'>" +
+    (held
+      ? held + " placement" + (held === 1 ? "" : "s") + " in the draft weeks " +
+        (held === 1 ? "has" : "have") + " been changed by hand, which stops the algorithm touching " +
+        (held === 1 ? "it" : "them") + ". This drops those changes; tonight's sync then reallocates."
+      : "Nothing in the draft weeks is held by hand — the algorithm already has a free run at all of them.") +
+    "</span></div></div>";
+  for (const m of wks){
+    const sun = addDays(m, 6);
+    const draft = sun > until;
+    h += "<div class='ahwk" + (draft ? " draft" : "") + "'>" +
+      "<div class='ahhd'><span>" + fmt(m) + " – " + fmt(sun) + "</span>" +
+      "<span class='sub'>" + new Date(sun + "T12:00:00").getFullYear() + "</span>" +
+      "<span class='ahchip" + (draft ? "" : " pub") + "'>" + (draft ? "DRAFT" : "PUBLISHED") + "</span></div>" +
+      "<div class='card' style='padding:.5rem'><div class='rota-wrap'>" + weekTableHTML(m) + "</div></div></div>";
+  }
+  box.innerHTML = h;
+  wireGrid(box);
+  const rb = $("#btnRedraft"); if (rb) rb.onclick = redraftDrafts;
+}
+
+/* ── RE-RUNNING THE ALGORITHM ON THE DRAFT WEEKS ───────────────────────────────────────────────
+   Ali, 6 Aug: "can you give me a button to rerun allocations with the algorithm for the publically
+   unviewable part?"
+
+   Be clear about what this does, because the honest version and the literal one are not the same
+   thing. The allocator is Python — it reads the workbook off SharePoint and runs nightly in an
+   Action; a browser cannot run it and should not be trusted with a token that could. So this
+   button does not compute an allocation itself.
+
+   What it does is the thing that was actually stopping the algorithm: it releases the draft weeks.
+   Every day carries `auto` (what the algorithm said) and `cur` (what stands). The sync only lets
+   `cur` follow the sheet while the two agree — the moment a human changes one, that placement is
+   theirs and survives every future run, for ever, which is right for a day people have seen and
+   wrong for a draft nobody has. So a hand-edit in week nine silently freezes week nine. This drops
+   those edits back to `auto`, and tonight's sync then has a free hand over the whole draft again.
+
+   Only days AFTER the published edge are touched. Anything four weeks out or nearer has been seen
+   and promised, and nothing here may move it. */
+function draftOverrides(){
+  const days = ((CR() || {}).days) || {};
+  const until = pubUntil();
+  const out = [];
+  for (const d in days){
+    if (d <= until) continue;                       // published: promised, never touched here
+    const rec = days[d]; if (!rec || !rec.auto || !rec.cur) continue;
+    for (const k of ["A","B","C","D","E","oncall","cod","fgh"])
+      if ((rec.cur[k] || "") !== (rec.auto[k] || "")) out.push({ d, k });
+  }
+  return out;
+}
+
+async function redraftDrafts(){
+  const cons = CR(); if (!cons) return;
+  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  const held = draftOverrides();
+  if (!held.length) { toast("Nothing held by hand in the draft weeks"); return; }
+  const days = new Set(held.map(x => x.d));
+  if (!confirm("Drop " + held.length + " hand-made placement" + (held.length === 1 ? "" : "s") +
+      " across " + days.size + " draft day" + (days.size === 1 ? "" : "s") +
+      ", so the algorithm decides them again?\n\nOnly weeks past the published four are affected — " +
+      "nothing anybody has been shown will change. Tonight's sync reallocates them.")) return;
+  ensureWho(async () => {
+    for (const { d, k } of held) cons.days[d].cur[k] = cons.days[d].auto[k] || "";
+    /* One log entry, not one per placement: this is a single decision by a person, and 40 rows
+       saying "reverted" would bury the day's real changes. Logged as manual for the same reason —
+       the software did not choose this, somebody pressed a button. */
+    clog("Draft weeks handed back to the algorithm — " + held.length + " hand-made placement" +
+         (held.length === 1 ? "" : "s") + " across " + days.size + " day" + (days.size === 1 ? "" : "s") +
+         " after " + fmt(pubUntil()) + " dropped", "manual", null, " (Look ahead)");
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Draft weeks released — the algorithm has them back"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); }
+    renderAll();
   });
 }
 
@@ -758,7 +995,14 @@ function shortDate(iso){
   catch(e){ return iso; }
 }
 
-function renderAll(){ renderRota(); renderFair(); renderLog(); renderSetup(); }
+/* Two grids now draw the same weeks from the same store — the Pods week and Look ahead — so
+   anything that changes an allocation, or just what a cell shows, has to redraw both or the two
+   views start disagreeing about the same day. Look ahead is only drawn when it's on screen: it
+   can run to dozens of week tables and there is no reason to build them for a viewer who never
+   gets through the shield. */
+const aheadVisible = () => { const s = $("#tab-ahead"); return !!s && s.style.display !== "none"; };
+function renderGrids(){ renderRota(); if (aheadVisible()) renderAhead(); }
+function renderAll(){ renderGrids(); renderFair(); renderLog(); renderSetup(); }
 
 function ensureWho(cb){
   const w = localStorage.getItem("consEditor");
@@ -776,8 +1020,24 @@ async function applyEdit(d, k, ini, note){
   const cur = rec.cur[k] || "";
   if (ini === cur) return;
   rec.cur[k] = ini;
-  clog((note || ("Consultant swap " + d + " " + rowLabel(k) + ": " + (cur || "—") + " → " + (ini || "—")))
-       + (ini === (rec.auto[k] || "") ? "" : " (differs from rota sheet)"), "manual", d, " (consultant page)");
+  const flag = ini === (rec.auto[k] || "") ? "" : " (differs from rota sheet)";
+  const isPod = "ABCDE".includes(k);
+  if (note || !isPod) {
+    /* A COD handover or an on-call/Fairfield change: nobody moved pod, so no From and no To. */
+    clog((note || ("Consultant swap " + d + " " + rowLabel(k) + ": " + (cur || "—") + " → " + (ini || "—"))) + flag,
+         "manual", d, " (consultant page)");
+  } else {
+    /* TWO rows when one consultant replaces another, not one (Ali left this to me). A single row
+       can only name one person, so the one who came OFF would leave no trace but a sentence —
+       and "who stopped covering C on Tuesday" is exactly the question a log is opened to answer.
+       Two rows cost nothing and neither person disappears. Departure logged first so that, newest
+       first, the arrival reads above it. */
+    if (cur) clog("Taken off " + rowLabel(k) + " on " + fmt(d) + ": " + nameOf(cur) + flag,
+                  "manual", d, " (consultant page)", { act: "move", subj: cur, from: k, to: "" });
+    if (ini) clog(nameOf(ini) + " covers " + rowLabel(k) + " on " + fmt(d) + flag,
+                  "manual", d, " (consultant page)",
+                  { act: "move", subj: ini, to: k, bench: !cur, from: "" });
+  }
   cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
   state("saving");
   try {
@@ -798,8 +1058,13 @@ async function applySwap(d, k1, k2){
   if (!a || !b || a === b) return;
   rec.cur[k1] = b; rec.cur[k2] = a;
   const who = localStorage.getItem("consEditor") || "?";
-  clog("Pod swap " + d + ": " + a + " " + rowLabel(k1) + " ↔ " + b + " " + rowLabel(k2),
-       "manual", d, " (consultant page)");
+  /* One row per person, so the swap reads as the two moves it actually is and each consultant
+     appears under their own name with their own pods. */
+  const podk = k => "ABCDE".includes(k) ? k : "";
+  clog(nameOf(a) + " moves to " + rowLabel(k2) + " on " + fmt(d), "manual", d, " (consultant page)",
+       { act: "move", subj: a, from: podk(k1), to: podk(k2) });
+  clog(nameOf(b) + " moves to " + rowLabel(k1) + " on " + fmt(d), "manual", d, " (consultant page)",
+       { act: "move", subj: b, from: podk(k2), to: podk(k1) });
   cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
   state("saving");
   try {
@@ -870,7 +1135,10 @@ function editCell(d, k, cellEl){
     cellEl.replaceWith(sel);
     sel.focus();
     let done = false;
-    const finish = commit => { if (done) return; done = true; if (commit && sel.value !== cur) applyEdit(d, k, sel.value); else renderRota(); };
+    /* Cancelling redraws BOTH grids, not just the Pods week: the dropdown that replaced the cell
+       may well be sitting on the Look ahead page, and redrawing the other one would leave it
+       stranded as a live <select> in a grid nothing is listening to. */
+    const finish = commit => { if (done) return; done = true; if (commit && sel.value !== cur) applyEdit(d, k, sel.value); else renderGrids(); };
     sel.onchange = () => finish(true);
     sel.onblur = () => finish(false);
     sel.onkeydown = e => { if (e.key === "Escape") finish(false); };
@@ -973,39 +1241,69 @@ $("#btnJuniors").onclick = () => {
      rest. This is the whole reason the toolbar fits on a phone now. */
   $("#btnJuniors").classList.toggle("on", showJun);
   $("#btnJuniors").title = showJun ? "Hide the residents" : "Show the residents in each pod";
-  renderRota();
+  renderGrids();
 };
 /* One shield, one inset menu, one password — the resident board's pattern exactly. The gate
    checks the SAME rota-team password (data.staffPw travels in the shared store), asked once
    per session on this device. */
+const TEAM_TABS = ["ahead", "fair", "log", "setup"];
 function showTab(t){
+  document.body.classList.remove("teamlocked");   // any deliberate move off the lock clears it
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === t));
-  for (const k of ["rota","fair","log","setup"]) $("#tab-" + k).style.display = (t === k) ? "" : "none";
-  document.body.classList.toggle("teamopen", ["fair","log","setup"].includes(t));
-  const bt = $("#btnTeam"); if (bt) bt.classList.toggle("active", ["fair","log","setup"].includes(t));
+  for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (t === k) ? "" : "none";
+  document.body.classList.toggle("teamopen", TEAM_TABS.includes(t));
+  const bt = $("#btnTeam"); if (bt) bt.classList.toggle("active", TEAM_TABS.includes(t));
+  /* Drawn on the way in rather than on every render — see renderGrids. Has to come AFTER the
+     display flip above, since renderGrids asks the section whether it's visible. */
+  if (t === "ahead") renderAhead();
 }
+/* The lock is a PAGE, not a dialog — the resident board's pattern, ported here on 6 Aug because
+   the two shields looked and behaved differently for no reason anybody could give (Ali: "why does
+   the rota team password gate look different to residents"). Its note is the argument: click the
+   shield, the whole pane becomes the password box, and only when it clears do the menu and the
+   pages appear behind it. A floating modal quietly says "dismiss me and carry on", which is the
+   wrong thing to say about a door.
+
+   What's deliberately NOT copied is the resident board's "set a password" and "forgotten? reset
+   it" branches. This page does not own the password — data.staffPw travels in the shared store
+   and is set on the resident board. Offering to set or reset it here would be a second place to
+   change one password, which is how they end up different. */
+let LOCK_THEN = null;
+function showLockScreen(then){
+  LOCK_THEN = then;
+  document.body.classList.add("teamlocked");
+  document.body.classList.remove("teamopen");
+  for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (k === "lock") ? "" : "none";
+  document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.remove("active"));
+  const bt = $("#btnTeam"); if (bt) bt.classList.add("active");
+  $("#lockSub").textContent = "One password covers Look ahead, Fairness and the change log. " +
+    "It's the rota team's password from the resident board, and you'll only be asked once on this device.";
+  $("#lockMsg").textContent = "";
+  $("#lockPw").value = "";
+  setTimeout(() => $("#lockPw").focus(), 40);
+}
+$("#lockBtn").onclick = async () => {
+  if (await sha($("#lockPw").value) === (data && data.staffPw)) {
+    try { sessionStorage.setItem("consTeamUnlocked", "1"); } catch(e){}
+    document.body.classList.remove("teamlocked");
+    $("#lockPw").value = "";
+    const then = LOCK_THEN; LOCK_THEN = null;
+    if (then) then();
+  } else $("#lockMsg").textContent = "Wrong password.";
+};
+$("#lockPw").onkeydown = e => { if (e.key === "Enter") $("#lockBtn").click(); };
 function ensureTeam(cb){
   let unlocked = false;
   try { unlocked = sessionStorage.getItem("consTeamUnlocked") === "1"; } catch(e){}
   if (unlocked || !data || !data.staffPw) return cb();
-  const gate = document.createElement("div"); gate.id = "whoOverlay";
-  const box = document.createElement("div"); box.className = "box";
-  const t = document.createElement("b"); t.textContent = "Rota team — password";
-  const inp = document.createElement("input"); inp.type = "password"; inp.placeholder = "Password"; inp.style.width = "100%"; inp.style.marginBottom = ".6rem";
-  const ok = document.createElement("button"); ok.className = "btn"; ok.style.width = "100%"; ok.textContent = "Unlock";
-  ok.onclick = async () => {
-    if (await sha(inp.value) === data.staffPw) {
-      try { sessionStorage.setItem("consTeamUnlocked", "1"); } catch(e){}
-      gate.remove(); cb();
-    } else t.textContent = "Wrong password";
-  };
-  inp.onkeydown = e => { if (e.key === "Enter") ok.click(); };
-  gate.onclick = e => { if (e.target === gate) gate.remove(); };
-  box.append(t, inp, ok); gate.append(box); document.body.append(gate);
-  setTimeout(() => inp.focus(), 0);
+  showLockScreen(cb);
 }
 document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
-$("#btnTeam").onclick = () => ensureTeam(() => { showTab("fair"); renderRota(); });
+/* The shield now lands on Look ahead rather than Fairness. What's coming up is the question the
+   rota team opens this page to answer; fairness is what they check afterwards. renderRota first,
+   because unlocking has just changed what the Pods grid is allowed to show and it must not be
+   left holding dashes behind the tab you switched away from; showTab draws Look ahead itself. */
+$("#btnTeam").onclick = () => ensureTeam(() => { renderRota(); showTab("ahead"); });
 $("#tpBack").onclick = () => showTab("rota");
 /* Read-only until Edit is pressed. Set here rather than in the markup so a page that fails to
    boot is not left looking editable. */

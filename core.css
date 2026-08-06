@@ -69,3 +69,40 @@
   border-radius:999px;background:var(--accent-bg);color:var(--accent);
   font-size:.52rem;font-weight:800;font-style:normal}
 .none{color:var(--muted);font-size:.7rem}
+
+/* ---------------------------------------------------------------------------
+   The change log.
+
+   `logPanel()` in core.js draws the log on BOTH pages, and it emits these class
+   names. Until 6 Aug they were styled only inside each page, which is precisely
+   the duplication the header of this file warns about — and it did exactly what
+   it warns of. Cover's copy drifted onto selectors core.js had stopped emitting
+   (`.logrow{display:flex}` on what is a <tr>, `.lt` for a timestamp emitted as
+   `.t`, `.loghead b` for a count emitted as a <span>), so the shared renderer
+   produced markup the page had no rules for and the log rendered as a mess. No
+   amount of matching one page's stylesheet against the other's could fix that,
+   because the agreement that matters is between core.js and the CSS — not
+   between two pages, which have no relationship beyond sharing this code.
+
+   So: the renderer's own class names live with the renderer. A page adds only
+   what its own container needs.
+
+   The resident board still carries local copies of these. It is frozen until
+   the go-live, and its rules load after this file so they win regardless —
+   deleting them is a post-go-live tidy, logged in JOBS.md.
+   --------------------------------------------------------------------------- */
+.logrow{font-size:.8rem;padding:.4rem 0;border-bottom:1px solid var(--hair)}
+.logrow .t{color:var(--muted);font-size:.7rem}
+.logrow.unread{border-left:2px solid var(--accent);padding-left:.6rem}
+/* The software's own changes sit behind a rule so a person's decisions read as the foreground. */
+.logrow.auto{border-left:2px solid var(--hair);padding-left:.55rem}
+.logrow.auto .t{font-style:italic}
+.loghead{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;font-size:.62rem;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;
+  margin:1.1rem 0 .4rem;padding-bottom:.25rem;border-bottom:1px solid var(--line)}
+.loghead:first-child{margin-top:.2rem}
+.loghead span{font-size:.7rem;letter-spacing:0;font-weight:700;color:var(--muted)}
+/* The arrow between the From and To pods. Without it two chips sit side by side saying nothing
+   about which way round they go. Keyed on the class core.js puts on the cell, so it needs no
+   container and works at every width. */
+td.logfrom:not(:empty)::after{content:"\2192";color:var(--muted);margin-left:.35rem}
