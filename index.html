@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cover — TEST</title>
-<link rel="stylesheet" href="core.css?v=20260731-02">
+<!-- The ?v= is a cache-buster, and it MUST be bumped whenever core.css or core.js changes.
+     Missed on 6 Aug when the change log's rules moved into core.css: the file changed, the version
+     did not, so every browser holding the old copy carried on using it — and that copy has no log
+     rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
+     thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
+<link rel="stylesheet" href="core.css?v=20260806-01">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -48,16 +53,13 @@ body.testmode main{padding-bottom:3.4rem}
 .stalebar{background:#fdf4f6;border:1px solid var(--podEb);border-radius:10px;padding:.7rem .9rem;
   margin:0 0 .8rem;font-size:.85rem;line-height:1.5;color:var(--ink)}
 .stalebar .why{display:block;margin-top:.4rem;font-size:.75rem;color:var(--muted)}
-/* Look ahead. A published week and a draft week must never look alike at a glance — the whole
-   point of the page is that everything past the fourth week is still free to move. Published
-   weeks carry the normal card; draft weeks are tinted and wear a DRAFT chip in the heading. */
-.ahwk{margin-bottom:1rem}
-.ahwk .ahhd{display:flex;align-items:center;gap:.55rem;margin:0 0 .5rem;font-size:.9rem;font-weight:700}
-.ahwk .ahhd .sub{font-weight:600;color:var(--muted);font-size:.72rem}
+/* Look ahead is the Pods grid; the only thing it adds is a chip in the week bar saying whether
+   the week on screen is one everybody can see or one still free to move. That distinction is the
+   entire reason the page is behind the shield, so it has to be legible at a glance. */
 .ahchip{font-size:.58rem;font-weight:800;letter-spacing:.08em;border-radius:999px;padding:.15rem .45rem;
-  border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg)}
+  border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg);white-space:nowrap}
 .ahchip.pub{border-color:var(--green);color:var(--green);background:var(--green-bg)}
-.ahwk.draft > .card{background:var(--amber-bg);border-style:dashed}
+.navarrow:disabled{opacity:.3;cursor:default}
 /* The rota-team lock, copied rule-for-rule from the resident board (Ali, 6 Aug: "why does the
    rota team password gate look different to residents"). It was a floating modal here and a
    page-of-its-own there — the resident board's note explains why that is the right one: "The
@@ -254,6 +256,14 @@ body.teamopen #teamPanel{display:block}
     </div>
   </section>
   <section id="tab-ahead" style="display:none">
+    <div class="weekbar">
+      <button class="navarrow" id="ahPrev" title="Previous week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <b id="ahTitle"></b>
+      <span id="ahChip"></span>
+      <button class="navarrow" id="ahNext" title="Next week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="btn sec" id="ahToday" style="font-size:.78rem;padding:.35rem .7rem">This week</button>
+    </div>
+    <div class="rota-wrap"><div id="ahGrid"></div></div>
     <div id="aheadBox"></div>
   </section>
   <section id="tab-fair" style="display:none">
@@ -274,7 +284,7 @@ body.teamopen #teamPanel{display:block}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260731-02"></script>
+<script src="core.js?v=20260806-01"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
 /* Keys: the link's #hash wins, else the small k.js file served alongside the page (window.__POD_KEYS)
@@ -823,47 +833,67 @@ function aheadWeeks(){
   return out;
 }
 
+/* Look ahead is THE PODS PAGE — the same grid, the same arrows, the same everything — that simply
+   keeps going past the four-week edge (Ali, 6 Aug: "the look ahead should be identical to the pods
+   apge but just cycle past the 4 week lock"). It was a long scroll of every week stacked up, which
+   answered "what does the whole horizon look like" — a question nobody had asked. What the rota
+   team actually does is page forward a week at a time exactly as they do on Pods, and want the
+   arrows not to stop at week four.
+   So the only differences from Pods are the two that matter: its weeks come from the COVER STORE
+   rather than the resident rota, and it is behind the shield, so cellHTML shows the draft weeks
+   instead of dashes. */
+let aheadWeek = null;
+
 function renderAhead(){
-  const box = $("#aheadBox"); if (!box) return;
+  const grid = $("#ahGrid"); if (!grid) return;
   const wks = aheadWeeks();
-  const until = pubUntil();
+  const box = $("#aheadBox");
   if (!wks.length){
-    box.innerHTML = "<div class='card'><h2>Look ahead</h2><p style='color:var(--muted)'>The cover store holds no allocated days yet.</p></div>";
+    $("#ahTitle").textContent = "";
+    grid.innerHTML = "<p style='padding:1rem;color:var(--muted)'>The cover store holds no allocated days yet.</p>";
+    if (box) box.innerHTML = "";
     return;
   }
-  const drafts = wks.filter(m => addDays(m, 6) > until).length;
+  if (!aheadWeek || !wks.includes(aheadWeek)) aheadWeek = wks[0];
+  const sun = addDays(aheadWeek, 6);
+  const draft = sun > pubUntil();
+  $("#ahTitle").textContent = fmt(aheadWeek) + " – " + fmt(sun) + " " + new Date(sun + "T12:00:00").getFullYear();
+  $("#ahChip").className = "ahchip" + (draft ? "" : " pub");
+  $("#ahChip").textContent = draft ? "DRAFT" : "EVERYONE SEES THIS";
+  $("#ahChip").title = draft
+    ? "Past the four weeks that are published — still free to move, and nobody has been shown it"
+    : "Inside the published four weeks — this is what everyone can already see";
+  const i = wks.indexOf(aheadWeek);
+  $("#ahPrev").disabled = i <= 0;
+  $("#ahNext").disabled = i >= wks.length - 1;
+  grid.innerHTML = weekTableHTML(aheadWeek);
+  wireGrid(grid);
+
+  /* Under the grid, the two facts that belong to the whole horizon rather than to one week. */
   const endsAt = addDays(wks[wks.length - 1], 6);
-  /* The heading says how far the rota actually reaches, because that is the question this page
-     is opened to answer and it is not something you should have to scroll to the bottom to find
-     out. Everything else on the page is the answer's detail. */
   const held = draftOverrides().length;
-  let h = "<div class='card' style='margin-bottom:1rem'><h2>Look ahead</h2>" +
-    "<p style='margin:.2rem 0 0;font-size:.87rem;line-height:1.5'>The rota reaches <b>" +
-    fmt(endsAt) + " " + new Date(endsAt + "T12:00:00").getFullYear() + "</b> — " + wks.length +
-    " week" + (wks.length === 1 ? "" : "s") + " from this one. Everyone sees the first " +
-    PUB_WEEKS + "; the other " + drafts + " " + (drafts === 1 ? "is" : "are") +
-    " draft and still free to move.</p>" +
-    "<div style='margin-top:.9rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap'>" +
-    "<button class='btn sec' id='btnRedraft'" + (held ? "" : " disabled") + ">Re-run the algorithm on the draft weeks</button>" +
-    "<span style='font-size:.8rem;color:var(--muted);line-height:1.45;flex:1;min-width:200px'>" +
-    (held
-      ? held + " placement" + (held === 1 ? "" : "s") + " in the draft weeks " +
-        (held === 1 ? "has" : "have") + " been changed by hand, which stops the algorithm touching " +
-        (held === 1 ? "it" : "them") + ". This drops those changes; tonight's sync then reallocates."
-      : "Nothing in the draft weeks is held by hand — the algorithm already has a free run at all of them.") +
-    "</span></div></div>";
-  for (const m of wks){
-    const sun = addDays(m, 6);
-    const draft = sun > until;
-    h += "<div class='ahwk" + (draft ? " draft" : "") + "'>" +
-      "<div class='ahhd'><span>" + fmt(m) + " – " + fmt(sun) + "</span>" +
-      "<span class='sub'>" + new Date(sun + "T12:00:00").getFullYear() + "</span>" +
-      "<span class='ahchip" + (draft ? "" : " pub") + "'>" + (draft ? "DRAFT" : "PUBLISHED") + "</span></div>" +
-      "<div class='card' style='padding:.5rem'><div class='rota-wrap'>" + weekTableHTML(m) + "</div></div></div>";
+  if (box) {
+    box.innerHTML = "<div class='card' style='margin-top:1rem'>" +
+      "<p style='margin:0;font-size:.87rem;line-height:1.5'>The rota reaches <b>" +
+      fmt(endsAt) + " " + new Date(endsAt + "T12:00:00").getFullYear() + "</b> — week " +
+      (i + 1) + " of " + wks.length + ". Everyone sees the first " + PUB_WEEKS + "; the rest are draft.</p>" +
+      "<div style='margin-top:.9rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap'>" +
+      "<button class='btn sec' id='btnRedraft'" + (held ? "" : " disabled") + ">Re-run the algorithm on the draft weeks</button>" +
+      "<span style='font-size:.8rem;color:var(--muted);line-height:1.45;flex:1;min-width:200px'>" +
+      (held
+        ? held + " placement" + (held === 1 ? "" : "s") + " in the draft weeks " +
+          (held === 1 ? "has" : "have") + " been changed by hand, which stops the algorithm touching " +
+          (held === 1 ? "it" : "them") + ". This drops those changes; tonight's sync then reallocates."
+        : "Nothing in the draft weeks is held by hand — the algorithm already has a free run at all of them.") +
+      "</span></div></div>";
+    const rb = $("#btnRedraft"); if (rb) rb.onclick = redraftDrafts;
   }
-  box.innerHTML = h;
-  wireGrid(box);
-  const rb = $("#btnRedraft"); if (rb) rb.onclick = redraftDrafts;
+}
+
+function shiftAhead(n){
+  const wks = aheadWeeks();
+  const t = wks[wks.indexOf(aheadWeek) + n];
+  if (t){ aheadWeek = t; renderAhead(); }
 }
 
 /* ── RE-RUNNING THE ALGORITHM ON THE DRAFT WEEKS ───────────────────────────────────────────────
@@ -1234,6 +1264,10 @@ function shiftWeek(n){
 }
 $("#btnPrev").onclick = () => shiftWeek(-1);
 $("#btnNext").onclick = () => shiftWeek(1);
+/* Look ahead's arrows, which are the Pods arrows over a different week list. */
+$("#ahPrev").onclick = () => shiftAhead(-1);
+$("#ahNext").onclick = () => shiftAhead(1);
+$("#ahToday").onclick = () => { aheadWeek = aheadWeeks()[0] || null; renderAhead(); };
 $("#btnToday").onclick = () => { const wks = weeksAvail(); const m = mondayOf(new Date().toISOString().slice(0,10)); if (wks.includes(m)){ curWeek = m; renderRota(); } };
 $("#btnJuniors").onclick = () => {
   showJun = !showJun;
