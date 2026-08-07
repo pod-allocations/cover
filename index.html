@@ -269,9 +269,9 @@ body.teamopen #teamPanel{display:block}
     <div class="weekbar">
       <button class="navarrow" id="ahPrev" title="Previous week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
       <b id="ahTitle"></b>
-      <span id="ahChip"></span>
       <button class="navarrow" id="ahNext" title="Next week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="btn sec" id="ahToday" style="font-size:.78rem;padding:.35rem .7rem">This week</button>
+      <span id="ahChip"></span>
     </div>
     <div class="rota-wrap"><div id="ahGrid"></div></div>
     <div id="aheadBox"></div>
@@ -296,6 +296,18 @@ body.teamopen #teamPanel{display:block}
 <div id="hovercard"></div>
 <script src="core.js?v=20260807-01"></script>
 <script src="k.js?v=20260804-02"></script>
+<script>
+/* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js and on the live host
+   it had drifted: two READ keys and no cover SAVE key, so Cover showed the rota perfectly and could
+   not write a single edit. The site serves a complete k.js at its root, same origin. Rather than
+   paste the key into a second file and wait for the two to drift apart again, borrow the site-wide
+   copy when this one is short — live host only, missing-key only, so staging can never gain a save
+   key. document.write because the keys must be in place before the main script reads them. */
+if (!(window.__POD_KEYS || {}).cs && !(window.__POD_KEYS || {}).cvs
+    && typeof LIVE_HOST !== "undefined" && location.hostname === LIVE_HOST) {
+  document.write('<scr' + 'ipt src="/k.js?v=20260807-01"><\/scr' + 'ipt>');
+}
+</script>
 <script>
 /* Keys: the link's #hash wins, else the small k.js file served alongside the page (window.__POD_KEYS)
    so the plain address works with no link — same trick the resident board uses. */
