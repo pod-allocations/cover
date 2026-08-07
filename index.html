@@ -9,7 +9,7 @@
      did not, so every browser holding the old copy carried on using it — and that copy has no log
      rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
      thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
-<link rel="stylesheet" href="core.css?v=20260806-01">
+<link rel="stylesheet" href="core.css?v=20260807-01">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -55,9 +55,19 @@ body.testmode main{padding-bottom:3.4rem}
 .stalebar .why{display:block;margin-top:.4rem;font-size:.75rem;color:var(--muted)}
 /* Look ahead is the Pods grid; the only thing it adds is a chip in the week bar saying whether
    the week on screen is one everybody can see or one still free to move. That distinction is the
-   entire reason the page is behind the shield, so it has to be legible at a glance. */
+   entire reason the page is behind the shield, so it has to be legible at a glance.
+   The chip is always as wide as its LONGEST label, not its current one (Ali, 7 Aug: "it moves
+   the position of the next arrow when flicking through quickly"). DRAFT is five characters and
+   EVERYONE SEES THIS is eighteen, so a chip sized to its own text made the Next arrow jump
+   sideways every time you crossed the four-week line — and crossing that line is exactly when
+   you are clicking fastest. Both labels are laid on top of each other in a one-cell grid and the
+   long one is kept as an invisible ghost, so the width is measured, never guessed: it stays
+   right if the wording or the font ever changes. */
 .ahchip{font-size:.58rem;font-weight:800;letter-spacing:.08em;border-radius:999px;padding:.15rem .45rem;
-  border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg);white-space:nowrap}
+  border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg);white-space:nowrap;
+  display:inline-grid;place-items:center}
+.ahchip>span{grid-area:1/1}
+.ahchip>.ghost{visibility:hidden}
 .ahchip.pub{border-color:var(--green);color:var(--green);background:var(--green-bg)}
 .navarrow:disabled{opacity:.3;cursor:default}
 /* The rota-team lock, copied rule-for-rule from the resident board (Ali, 6 Aug: "why does the
@@ -284,7 +294,7 @@ body.teamopen #teamPanel{display:block}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260806-01"></script>
+<script src="core.js?v=20260807-01"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
 /* Keys: the link's #hash wins, else the small k.js file served alongside the page (window.__POD_KEYS)
@@ -859,7 +869,9 @@ function renderAhead(){
   const draft = sun > pubUntil();
   $("#ahTitle").textContent = fmt(aheadWeek) + " – " + fmt(sun) + " " + new Date(sun + "T12:00:00").getFullYear();
   $("#ahChip").className = "ahchip" + (draft ? "" : " pub");
-  $("#ahChip").textContent = draft ? "DRAFT" : "EVERYONE SEES THIS";
+  /* Ghost first, always the long label: it sets the width so the Next arrow never moves. */
+  $("#ahChip").innerHTML = '<span class="ghost">EVERYONE SEES THIS</span><span>'
+    + (draft ? "DRAFT" : "EVERYONE SEES THIS") + '</span>';
   $("#ahChip").title = draft
     ? "Past the four weeks that are published — still free to move, and nobody has been shown it"
     : "Inside the published four weeks — this is what everyone can already see";
