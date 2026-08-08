@@ -9,7 +9,7 @@
      did not, so every browser holding the old copy carried on using it — and that copy has no log
      rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
      thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
-<link rel="stylesheet" href="core.css?v=20260807-01">
+<link rel="stylesheet" href="core.css?v=20260808-02">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -147,6 +147,62 @@ table.plain th{text-align:left;font-size:.62rem;text-transform:uppercase;letter-
 table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-size:.85rem}
 .warnpc{color:var(--amber);font-weight:700}
 .inipill{display:inline-block;background:var(--hair);border-radius:8px;padding:.05rem .4rem;font-size:.72rem;font-weight:700;color:var(--muted);margin-left:.35rem}
+/* The attention panel — an unnamed consultant is the one thing on Setup a person can fix in ten
+   seconds, so it is tinted and sits above everything else rather than reading as another table. */
+.card.attn{background:var(--amber-bg);border-color:var(--amber)}
+/* The Look ahead bar. This was three sentences of prose — how far the rota reached, which weeks
+   were public, and whether anything was held by hand (Ali, 8 Aug: "looks messy and unprofessional
+   with stupid explainers"). Rule 2 says a screen that needs explaining should be redrawn instead,
+   so every one of those facts is now a mark you read rather than a line you read: the ribbon is
+   the whole horizon, solid for the weeks everyone can see and pale for draft, amber where somebody
+   has overridden the algorithm, and outlined on the week you are looking at. The held-by-hand
+   sentence became a count, because that is all it ever was. */
+/* The Attention page and the Staff page. Both are lists of rows rather than cards, because a
+   dense list of things to deal with reads faster than a stack of boxes. */
+.sectlab{font-size:.68rem;font-weight:700;letter-spacing:.07em;color:var(--muted)}
+.cnt{font-size:.68rem;font-weight:600;color:var(--muted);background:var(--hair);
+  padding:.15rem .5rem;border-radius:999px}
+.cnt.warn{color:var(--amber);background:var(--amber-bg)}
+.stafftop{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+.nmin.miss{border-color:var(--amber);background:var(--amber-bg)}
+.attnrow{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;
+  border-top:1px solid var(--hair)}
+.attnrow:first-child{border-top:0}
+.attnrow .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);
+  margin-top:.42rem;flex:none}
+.attnrow .txt{flex:1;min-width:0}
+.attnrow .txt b{font-size:.87rem;font-weight:600;display:block}
+.attnrow .sub{font-size:.76rem;color:var(--muted);margin-top:.12rem;line-height:1.4}
+.attnrow .btn{flex:none;font-size:.76rem;padding:.3rem .7rem}
+.tpbadge{margin-left:auto;font-size:.62rem;font-weight:700;color:#fff;background:var(--amber);
+  border-radius:999px;padding:.05rem .38rem;min-width:1.1rem;text-align:center}
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.6rem}
+.srcgrid span{display:block;font-size:.7rem;color:var(--muted)}
+.srcgrid b{font-size:.83rem;font-weight:600}
+.balrow{display:flex;gap:1.3rem;flex-wrap:wrap}
+.balrow label{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
+.balrow input{width:4.6rem}
+.lockreset{display:inline-block;margin-top:.75rem;font-size:.72rem;color:var(--muted)}
+/* A day the sync could not resolve. Amber only behind the shield: the rota team can act on it,
+   and nobody else can (Ali, 8 Aug — "if its a complex swap needs admin involvement so should sit
+   behind admin really"). */
+body.teamopen tr.needs td.rowh{background:var(--amber-bg);color:var(--amber);
+  box-shadow:inset 3px 0 0 var(--amber)}
+.ahbar .top{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.ahrib{display:flex;gap:2px;height:10px;margin-top:.85rem}
+.ahrib span{flex:1;border-radius:2px;background:var(--hair);min-width:3px}
+.ahrib span.live{background:var(--podAb)}
+.ahrib span.held{background:var(--amber)}
+.ahrib span.now{outline:2px solid var(--ink);outline-offset:1px}
+.ahkey{display:flex;gap:.9rem;margin-top:.65rem;flex-wrap:wrap}
+.ahkey span{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:.35rem}
+.ahkey i{width:9px;height:9px;border-radius:2px;display:inline-block;font-style:normal}
+.heldchip{font-size:.72rem;font-weight:600;color:var(--amber);background:var(--amber-bg);
+  padding:.2rem .55rem;border-radius:999px}
+.nmrow{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;flex-wrap:wrap}
+.nmrow .inipill{margin-left:0;min-width:3.2rem;text-align:center;font-size:.78rem;color:var(--ink)}
+.nmin{flex:1;min-width:190px;font-family:inherit;font-size:.85rem;padding:.4rem .55rem;
+  border:1px solid var(--line);border-radius:9px;background:var(--card)}
 table.fair{border-collapse:collapse;width:100%}
 .fair th{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
 .fair th,.fair td{padding:.4rem .6rem;border-bottom:1px solid var(--hair);font-size:.82rem;text-align:center}
@@ -227,9 +283,11 @@ body.teamopen #teamPanel{display:block}
 <nav id="teamPanel">
   <button id="tpBack" class="tpback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Menu</button>
   <div class="tpttl">Rota team</div>
+  <button data-tab="attn" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a6 6 0 00-6 6c0 4-2 5-2 5h16s-2-1-2-5a6 6 0 00-6-6z"/><path d="M10.5 20.5a2 2 0 003 0"/></svg>Attention<span id="attnBadge" class="tpbadge"></span></button>
   <button data-tab="ahead" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M11 14l2.5 2.5L11 19"/></svg>Look ahead</button>
   <button data-tab="fair" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg>Fairness</button>
   <button data-tab="log" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Log</button>
+  <button data-tab="staff" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.5 14.4c2.6-.5 5 1.3 5 4.6"/></svg>Staff</button>
   <button data-tab="setup" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 00-.15-1.44l2-1.55-2-3.46-2.37.95a7 7 0 00-2.49-1.44L13.6 2.5h-3.2l-.39 2.56a7 7 0 00-2.49 1.44l-2.37-.95-2 3.46 2 1.55A7 7 0 005 12c0 .49.05.97.15 1.44l-2 1.55 2 3.46 2.37-.95a7 7 0 002.49 1.44l.39 2.56h3.2l.39-2.56a7 7 0 002.49-1.44l2.37.95 2-3.46-2-1.55c.1-.47.15-.95.15-1.44z"/></svg>Setup</button>
 </nav>
 <div id="content">
@@ -262,6 +320,11 @@ body.teamopen #teamPanel{display:block}
         <input type="password" id="lockPw" placeholder="Password">
         <button class="btn" id="lockBtn" style="width:100%">Unlock</button>
         <div id="lockMsg" style="font-size:.78rem;color:var(--red);min-height:1em;margin-top:.3rem"></div>
+        <a href="#" id="lockReset" class="lockreset">Reset password</a>
+        <div id="lockResetBox" style="display:none;margin-top:.6rem">
+          <select id="lockAdmin" style="width:100%;margin-bottom:.5rem"></select>
+          <button class="btn sec" id="lockSend" style="width:100%">Send link</button>
+        </div>
       </div>
     </div>
   </section>
@@ -271,6 +334,12 @@ body.teamopen #teamPanel{display:block}
       <b id="ahTitle"></b>
       <button class="navarrow" id="ahNext" title="Next week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="btn sec" id="ahToday" style="font-size:.78rem;padding:.35rem .7rem">This week</button>
+      <!-- The chip goes LAST, after the navigation, and not between the title and the next arrow
+           where it started. Its two labels are very different lengths, so sitting mid-bar it shoved
+           the next arrow sideways on every page — you would go to click forward again and the
+           button had moved out from under the cursor (Ali, 7 Aug). Nothing that changes width
+           belongs upstream of a control people click repeatedly. This also leaves the arrows in
+           exactly the positions they occupy on the Pods page. -->
       <span id="ahChip"></span>
     </div>
     <div class="rota-wrap"><div id="ahGrid"></div></div>
@@ -281,6 +350,12 @@ body.teamopen #teamPanel{display:block}
   </section>
   <section id="tab-log" style="display:none">
     <div class="card"><h2>Cover change log</h2><div id="logBox"></div></div>
+  </section>
+  <section id="tab-attn" style="display:none">
+    <div id="attnBox"></div>
+  </section>
+  <section id="tab-staff" style="display:none">
+    <div id="staffBox"></div>
   </section>
   <section id="tab-setup" style="display:none">
     <div id="setupBox"></div>
@@ -294,15 +369,19 @@ body.teamopen #teamPanel{display:block}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260807-01"></script>
+<script src="core.js?v=20260808-02"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
-/* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js and on the live host
-   it had drifted: two READ keys and no cover SAVE key, so Cover showed the rota perfectly and could
-   not write a single edit. The site serves a complete k.js at its root, same origin. Rather than
-   paste the key into a second file and wait for the two to drift apart again, borrow the site-wide
-   copy when this one is short — live host only, missing-key only, so staging can never gain a save
-   key. document.write because the keys must be in place before the main script reads them. */
+/* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js, and on the live
+   host that copy had drifted: it carried the two READ keys and no cover SAVE key at all. So Cover
+   loaded, showed the rota perfectly, and silently could not write a single edit — the worst shape
+   of failure, because nothing looks wrong until somebody's change quietly fails to stick.
+   The site already serves a complete k.js at its root, same origin, holding every key. Rather than
+   paste the save key into a second file and wait for the two to drift apart again — which is
+   exactly how this happened — the page borrows the site-wide copy when its own is short.
+   Only on the live host, and only when the key is genuinely missing: staging's local copy is
+   deliberately incomplete (it must never be able to save) and is left alone. document.write is
+   used because the keys have to be in place before the main script below reads them. */
 if (!(window.__POD_KEYS || {}).cs && !(window.__POD_KEYS || {}).cvs
     && typeof LIVE_HOST !== "undefined" && location.hostname === LIVE_HOST) {
   document.write('<scr' + 'ipt src="/k.js?v=20260807-01"><\/scr' + 'ipt>');
@@ -328,6 +407,9 @@ const _ls = k => { try { return localStorage.getItem(k) || ""; } catch(e){ retur
 const READ  = q.get("r")  || K.r  || _ls("podR");
 const COVER_READ = q.get("cv")  || q.get("cr") || K.cv  || K.cr || _ls("podCR");
 const COVER_SAVE = q.get("cvs") || q.get("cs") || K.cvs || K.cs || _ls("podCS");
+/* The flow that emails a reset link. Optional on purpose: with no key the lock screen still works
+   and simply says the reset isn't connected, rather than offering a button that goes nowhere. */
+const COVER_RESET = q.get("cvr") || K.cvr || _ls("podCRS");
 // Remember whatever arrived by link, so the plain address works next time on this device.
 try {
   if (q.get("r"))   localStorage.setItem("podR",  q.get("r"));
@@ -374,7 +456,37 @@ const fmt = iso => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day
    too; inside a file that is only about cover, that wrapper said nothing. CR() stays as the one
    way in, so the rest of the page didn't have to change when the wrapper came off. */
 const CR = () => cdata || null;
-const nameOf = ini => (CR() && CR().map && CR().map[ini]) || ini;
+/* A name comes from the STORE first and the code second. `map` is written by the sync out of the
+   hardcoded INITIALS_MAP in consultant_rota.py; `names` is typed in on this page and lives only in
+   the store. Until 7 Aug there was no `names`, so a consultant who joined showed on the board as
+   their initials until somebody edited Python and redeployed — which is exactly what project rule
+   1 exists to forbid: every functional thing must be editable from the front end by an authorised
+   user, never requiring code edits or repo access (Ali, 7 Aug: "new initials a way to add as new
+   staff list. probably needs an attention pane for admin").
+   `names` wins over `map` so a correction made here also fixes a name the code has wrong. The sync
+   only ever writes days/map/fair/window/source, so it cannot touch what is typed here. */
+const nameOf = ini => (CR() && ((CR().names && CR().names[ini]) || (CR().map && CR().map[ini]))) || ini;
+/* Everyone the rota is actually using who has no name anywhere — the list the attention panel
+   offers to fill in. Read from the allocation itself rather than from the sync's `unknownInitials`,
+   because that only records what the PARSER could not match; somebody can be perfectly parseable
+   and still have no name against them. */
+/* EVERYONE THE ROTA ACTUALLY USES. Derived from the allocation rather than kept as a list, which
+   is the whole point: there is no second staff list to drift out of step with the workbook. Anyone
+   the sheet puts to work appears here on the next sync; anyone it stops using drops off. That is
+   also why the Staff page can name people but cannot add or remove them (Ali, 8 Aug) — adding
+   somebody the rota has never heard of would be inventing a consultant. */
+function everyone(){
+  const cons = CR(); if (!cons) return [];
+  const seen = new Set();
+  for (const d in (cons.days || {})) {
+    const c = cons.days[d].cur || {};
+    for (const k of ["A","B","C","D","E","oncall","cod","fgh"]) if (c[k]) seen.add(c[k]);
+    for (const i of ((cons.days[d].auto || {}).extra || [])) seen.add(i);
+  }
+  return [...seen].sort();
+}
+const isNamed = i => { const c = CR() || {}; return !!((c.names && c.names[i]) || (c.map && c.map[i])); };
+function unnamed(){ return everyone().filter(i => !isNamed(i)); }
 const PODROWS = [["A","Pod A","var(--podAb)"],["B","Pod B","var(--podBb)"],["C","Pod C","var(--podCb)"],["D","Pod D","var(--podDb)"],["E","Pod E","var(--podEb)"]];
 const state = t => { const s = $("#saveState"); s.className = t; s.textContent = t === "saved" ? "Saved" : t === "saving" ? "Saving…" : "Save failed"; };
 
@@ -408,7 +520,10 @@ async function load(){
 
    Nothing else. A key outside that list means the consultant rota paperwork is being written
    back in and the split is unravelling. */
-const COVER_ONLY = ["days","map","fair","window","source","pw","log","v","savedAt","savedBy"];
+/* `names` joins the list on 7 Aug: names typed in on Setup, which belong to the cover and to
+   nothing else. The sync writes only days/map/fair/window/source, so it can never overwrite them. */
+const COVER_ONLY = ["days","map","names","fair","window","source","pw","log","v","savedAt","savedBy",
+                    "acked","notices","admins","pubWeeks","pubHighWater","cap","hard","syncRequest"];
 /* pw is on that list so a carve that moved the old rota-master PIN in here is not thrown away,
    but nothing on this page reads it: editing needs a name, not a password (6 Aug). */
 function seedC(){
@@ -529,34 +644,342 @@ function renderSetup(){
      the repo. Saying which is the difference between "something is wrong" and "here is what is
      wrong". */
   const fetched = !!src.name;
-  const rotaLine = fetched
-    ? esc(src.name) + (src.modified ? " <span class='inipill'>" + esc(String(src.modified).slice(0, 10)) + "</span>" : "")
-    : "<b>the copy kept in the repo</b><div style='font-size:.78rem;color:var(--muted);margin-top:.15rem'>" +
-      "The SharePoint fetch has never succeeded, so every allocation below was worked out from " +
-      "that copy rather than the current rota.</div>";
-  h += "<div class='card'><h2>Where this comes from</h2><table class='plain'>" +
-    "<tr><td>Consultant rota</td><td>" + rotaLine + "</td></tr>" +
-    "<tr><td>Read to</td><td>" + esc(src.sheetUntil || "—") + "</td></tr>" +
-    "<tr><td>Resident rota</td><td>" + (data ? Object.keys(data.weeks || {}).length + " week(s), read-only" : "not loaded") + "</td></tr>" +
-    "<tr><td>Cover last worked out</td><td>" + esc((cdata && cdata.savedAt) ? shortDate(String(cdata.savedAt).slice(0, 10)) : "—") +
-      ((cdata && cdata.savedBy) ? " by " + esc(cdata.savedBy) : "") + "</td></tr>" +
-    "</table></div>";
+  /* TIMES, TO THE MINUTE. This panel used to show a bare date against the workbook and a bare date
+     against the store, which are two different clocks measuring two different things, and said
+     which was which nowhere (Ali, 8 Aug: "I want to know what date and time last synced file
+     exactly etc"). The store has always carried all four to the second; only the display was
+     throwing them away. */
+  const when = t => {
+    if (!t) return "—";
+    const d = new Date(t);
+    if (isNaN(d)) return esc(String(t).slice(0, 10));
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " +
+           d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  };
+  h += "<div class='card'>" +
+    "<div class='stafftop'><span class='sectlab'>SOURCE</span>" +
+      (fetched ? "<span class='cnt'>in step</span>" : "<span class='cnt warn'>never fetched</span>") +
+      "<button class='btn sec' id='btnSync' style='margin-left:auto;font-size:.78rem;padding:.3rem .7rem'>Sync now</button></div>" +
+    "<div style='font-size:.85rem;margin-bottom:.7rem'>" +
+      (fetched ? esc(src.name) : "<b>the copy kept in the repo</b>") + "</div>" +
+    "<div class='srcgrid'>" +
+      "<div><span>workbook edited</span><b>" + when(src.modified) + "</b></div>" +
+      "<div><span>last fetched</span><b>" + when(src.fetched) + "</b></div>" +
+      "<div><span>last worked out</span><b>" + when(cdata && cdata.savedAt) +
+        ((cdata && cdata.savedBy) ? " · " + esc(cdata.savedBy) : "") + "</b></div>" +
+      "<div><span>reads to</span><b>" + esc(src.sheetUntil || "—") + "</b></div>" +
+    "</div></div>";
 
-  const unknown = src.unknownInitials || [];
-  if (unknown.length)
-    h += "<div class='card'><h2>Initials the rota uses that we don't know</h2><p style='font-size:.85rem'>" +
-      unknown.map(esc).join(", ") + "</p></div>";
+  /* PUBLISHED WEEKS. Raising it is safe. LOWERING it would un-publish weeks people have already
+     been shown, which is the one thing this whole page exists to prevent — so the control refuses
+     to go below the high-water mark rather than trusting nobody will try it. */
+  h += "<div class='card'><div class='stafftop'><span class='sectlab'>PUBLISHED</span>" +
+    "<input type='number' id='setPub' min='" + PUB_MIN + "' max='26' value='" + PUB_WEEKS + "' " +
+      "style='width:4.2rem;margin-left:.4rem'>" +
+    "<span style='font-size:.85rem'>weeks</span>" +
+    "<span style='margin-left:auto;font-size:.78rem;color:var(--muted)'>to " + fmt(pubUntil()) + "</span>" +
+    "</div></div>";
 
-  /* The "Editing password" card was here. Editing needs no password any more, and the rota-team
-     password that guards this page is the board's own — set on the resident board, shared, not
-     duplicated here. Two places to change one password is how they end up different. */
+  /* THE TWO BALANCE NUMBERS. They were constants in the Python, which meant changing how hard the
+     allocator chases an even neuro split needed a code edit and a deploy — squarely against rule 1.
+     They live in the store now and the sync reads them. */
+  const cap = (CR().cap == null ? 0.05 : CR().cap), hard = (CR().hard == null ? 0.06 : CR().hard);
+  h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>NEURO BALANCE</div>" +
+    "<div class='balrow'>" +
+      "<label><input type='number' id='setCap' step='0.01' min='0' max='0.5' value='" + cap + "'>" +
+        "<span>correct beyond</span></label>" +
+      "<label><input type='number' id='setHard' step='0.01' min='0' max='0.5' value='" + hard + "'>" +
+        "<span>override a weekend beyond</span></label>" +
+    "</div></div>";
+
+  /* WHO CAN ALLOW A RESET. Full addresses only here, behind the shield — the lock screen shows them
+     masked, because anybody with the link reaches the lock screen and there is no reason to publish
+     consultants' email addresses to them. */
+  const admins = (CR().admins || []);
+  h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>WHO CAN ALLOW A PASSWORD RESET</div>" +
+    admins.map((a, n) => "<div class='nmrow'><input class='nmin admin' data-n='" + n + "' value='" + esc(a) + "'>" +
+      "<button class='btn sec adminrm' data-n='" + n + "'>Remove</button></div>").join("") +
+    "<div class='nmrow'><input class='nmin' id='adminNew' placeholder='Add an address' autocomplete='off'>" +
+    "<button class='btn sec' id='adminAdd'>Add</button></div></div>";
+
+  /* The naming panel used to sit here, and the unmatched-initials card with it. Both have moved:
+     the names to the Staff page, where they are a place you can go rather than a panel that
+     appears and disappears, and the nagging to the Attention page (Ali, 8 Aug: "I'd rather those
+     proposed changes sat in an attention pane, theyre not really a log"). Setup is settings now,
+     and nothing else.
+
+     The "Editing password" card was here too. Editing needs no password any more, and the
+     rota-team password that guards this page is the board's own — set on the resident board,
+     shared, not duplicated here. Two places to change one password is how they end up different. */
 
   box.innerHTML = h;
+
+  const num = (el, key, lo, hi, label) => {
+    if (!el) return;
+    el.onchange = () => {
+      let v = parseFloat(el.value);
+      if (isNaN(v) || v < lo || v > hi) { el.value = (CR()[key] == null ? "" : CR()[key]); return; }
+      setSetting(key, v, label + " set to " + v);
+    };
+  };
+  const pubEl = $("#setPub");
+  if (pubEl) pubEl.onchange = () => {
+    const v = parseInt(pubEl.value, 10);
+    if (isNaN(v) || v > 26) { pubEl.value = PUB_WEEKS; return; }
+    if (v < PUB_MIN) {
+      pubEl.value = PUB_WEEKS;
+      toast(PUB_MIN + " weeks have already been shown — it can't go below that");
+      return;
+    }
+    const cons = CR();
+    cons.pubHighWater = Math.max(PUB_MIN, v);   // the promise, once made, is kept
+    setSetting("pubWeeks", v, "Published weeks set to " + v);
+  };
+  num($("#setCap"), "cap", 0, 0.5, "Balance correction");
+  num($("#setHard"), "hard", 0, 0.5, "Weekend override");
+  const sy = $("#btnSync"); if (sy) sy.onclick = syncNow;
+  box.querySelectorAll(".admin").forEach(inp => inp.onchange = () => {
+    const list = (CR().admins || []).slice();
+    const v = (inp.value || "").trim();
+    if (!v || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { renderSetup(); toast("That isn't an email address"); return; }
+    list[+inp.dataset.n] = v;
+    setSetting("admins", list, "Reset admin changed to " + v);
+  });
+  box.querySelectorAll(".adminrm").forEach(b => b.onclick = () => {
+    const list = (CR().admins || []).slice();
+    /* Removing the last one would leave nobody able to allow a reset, which is the lockout this
+       whole mechanism exists to prevent. */
+    if (list.length <= 1) { toast("Keep at least one address, or nobody can allow a reset"); return; }
+    const [gone] = list.splice(+b.dataset.n, 1);
+    setSetting("admins", list, "Reset admin removed: " + gone);
+  });
+  const add = $("#adminAdd");
+  if (add) add.onclick = () => {
+    const el = $("#adminNew"), v = (el.value || "").trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast("That isn't an email address"); return; }
+    setSetting("admins", (CR().admins || []).concat([v]), "Reset admin added: " + v);
+  };
+}
+
+/* One way in for every setting on this page, so each one is saved, logged and re-rendered the same
+   way rather than each control growing its own copy of that. */
+async function setSetting(key, value, msg){
+  const cons = CR(); if (!cons || !COVER_SAVE) { toast("Cover store not connected"); return; }
+  ensureWho(async () => {
+    cons[key] = value;
+    clog(msg, "manual", null, " (Setup)");
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Saved"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
+    renderAll(); renderSetup();
+  });
+}
+/* Sync now asks the nightly job to run at once. There is no server here to ask, so it writes a
+   request into the store and the GitHub Action picks it up on its next pass — which means this is
+   "run it soon", not "run it this second", and the button says so by going quiet rather than
+   claiming success it cannot verify. */
+async function syncNow(){
+  const cons = CR(); if (!cons || !COVER_SAVE) { toast("Cover store not connected"); return; }
+  ensureWho(async () => {
+    cons.syncRequest = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
+    clog("Sync requested", "manual", null, " (Setup)");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); toast("Asked for — the next run will pick it up"); }
+    catch(e){ toast("Couldn't ask — try again"); }
+  });
+}
+
+/* THE STAFF PAGE. Everyone the rota uses, with a box to put a name to them. Deliberately a page
+   and not a panel: a panel that only appears when something is wrong is a nag, and there is no
+   way to go and look at the list when nothing is wrong (Ali, 8 Aug: "I think there shuld be a
+   staff page just like resitents where the naming issue can sit"). Unnamed people sort to the top
+   because that is the only thing on this page anybody needs to act on. */
+function renderStaff(){
+  const box = $("#staffBox");
+  if (!box) return;
+  const all = everyone();
+  if (!all.length) { box.innerHTML = "<div class='card'><h2>Nobody yet</h2></div>"; return; }
+  const miss = all.filter(i => !isNamed(i));
+  const q = (staffFind || "").toLowerCase();
+  const shown = all.filter(i => !q || i.toLowerCase().includes(q) || nameOf(i).toLowerCase().includes(q));
+  shown.sort((a, b) => (isNamed(a) - isNamed(b)) || a.localeCompare(b));
+  box.innerHTML = "<div class='card'>" +
+    "<div class='stafftop'>" +
+      "<span class='sectlab'>CONSULTANTS</span>" +
+      "<span class='cnt'>" + all.length + "</span>" +
+      (miss.length ? "<span class='cnt warn'>" + miss.length + " unnamed</span>" : "") +
+      "<input id='staffQ' class='nmin' placeholder='Find' autocomplete='off' " +
+        "value='" + esc(staffFind || "") + "' style='margin-left:auto;flex:0 0 9rem;min-width:0'>" +
+    "</div>" +
+    shown.map(i => "<div class='nmrow'><b class='inipill'>" + esc(i) + "</b>" +
+      "<input class='nmin" + (isNamed(i) ? "" : " miss") + "' data-ini='" + esc(i) + "' " +
+      "value='" + esc(isNamed(i) ? nameOf(i) : "") + "' placeholder='Full name' " +
+      "autocomplete='off' spellcheck='false'></div>").join("") +
+    "</div>";
+  const qi = $("#staffQ");
+  qi.oninput = () => { staffFind = qi.value; const at = qi.selectionStart; renderStaff();
+                       const n = $("#staffQ"); n.focus(); try { n.setSelectionRange(at, at); } catch(e){} };
+  /* Saved on leaving the box or on Enter, not behind a Save button per row: a row of Save buttons
+     is a row of things you can forget to press. */
+  box.querySelectorAll(".nmin[data-ini]").forEach(inp => {
+    inp.onkeydown = e => { if (e.key === "Enter") inp.blur(); };
+    inp.onblur = () => {
+      const v = (inp.value || "").trim();
+      if (v && v !== (isNamed(inp.dataset.ini) ? nameOf(inp.dataset.ini) : "")) saveName(inp.dataset.ini, v);
+    };
+  });
+}
+let staffFind = "";
+
+/* THE ATTENTION PAGE. Everything waiting for a person, in one place, separate from the log —
+   because a log is history you go looking for and this is work that has come looking for you
+   (Ali, 8 Aug). Two kinds of item, and they behave differently on purpose:
+
+     NEEDS DOING     no dismiss button at all. It clears when the thing is actually done. A
+                     dismiss here would be dangerous: hiding "Wednesday has an empty pod" does
+                     not staff the pod, it just means nobody finds out until Wednesday.
+     JUST TELLING    "Got it" and gone.
+
+   The gap in that is the item nobody CAN fix — a pod there is genuinely nobody to cover, a locum
+   whose initials will never have a name. Nagging for ever is its own kind of broken, so those get
+   the deliberate alternative instead of a dismiss: a named decision, logged. Nothing here
+   disappears without either the problem being solved or somebody putting their name to it. */
+function attnItems(){
+  const cons = CR(); if (!cons) return [];
+  const out = [];
+  const seenAck = (cons.acked || {});
+  for (const d of Object.keys(cons.days || {}).sort()) {
+    const a = cons.days[d].alert;
+    if (!a || typeof a !== "object") continue;
+    const gone = a.gone || [], came = a.new || [];
+    out.push({
+      kind: "day", id: "day:" + d, date: d,
+      title: shortDate(d) + " has a pod with nobody on it",
+      detail: (gone.length ? gone.map(nameOf).join(" and ") + " came off the rota" : "") +
+              (gone.length && came.length ? " · " : "") +
+              (came.length ? came.map(nameOf).join(" and ") + " came on" : ""),
+      act: "Open the day", alt: "Leave it empty"
+    });
+  }
+  const miss = unnamed();
+  if (miss.length)
+    out.push({ kind: "name", id: "unnamed", title: miss.length + " consultant" +
+      (miss.length === 1 ? " has" : "s have") + " no name",
+      detail: miss.join(" · "), act: "Name them" });
+  const unknown = ((cons.source || {}).unknownInitials || []).filter(i => !seenAck["unk:" + i]);
+  for (const i of unknown)
+    out.push({ kind: "unknown", id: "unk:" + i,
+      title: "An initial on the sheet isn't recognised",
+      detail: i + " — the spelling in the workbook needs fixing, or the initials adding to the sync",
+      ack: true });
+  for (const n of (cons.notices || []))
+    if (!seenAck["notice:" + n.id]) out.push({ kind: "notice", id: "notice:" + n.id,
+      title: n.msg, detail: n.who ? "by " + esc(n.who) + " · " + shortDate(String(n.t).slice(0, 10)) : "",
+      ack: true });
+  return out;
+}
+function attnCount(){ return attnItems().length; }
+function paintAttnBadge(){
+  const b = $("#attnBadge"); if (!b) return;
+  const n = attnCount();
+  b.textContent = n ? String(n) : "";
+  b.style.display = n ? "" : "none";
+}
+function renderAttn(){
+  const box = $("#attnBox"); if (!box) return;
+  const items = attnItems();
+  if (!items.length) {
+    box.innerHTML = "<div class='card' style='text-align:center;padding:2.2rem 1rem'>" +
+      "<span style='color:var(--muted);font-size:.9rem'>Nothing needs you</span></div>";
+    paintAttnBadge(); return;
+  }
+  box.innerHTML = "<div class='card'>" + items.map(it =>
+    "<div class='attnrow' data-id='" + esc(it.id) + "'>" +
+      "<span class='dot'></span>" +
+      "<div class='txt'><b>" + esc(it.title) + "</b>" +
+        (it.detail ? "<div class='sub'>" + esc(it.detail) + "</div>" : "") + "</div>" +
+      (it.act ? "<button class='btn sec attndo'>" + esc(it.act) + "</button>" : "") +
+      (it.alt ? "<button class='btn sec attnalt'>" + esc(it.alt) + "</button>" : "") +
+      (it.ack ? "<button class='btn sec attnack'>Got it</button>" : "") +
+    "</div>").join("") + "</div>";
+  box.querySelectorAll(".attnrow").forEach(row => {
+    const id = row.dataset.id, it = items.find(x => x.id === id);
+    const doBtn = row.querySelector(".attndo"), altBtn = row.querySelector(".attnalt"),
+          ackBtn = row.querySelector(".attnack");
+    if (doBtn) doBtn.onclick = () => {
+      if (it.kind === "day") { aheadWeek = mondayOf(it.date); showTab("ahead"); }
+      else showTab("staff");
+    };
+    if (altBtn) altBtn.onclick = () => leaveEmpty(it.date);
+    if (ackBtn) ackBtn.onclick = () => ack(id);
+  });
+  paintAttnBadge();
+}
+/* Acknowledging is itself a change to the store, so it is saved and logged like any other. Kept in
+   `acked` rather than deleting the thing acknowledged, because the underlying fact — the sheet has
+   an initial nobody recognises — is still true and should not be erased by somebody reading it. */
+async function ack(id){
+  const cons = CR(); if (!cons || !COVER_SAVE) return;
+  ensureWho(async () => {
+    cons.acked = cons.acked || {};
+    cons.acked[id] = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); } catch(e){ toast("Save failed — try again"); return; }
+    renderAttn();
+  });
+}
+/* The escape hatch for a pod there is nobody to cover. Not a dismiss: it records that a named
+   person decided the pod stands empty, so the day shows a deliberate blank rather than an
+   accident, and the change log says who decided it. */
+async function leaveEmpty(date){
+  const cons = CR(); if (!cons || !cons.days[date] || !COVER_SAVE) return;
+  ensureWho(async () => {
+    const rec = cons.days[date];
+    delete rec.alert;
+    rec.note = (rec.note ? rec.note + " · " : "") + "pod left empty deliberately";
+    clog("Pod left empty on " + shortDate(date) + " — nobody available", "manual", date, "");
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Recorded"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
+    renderAttn(); renderAll();
+  });
+}
+
+/* Naming somebody is a change to the cover like any other: it is logged, under the name of whoever
+   is editing, and it is saved to the store rather than held in the browser. Deliberately NOT
+   guarded by anything beyond the shield — putting a name to a set of initials is not a decision
+   anybody needs protecting from, and making it hard is how it stays undone. */
+async function saveName(ini, name){
+  if (!ini) return;
+  if (!name) { toast("Type a name first"); return; }
+  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  ensureWho(async () => {
+    const cons = CR(); if (!cons) return;
+    cons.names = cons.names || {};
+    const was = cons.names[ini];
+    if (was === name) return;
+    cons.names[ini] = name;
+    clog((was ? "Renamed " + ini + ": " + was + " → " + name : ini + " named as " + name),
+         "manual", null, " (Setup)");
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast(ini + " is now " + name); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); }
+    renderAll();
+  });
 }
 
 function consList(){
-  const map = (CR() || {}).map || {};
-  return Object.keys(map).filter(i => !["FMCN","NET","AC","SF"].includes(i)).sort((a,b) => nameOf(a).localeCompare(nameOf(b)));
+  /* Names added on Setup belong in this list too, or a newly-named consultant could be allocated
+     and shown on the board but not be pickable as the person who edited something. */
+  const cons = CR() || {};
+  const all = new Set([...Object.keys(cons.map || {}), ...Object.keys(cons.names || {})]);
+  return [...all].filter(i => !["FMCN","NET","AC","SF"].includes(i)).sort((a,b) => nameOf(a).localeCompare(nameOf(b)));
 }
 function consSelect(cls, selected, blankLabel){
   const s = document.createElement("select"); s.className = cls;
@@ -681,7 +1104,22 @@ const resPills = list => (list && list.length) ? "<div class='rpills'>" + list.m
    That relationship is the whole safety of this: if PUB_WEEKS ever grows past 4, the pin
    horizon in consultant_rota.py must grow with it, or the page will publish days the allocator
    still considers free. */
-const PUB_WEEKS = 4;
+/* Four is the default, not the law — it is a setting on Setup now, because how far ahead the ward
+   sees is a rota-team decision and not a thing that should need a code change (rule 1). It is read
+   through a getter rather than captured once, so changing it redraws everything that depends on it
+   without a reload.
+
+   PUB_MIN is the floor, and it is the important half. Raising the number publishes more, which is
+   only ever safe. LOWERING it would take back weeks people have already been shown — precisely the
+   promise the freeze exists to keep — so the store remembers the highest it has ever been and the
+   control will not go under it. */
+const PUB_DEFAULT = 4;
+Object.defineProperty(window, "PUB_WEEKS", {
+  get(){ const v = (CR() || {}).pubWeeks; return (typeof v === "number" && v >= 1) ? v : PUB_DEFAULT; }
+});
+Object.defineProperty(window, "PUB_MIN", {
+  get(){ const v = (CR() || {}).pubHighWater; return (typeof v === "number" && v >= 1) ? v : PUB_WEEKS; }
+});
 const pubUntil = () => addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1);
 function teamUnlocked(){
   try { if (sessionStorage.getItem("consTeamUnlocked") === "1") return true; } catch(e){}
@@ -730,7 +1168,12 @@ function weekTableHTML(mondayISO){
   h += "<th>On call</th><th>Fairfield</th></tr>";
   dates.forEach((d, i) => {
     const j = showJun ? juniorsFor(d) : null;
-    h += "<tr><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span></td>";
+    /* A day the sync could not resolve is marked on the day itself, because the day is where the
+       fix happens — the attention page can only send you here. The CSS shows it only inside
+       body.teamopen: everyone can see the day, but only the rota team can do anything about it,
+       and an amber warning you cannot act on is just alarming (Ali, 8 Aug). */
+    const needs = cons[d] && cons[d].alert ? " class='needs'" : "";
+    h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span></td>";
     for (const [p] of PODROWS)
       h += "<td style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
     h += "<td data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
@@ -893,23 +1336,33 @@ function renderAhead(){
   grid.innerHTML = weekTableHTML(aheadWeek);
   wireGrid(grid);
 
-  /* Under the grid, the two facts that belong to the whole horizon rather than to one week. */
+  /* Under the grid, the whole horizon at a glance — see .ahbar in the stylesheet for why this
+     is a ribbon rather than a paragraph. */
   const endsAt = addDays(wks[wks.length - 1], 6);
-  const held = draftOverrides().length;
+  const heldList = draftOverrides();
+  const held = heldList.length;
+  const heldWk = new Set(heldList.map(o => mondayOf(o.d)));
   if (box) {
-    box.innerHTML = "<div class='card' style='margin-top:1rem'>" +
-      "<p style='margin:0;font-size:.87rem;line-height:1.5'>The rota reaches <b>" +
-      fmt(endsAt) + " " + new Date(endsAt + "T12:00:00").getFullYear() + "</b> — week " +
-      (i + 1) + " of " + wks.length + ". Everyone sees the first " + PUB_WEEKS + "; the rest are draft.</p>" +
-      "<div style='margin-top:.9rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap'>" +
-      "<button class='btn sec' id='btnRedraft'" + (held ? "" : " disabled") + ">Re-run the algorithm on the draft weeks</button>" +
-      "<span style='font-size:.8rem;color:var(--muted);line-height:1.45;flex:1;min-width:200px'>" +
-      (held
-        ? held + " placement" + (held === 1 ? "" : "s") + " in the draft weeks " +
-          (held === 1 ? "has" : "have") + " been changed by hand, which stops the algorithm touching " +
-          (held === 1 ? "it" : "them") + ". This drops those changes; tonight's sync then reallocates."
-        : "Nothing in the draft weeks is held by hand — the algorithm already has a free run at all of them.") +
-      "</span></div></div>";
+    const segs = wks.map((m, n) => {
+      const cls = (heldWk.has(m) ? "held" : n < PUB_WEEKS ? "live" : "") +
+                  (m === aheadWeek ? " now" : "");
+      return "<span" + (cls.trim() ? " class='" + cls.trim() + "'" : "") + "></span>";
+    }).join("");
+    box.innerHTML = "<div class='card ahbar' style='margin-top:1rem'>" +
+      "<div class='top'>" +
+        "<b style='font-size:.95rem'>Week " + (i + 1) + "</b>" +
+        "<span style='font-size:.8rem;color:var(--muted)'>of " + wks.length + " · to " +
+          fmt(endsAt) + " " + new Date(endsAt + "T12:00:00").getFullYear() + "</span>" +
+        (held ? "<span class='heldchip'>" + held + " held by hand</span>" : "") +
+        "<button class='btn sec' id='btnRedraft'" + (held ? "" : " disabled") +
+          " style='margin-left:auto'>Re-run drafts</button>" +
+      "</div>" +
+      "<div class='ahrib'>" + segs + "</div>" +
+      "<div class='ahkey'>" +
+        "<span><i style='background:var(--podAb)'></i>live</span>" +
+        "<span><i style='background:var(--hair)'></i>draft</span>" +
+        (held ? "<span><i style='background:var(--amber)'></i>held by hand</span>" : "") +
+      "</div></div>";
     const rb = $("#btnRedraft"); if (rb) rb.onclick = redraftDrafts;
   }
 }
@@ -1056,7 +1509,7 @@ function shortDate(iso){
    gets through the shield. */
 const aheadVisible = () => { const s = $("#tab-ahead"); return !!s && s.style.display !== "none"; };
 function renderGrids(){ renderRota(); if (aheadVisible()) renderAhead(); }
-function renderAll(){ renderGrids(); renderFair(); renderLog(); renderSetup(); }
+function renderAll(){ renderGrids(); renderFair(); renderLog(); renderSetup(); paintAttnBadge(); }
 
 function ensureWho(cb){
   const w = localStorage.getItem("consEditor");
@@ -1091,6 +1544,19 @@ async function applyEdit(d, k, ini, note){
     if (ini) clog(nameOf(ini) + " covers " + rowLabel(k) + " on " + fmt(d) + flag,
                   "manual", d, " (consultant page)",
                   { act: "move", subj: ini, to: k, bench: !cur, from: "" });
+  }
+  /* CLEAR THE FLAG HERE, NOT OVERNIGHT. The sync also clears it, but the sync runs at night: fix a
+     flagged day at 09:14 and the amber would sit there until the small hours, which teaches people
+     that amber means nothing. So the moment the people on the day match the people the sheet
+     expects, the flag goes — and if only half the job is done it stays, which is the point. */
+  if (rec.alert && typeof rec.alert === "object") {
+    const on = new Set(["A","B","C","D","E","oncall"].map(x => rec.cur[x]).filter(Boolean));
+    const waiting = (rec.alert.new || []).filter(i => !on.has(i));
+    const stillOn = (rec.alert.gone || []).filter(i => on.has(i));
+    if (!waiting.length && !stillOn.length) {
+      delete rec.alert;
+      clog("Rota change on " + fmt(d) + " sorted out", "manual", d, " (consultant page)");
+    }
   }
   cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
   state("saving");
@@ -1304,7 +1770,7 @@ $("#btnJuniors").onclick = () => {
 /* One shield, one inset menu, one password — the resident board's pattern exactly. The gate
    checks the SAME rota-team password (data.staffPw travels in the shared store), asked once
    per session on this device. */
-const TEAM_TABS = ["ahead", "fair", "log", "setup"];
+const TEAM_TABS = ["attn", "ahead", "fair", "log", "staff", "setup"];
 function showTab(t){
   document.body.classList.remove("teamlocked");   // any deliberate move off the lock clears it
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === t));
@@ -1312,8 +1778,14 @@ function showTab(t){
   document.body.classList.toggle("teamopen", TEAM_TABS.includes(t));
   const bt = $("#btnTeam"); if (bt) bt.classList.toggle("active", TEAM_TABS.includes(t));
   /* Drawn on the way in rather than on every render — see renderGrids. Has to come AFTER the
-     display flip above, since renderGrids asks the section whether it's visible. */
+     display flip above, since renderGrids asks the section whether it's visible.
+     Setup is redrawn on the way in too: it carries the attention panel of unnamed consultants, and
+     that is answered from the allocation, which the sync changes under it. Rendered once at load,
+     it would show whoever was unnamed when the tab was first opened. */
   if (t === "ahead") renderAhead();
+  if (t === "setup") renderSetup();
+  if (t === "staff") renderStaff();
+  if (t === "attn") renderAttn();
 }
 /* The lock is a PAGE, not a dialog — the resident board's pattern, ported here on 6 Aug because
    the two shields looked and behaved differently for no reason anybody could give (Ali: "why does
@@ -1350,6 +1822,50 @@ $("#lockBtn").onclick = async () => {
   } else $("#lockMsg").textContent = "Wrong password.";
 };
 $("#lockPw").onkeydown = e => { if (e.key === "Enter") $("#lockBtn").click(); };
+
+/* RESETTING A FORGOTTEN PASSWORD, BY EMAIL.
+
+   What was here before was nothing at all: Cover deliberately left out the resident board's
+   "forgotten?" branch, so a person who forgot saw a dead end and had to know, from nowhere, to go
+   to the other board. And what the other board does — clear it for everyone, on the word of
+   whoever happens to be standing there — was the thing Ali put his finger on: "this means anyone
+   accessing the board can just set a new password without telling anyone right?" Yes, it did.
+
+   So a reset is now something a named person ALLOWS rather than something anybody takes. You pick
+   one of the admin addresses, a link goes to it, and the password only clears when they click it.
+   The addresses are masked here because this screen is reachable by anybody with the link.
+
+   The two Power Automate flows this needs are Ali's to build in the trust tenant, and until they
+   exist the button says so rather than pretending. See RESET-FLOWS.md for exactly what they do. */
+const maskEmail = a => {
+  const [u, d] = String(a).split("@");
+  return (u || "").slice(0, 3) + "•••" + (d ? "@" + d : "");
+};
+$("#lockReset").onclick = e => {
+  e.preventDefault();
+  const admins = ((CR() || {}).admins || []);
+  if (!admins.length) { $("#lockMsg").textContent = "No reset address is set up yet."; return; }
+  const sel = $("#lockAdmin");
+  sel.innerHTML = admins.map((a, n) => "<option value='" + n + "'>" + esc(maskEmail(a)) + "</option>").join("");
+  $("#lockResetBox").style.display = "";
+  $("#lockReset").style.display = "none";
+};
+$("#lockSend").onclick = async () => {
+  const admins = ((CR() || {}).admins || []);
+  const n = +$("#lockAdmin").value;
+  if (!admins[n]) return;
+  if (!COVER_RESET) { $("#lockMsg").textContent = "The reset flow isn't connected yet."; return; }
+  $("#lockSend").disabled = true;
+  try {
+    await postLive(COVER_RESET, JSON.stringify({ to: admins[n], at: location.href }));
+    $("#lockResetBox").style.display = "none";
+    $("#lockMsg").style.color = "var(--green)";
+    $("#lockMsg").textContent = "Link sent to " + maskEmail(admins[n]);
+  } catch(e){
+    $("#lockSend").disabled = false;
+    $("#lockMsg").textContent = "Couldn't send — try again.";
+  }
+};
 function ensureTeam(cb){
   let unlocked = false;
   try { unlocked = sessionStorage.getItem("consTeamUnlocked") === "1"; } catch(e){}
