@@ -275,6 +275,38 @@ table.fair{border-collapse:collapse;width:100%}
 .fbar{height:6px;background:var(--hair);border-radius:99px;width:64px;display:inline-block;margin-left:.45rem;vertical-align:middle;overflow:hidden}
 .fbar-fill{height:100%;border-radius:99px;background:var(--accent);display:block}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2c2c2a;color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;display:none;z-index:50}
+/* ── FEEDBACK — 8 Aug ─────────────────────────────────────────────────────────────────────────
+   Ali: "it also needs the feedback page and button just identical to residents (visually and
+   functionally)." Every rule below is COPIED from the resident board rather than written afresh,
+   because "identical" is a promise that only holds if there is one source for it. Where the two
+   boards were each allowed their own version of a thing — the password gate, the change log —
+   they drifted, and somebody then had to be told about the difference. Same values, same names.
+   The pulse is the point: feedback is a trial-only ask, so it earns one quiet dot and no more. */
+#btnFeedback{position:relative;border-color:#c7cdf2;color:var(--accent);background:var(--accent-bg)}
+#btnFeedback::after{content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;
+  border-radius:50%;background:var(--accent);animation:fbpulse 2.8s ease-out infinite}
+@keyframes fbpulse{0%{box-shadow:0 0 0 0 rgba(76,93,214,.45)}65%{box-shadow:0 0 0 7px rgba(76,93,214,0)}100%{box-shadow:0 0 0 0 rgba(76,93,214,0)}}
+@media (prefers-reduced-motion:reduce){#btnFeedback::after{animation:none}}
+/* The unread count on the rail. `tpc` is the resident board's name for it, kept so the two
+   stylesheets can be read side by side. Cover's own amber `tpbadge` stays what it is — that one
+   counts things needing a decision, this one counts things needing reading. */
+.tpc{margin-left:auto;background:var(--red,#c0392b);color:#fff;font-size:.58rem;font-weight:800;
+  border-radius:999px;padding:.05rem .35rem;display:none}
+.tpc.on{display:inline-block}
+.adlbl{display:block;font-size:.72rem;color:var(--muted);margin:.7rem 0 .3rem;font-weight:600}
+.seg{display:flex;gap:.3rem}
+.segbtn{flex:1;font-size:.78rem;font-weight:600;background:var(--card);color:var(--ink);
+  border:1px solid var(--line);border-radius:9px;padding:.5rem .3rem;cursor:pointer;font-family:inherit}
+.segbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.attnclear{text-align:center;padding:2.4rem 1rem;color:var(--muted)}
+.attnclear b{display:block;font-size:1rem;color:var(--ink);margin-bottom:.3rem}
+#modalBg{position:fixed;inset:0;background:rgba(20,21,29,.38);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:100}
+#modal{background:var(--card);border-radius:20px;padding:1.5rem 1.7rem;max-width:640px;width:94%;
+  max-height:88vh;overflow:auto;box-shadow:0 24px 60px rgba(20,21,29,.22);animation:dlgin .15s ease}
+#modal h3{margin:0;font-size:1.05rem}
+@keyframes dlgin{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}
+.modalbtns{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.8rem}
 /* The log's own rules moved to core.css on 6 Aug, where the renderer that emits those class names
    already lives. Nothing about the change log is this page's to style; only its container is.
    Ali, 6 Aug: "Parity has nothing to do with the residents page." Quite right — the two pages
@@ -376,6 +408,7 @@ body.teamopen #teamPanel{display:block}
   <button data-tab="fair" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg>Fairness</button>
   <button data-tab="log" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Log</button>
   <button data-tab="staff" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.5 14.4c2.6-.5 5 1.3 5 4.6"/></svg>Staff</button>
+  <button data-tab="feedback" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>Feedback<span class="tpc" id="tabFbCount"></span></button>
   <button data-tab="setup" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 00-.15-1.44l2-1.55-2-3.46-2.37.95a7 7 0 00-2.49-1.44L13.6 2.5h-3.2l-.39 2.56a7 7 0 00-2.49 1.44l-2.37-.95-2 3.46 2 1.55A7 7 0 005 12c0 .49.05.97.15 1.44l-2 1.55 2 3.46 2.37-.95a7 7 0 002.49 1.44l.39 2.56h3.2l.39-2.56a7 7 0 002.49-1.44l2.37.95 2-3.46-2-1.55c.1-.47.15-.95.15-1.44z"/></svg>Setup</button>
 </nav>
 <div id="content">
@@ -386,6 +419,10 @@ body.teamopen #teamPanel{display:block}
   <span id="saveState"></span>
   <button class="hbtn ghost hicon" id="btnJuniors" title="Show the residents in each pod" aria-label="Show residents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.5 14.4c2.6-.5 5 1.3 5 4.6"/></svg></button>
   <button class="hbtn ghost hicon" id="btnKey" title="What the colours and pills mean" aria-label="Key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17.5 12v3.2"/><path d="M20.5 12v2.2"/></svg></button>
+  <!-- Open to everyone, no unlock. Same icon, same position in the row and same pulse as the
+       resident board's, because a consultant who has used one board should not have to find it
+       again on the other. -->
+  <button class="hbtn ghost hicon" id="btnFeedback" title="Feedback" aria-label="Feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5a2.5 2.5 0 01-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5z"/></svg></button>
   <button class="hbtn" id="btnEdit" title="Unlock to change who covers what">Edit</button>
   <button class="hbtn ghost" id="btnDone" title="Back to read-only">Done</button>
 </div>
@@ -445,12 +482,18 @@ body.teamopen #teamPanel{display:block}
   <section id="tab-staff" style="display:none">
     <div id="staffBox"></div>
   </section>
+  <section id="tab-feedback" style="display:none">
+    <div class="card" id="feedbackCard">
+      <div id="fbList"></div>
+    </div>
+  </section>
   <section id="tab-setup" style="display:none">
     <div id="setupBox"></div>
   </section>
 </main>
 </div>
 </div>
+<div id="modalBg"><div id="modal"></div></div>
 <div id="toast"></div>
 <div id="testbar" style="display:none">
   <b>TEST SITE</b><span>Nothing here changes the real cover.</span>
@@ -510,6 +553,11 @@ try {
    caused every real bug on this project. All writes now go through one door. Do not add another
    fetch to SAVE or COVER_SAVE; call postLive. */
 const TESTMODE = window.__POD_TEST === true;
+/* The feedback ask is for the trial, not for ever. Declared up here with the other configuration
+   rather than beside the feedback code, because the button is wired at the bottom of the file and a
+   `const` further down is in its temporal dead zone at that point — which threw on load and took
+   the whole page with it. Configuration at the top, behaviour below it. */
+const TRIAL_END = "2026-09-02";
 const TEST_KEY = "coverTestStore";
 /* Can an edit go anywhere? On the live site that means a save key; on the test site it means
    the browser's own sandbox, which is always there. Written once because it was written four
@@ -610,8 +658,13 @@ async function load(){
    back in and the split is unravelling. */
 /* `names` joins the list on 7 Aug: names typed in on Setup, which belong to the cover and to
    nothing else. The sync writes only days/map/fair/window/source, so it can never overwrite them. */
+/* `feedback` joined this list on 8 Aug with the feedback page. It has to be a COVER key rather
+   than sharing the resident board's: this page has no save key for the resident store and must
+   never have one, so writing consultants' feedback into that file is not something it can do, and
+   the isolation is worth more than one shared array. */
 const COVER_ONLY = ["days","map","names","fair","window","source","pw","log","v","savedAt","savedBy",
-                    "acked","notices","admins","pubWeeks","pubHighWater","cap","hard","syncRequest"];
+                    "acked","notices","admins","pubWeeks","pubHighWater","cap","hard","syncRequest",
+                    "feedback"];
 /* pw is on that list so a carve that moved the old rota-master PIN in here is not thrown away,
    but nothing on this page reads it: editing needs a name, not a password (6 Aug). */
 function seedC(){
@@ -1645,7 +1698,7 @@ function shortDate(iso){
    gets through the shield. */
 const aheadVisible = () => { const s = $("#tab-ahead"); return !!s && s.style.display !== "none"; };
 function renderGrids(){ renderRota(); if (aheadVisible()) renderAhead(); }
-function renderAll(){ renderGrids(); renderFair(); renderLog(); renderSetup(); paintAttnBadge(); }
+function renderAll(){ renderGrids(); renderFair(); renderLog(); renderSetup(); paintAttnBadge(); updateFbCount(); }
 
 function ensureWho(cb){
   const w = localStorage.getItem("consEditor");
@@ -1881,6 +1934,12 @@ function keyDialog(){
   ov.append(box); document.body.append(ov);
 }
 $("#btnKey").onclick = keyDialog;
+$("#btnFeedback").onclick = feedbackDialog;
+/* The ask is for the trial, not for ever. After TRIAL_END the button goes and the page stays, so
+   what people sent is still there to read. */
+if (!trialOn()) $("#btnFeedback").style.display = "none";
+/* Clicking the backdrop closes it, like every other dialog on both boards. */
+$("#modalBg").onclick = e => { if (e.target === $("#modalBg")) closeModal(); };
 
 function shiftWeek(n){
   const wks = weeksAvail();
@@ -1906,7 +1965,172 @@ $("#btnJuniors").onclick = () => {
 /* One shield, one inset menu, one password — the resident board's pattern exactly. The gate
    checks the SAME rota-team password (data.staffPw travels in the shared store), asked once
    per session on this device. */
-const TEAM_TABS = ["attn", "ahead", "fair", "log", "staff", "setup"];
+/* ================= TRIAL FEEDBACK =================
+   Ported from the resident board on 8 Aug, deliberately as a copy of its behaviour rather than a
+   fresh take on it (Ali: "just identical to residents (visually and functionally)").
+
+   The BUTTON is open to everyone — a consultant who has spotted something wrong should not have to
+   ask for a password first. The PAGE that lists what people sent sits behind the shield with the
+   rest of the rota-team pages, because it carries names.
+
+   Anonymous really is anonymous: nothing about the sender is recorded unless they type it.
+
+   It writes against a FRESHLY-READ copy of the store, never our own in-memory one, so somebody
+   sending feedback can never overwrite a pod change made elsewhere in the meantime. That is the
+   same reasoning as the backup's lastBackup stamp, and it matters more here, because the person
+   sending feedback has the page open for minutes rather than seconds. */
+/* TRIAL_END is declared at the top with the other configuration — see the note there. */
+function trialOn(){ return new Date().toISOString().slice(0, 10) <= TRIAL_END; }
+
+/* Straight out by email too, so nobody has to remember to look at the page. Best-effort and
+   deliberately silent: if the mail flow is down the feedback is still saved and the sender is
+   told it worked — because as far as they are concerned it did. Needs `fb` in k.js; without it
+   this does nothing and the feedback still lands in the store. */
+async function emailFeedback(entry){
+  const url = (window.__POD_KEYS || {}).fb;
+  if (!url) return;
+  const who = entry.name ? entry.name : "anonymous";
+  const lines = [
+    entry.kind + " — " + who,
+    "",
+    entry.msg,
+    "",
+    "Sent " + new Date(entry.t).toLocaleString("en-GB") + " from the consultant Cover trial.",
+    entry.name ? "" : "This person chose to send it anonymously; there is no way to identify them."
+  ];
+  try {
+    await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: "Cover feedback — " + entry.kind + " (" + who + ")",
+        text: lines.join("\n")
+      }) });
+  } catch (e) { /* saved anyway — nothing to tell the sender */ }
+}
+
+async function sendFeedback(entry){
+  /* On the test site, keep it with the test site — never write it into the live cover file. The
+     email still goes, because feedback from somebody trialling it is worth having either way. */
+  if (TESTMODE || !COVER_SAVE) {
+    cdata = cdata || seedC();
+    cdata.feedback = cdata.feedback || [];
+    cdata.feedback.unshift(entry);
+    if (cdata.feedback.length > 300) cdata.feedback.length = 300;
+    emailFeedback(entry);
+    updateFbCount();
+    return true;
+  }
+  let base = null;
+  try {
+    const r = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: "{}", cache: "no-store" });
+    const fresh = await r.json();
+    if (fresh && typeof fresh === "object" && (fresh.days || fresh.map)) base = fresh;
+  } catch (e) { /* fall through to our own copy */ }
+  if (!base) base = cdata;
+  if (!base) return false;
+  base.feedback = base.feedback || [];
+  base.feedback.unshift(entry);
+  if (base.feedback.length > 300) base.feedback.length = 300;
+  base.savedAt = new Date().toISOString();
+  try { await postLive(COVER_SAVE, JSON.stringify(base)); }
+  catch (e) { emailFeedback(entry); return false; }
+  cdata = base;
+  emailFeedback(entry);
+  updateFbCount();
+  return true;
+}
+
+function closeModal(){ $("#modalBg").style.display = "none"; $("#modal").innerHTML = ""; }
+
+function feedbackDialog(){
+  const m = $("#modal"); m.innerHTML = "";
+  m.append(__el("h3", {}, "Feedback"));
+  let kind = "Problem";
+  const seg = __el("div", { class: "seg" });
+  [["Problem","Something's wrong"],["Suggestion","An idea"],["Question","A question"]].forEach(([v,l]) => {
+    const b = __el("button", { class: "segbtn" + (v === kind ? " on" : ""), onclick: () => {
+      kind = v; [...seg.children].forEach(c => c.classList.toggle("on", c.dataset.v === v)); } }, l);
+    b.dataset.v = v; seg.append(b);
+  });
+  m.append(__el("label", { class: "adlbl" }, "What kind of thing is it?"), seg);
+  const msg = __el("textarea", { style: "width:100%;min-height:130px;font-family:inherit;font-size:.9rem;border:1px solid var(--line);border-radius:12px;padding:.6rem .7rem",
+    placeholder: "What happened, or what would make it better?" });
+  m.append(__el("label", { class: "adlbl" }, "Your feedback"), msg);
+  const nameIn = __el("input", { type: "text", placeholder: "Optional", style: "width:100%" });
+  m.append(__el("label", { class: "adlbl" }, "Your name"), nameIn);
+  const btns = __el("div", { class: "modalbtns" });
+  btns.append(
+    __el("button", { class: "btn sec", onclick: closeModal }, "Cancel"),
+    __el("button", { class: "btn", onclick: async () => {
+        const text = (msg.value || "").trim();
+        if (!text) { msg.focus(); return; }
+        closeModal();
+        toast("Sending…");
+        const ok = await sendFeedback({ t: new Date().toISOString(), kind,
+          name: (nameIn.value || "").trim(), msg: text });
+        toast(ok ? "Thanks — that's been sent" : "Couldn't send just now — please try again in a moment");
+      } }, "Send")
+  );
+  m.append(btns);
+  $("#modalBg").style.display = "flex";
+  msg.focus();
+}
+
+/* Read state. The shared `read` flag is the answer; this browser's own list only fills the gap
+   between somebody looking and the next save, so an unread count does not come back on a reload.
+   Marking read is NOT gated on a save key — on the test site, or with no key, the count still
+   clears, because the person genuinely has read it. */
+function readFeedbackLocal(){
+  try { return new Set(JSON.parse(localStorage.getItem("coverFbRead") || "[]")); } catch(e){ return new Set(); }
+}
+function feedbackKey(f){ return (f && (f.t || "")) + "|" + (f && (f.name || "")); }
+function isFeedbackRead(f){ return !!(f && f.read) || readFeedbackLocal().has(feedbackKey(f)); }
+function unreadFeedback(){ return (((CR() || {}).feedback) || []).filter(f => !isFeedbackRead(f)).length; }
+function markFeedbackRead(){
+  const fb = ((CR() || {}).feedback) || [];
+  if (!fb.some(f => !isFeedbackRead(f))) return;
+  const local = readFeedbackLocal();
+  fb.forEach(f => { f.read = true; local.add(feedbackKey(f)); });
+  try { localStorage.setItem("coverFbRead", JSON.stringify([...local].slice(-400))); } catch(e){}
+  updateFbCount();
+}
+function updateFbCount(){
+  const f = $("#tabFbCount"); if (!f) return;
+  const u = unreadFeedback();
+  f.textContent = String(u);
+  f.classList.toggle("on", u > 0);
+}
+
+/* One card per message. The resident board's markup and colours exactly — a problem is pink, an
+   idea is blue, read ones fade. No opening sentence explaining what the page is: hard rule 2. */
+function feedbackCards(list, cap){
+  const wrap = __el("div", { style: "display:grid;gap:.5rem" });
+  for (const f of (list || []).slice(0, cap || 300)){
+    const kind = (f.kind || "").toLowerCase();
+    const tint = kind === "problem" ? "#fdf4f6" : kind === "suggestion" ? "#f5f8ff" : "var(--hair)";
+    const ink  = kind === "problem" ? "var(--podEb)" : kind === "suggestion" ? "var(--podAb)" : "var(--muted)";
+    const read = isFeedbackRead(f);
+    wrap.append(__el("div", { style: "background:#fff;border:1px solid " + (read ? "#e3e3de" : "#d5d5d0") +
+        ";border-radius:10px;padding:.6rem .8rem" + (read ? ";opacity:.62" : "") },
+      __el("div", { style: "display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem" },
+        f.kind ? __el("span", { style: "background:" + tint + ";color:" + ink +
+          ";font-size:.68rem;font-weight:700;padding:.1rem .5rem;border-radius:999px" }, f.kind) : null,
+        __el("span", { style: "font-size:.72rem;color:var(--muted)" },
+          new Date(f.t).toLocaleString("en-GB") + " · " + (f.name || "anonymous"))),
+      __el("div", { style: "font-size:.92rem" }, f.msg)));
+  }
+  return wrap;
+}
+function renderFeedback(){
+  const box = $("#fbList"); if (!box) return;
+  box.innerHTML = "";
+  const fb = ((CR() || {}).feedback) || [];
+  if (!fb.length) { box.append(__el("div", { class: "attnclear" }, __el("b", {}, "Nothing yet"),
+    "Messages sent with the Feedback button appear here.")); return; }
+  box.append(feedbackCards(fb, 300));
+}
+
+const TEAM_TABS = ["attn", "ahead", "fair", "log", "staff", "setup", "feedback"];
 function showTab(t){
   document.body.classList.remove("teamlocked");   // any deliberate move off the lock clears it
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === t));
@@ -1922,6 +2146,9 @@ function showTab(t){
   if (t === "setup") renderSetup();
   if (t === "staff") renderStaff();
   if (t === "attn") renderAttn();
+  /* Opening the page IS reading it, so the count clears on the way in rather than needing a
+     button. Draw first, then mark — the cards have to be able to show which were unread. */
+  if (t === "feedback") { renderFeedback(); markFeedbackRead(); }
 }
 /* The lock is a PAGE, not a dialog — the resident board's pattern, ported here on 6 Aug because
    the two shields looked and behaved differently for no reason anybody could give (Ali: "why does
