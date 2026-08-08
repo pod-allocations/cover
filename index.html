@@ -172,7 +172,13 @@ table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-siz
    sentence became a count, because that is all it ever was. */
 /* The Attention page and the Staff page. Both are lists of rows rather than cards, because a
    dense list of things to deal with reads faster than a stack of boxes. */
-.sectlab{font-size:.68rem;font-weight:700;letter-spacing:.07em;color:var(--muted)}
+/* Every card behind the shield opens with one of these. It used to carry its own spacing inline
+   at each of the five call sites, so the gap under the label was .7rem in some cards, nothing in
+   others, and the labels themselves sat at different heights down the page. The spacing belongs
+   to the label, not to whoever remembered to type it. */
+.sectlab{display:block;font-size:.68rem;font-weight:700;letter-spacing:.07em;color:var(--muted);
+  margin-bottom:.7rem}
+.stafftop .sectlab{margin-bottom:0}
 .cnt{font-size:.68rem;font-weight:600;color:var(--muted);background:var(--hair);
   padding:.15rem .5rem;border-radius:999px}
 .cnt.warn{color:var(--amber);background:var(--amber-bg)}
@@ -192,6 +198,12 @@ table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-siz
 .srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.6rem}
 .srcgrid span{display:block;font-size:.7rem;color:var(--muted)}
 .srcgrid b{font-size:.83rem;font-weight:600}
+/* The name of a source, and what it is. Both sources use it, so they read as two of the same
+   thing rather than one designed row and one paragraph that happened to be there. */
+.srcname{margin-bottom:.7rem}
+.srcname b{font-size:.9rem;font-weight:600;display:block}
+.srcname span{display:block;font-size:.75rem;color:var(--muted);line-height:1.45;margin-top:.15rem}
+.srcsplit{height:1px;background:var(--hair);margin:1rem 0}
 .balrow{display:flex;gap:1.3rem;flex-wrap:wrap}
 .balrow label{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
 .balrow input{width:4.6rem}
@@ -212,14 +224,53 @@ body.teamopen tr.needs td.rowh{background:var(--amber-bg);color:var(--amber);
 .ahkey i{width:9px;height:9px;border-radius:2px;display:inline-block;font-style:normal}
 .heldchip{font-size:.72rem;font-weight:600;color:var(--amber);background:var(--amber-bg);
   padding:.2rem .55rem;border-radius:999px}
+/* ── ONE CONTROL, ONE TABLE — 8 Aug ───────────────────────────────────────────────────────────
+   Ali: "on some of the cover rota team bits boxes are poorly rendeerd and incosistent use of
+   tabling, just make all look bettter and high end."
+
+   Both halves of that had the same cause. `.nmin` was a properly drawn control — but only things
+   given that class got it, and plenty were not: the change log's search box and its two
+   dropdowns, the gate's password field, the two flow-URL fields in Setup, the three number
+   fields on the balance page. Those fell back to whatever the browser draws, and a page carrying
+   two kinds of box looks less finished than one carrying only plain ones, because the difference
+   is what the eye lands on.
+
+   So the ELEMENT gets the style and `.nmin` keeps only the layout it adds. Nothing has to
+   remember a class, and a control added tomorrow is right without anybody thinking about it.
+   Kept at element specificity (0,0,1) on purpose: `.nmin.miss`, `select.cellsel` and
+   `.balrow input` all still win where they say something different. */
+input,select,textarea{font-family:inherit;font-size:.85rem;color:var(--ink);background:var(--card);
+  padding:.42rem .6rem;border:1px solid var(--line);border-radius:9px;
+  -webkit-appearance:none;appearance:none;transition:border-color .12s,box-shadow .12s}
+/* The chevron is drawn, not native. A native select arrow is a different shape, weight and colour
+   in every browser and on every platform, and next to a hand-built page it is the single most
+   obvious tell that a control was not designed. Same mark on the pod-cell pickers, tighter. */
+select{cursor:pointer;padding-right:1.75rem;background-repeat:no-repeat;
+  background-position:right .6rem center;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path d='M1 1.5L5 5.5L9 1.5' fill='none' stroke='%238c8a84' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")}
+select.cellsel{padding-right:1.3rem;background-position:right .38rem center}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-bg)}
+input:hover:not(:focus),select:hover:not(:focus){border-color:#cfcdc6}
+input::placeholder{color:var(--muted);opacity:.85}
+/* Read-only means read-only, and should look it rather than inviting a click and doing nothing. */
+input[readonly]{background:var(--hair);color:var(--muted);cursor:default}
+input[readonly]:focus{border-color:var(--line);box-shadow:none}
+input[type=number]{text-align:right}
 .nmrow{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;flex-wrap:wrap}
 .nmrow .inipill{margin-left:0;min-width:3.2rem;text-align:center;font-size:.78rem;color:var(--ink)}
-.nmin{flex:1;min-width:190px;font-family:inherit;font-size:.85rem;padding:.4rem .55rem;
-  border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.nmin{flex:1;min-width:190px}
+/* The tables. There are three on this page — the week grid, Fairness, and the change log — and
+   they had three different header treatments, three paddings and three border weights. A table
+   header is the same idea everywhere it appears, so it is written once and the tables differ only
+   where their CONTENT differs. */
 table.fair{border-collapse:collapse;width:100%}
-.fair th{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
-.fair th,.fair td{padding:.4rem .6rem;border-bottom:1px solid var(--hair);font-size:.82rem;text-align:center}
+.fair th{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;
+  padding-bottom:.5rem;border-bottom:1px solid var(--line)}
+.fair th,.fair td{padding:.45rem .6rem;border-bottom:1px solid var(--hair);font-size:.82rem;text-align:center}
+.fair tbody tr:last-child td,.fair tr:last-child td{border-bottom:0}
 .fair td:first-child,.fair th:first-child{text-align:left}
+.fair tr:hover td{background:#faf9f6}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.3rem;vertical-align:baseline}
 .fbar{height:6px;background:var(--hair);border-radius:99px;width:64px;display:inline-block;margin-left:.45rem;vertical-align:middle;overflow:hidden}
 .fbar-fill{height:100%;border-radius:99px;background:var(--accent);display:block}
@@ -234,6 +285,30 @@ table.fair{border-collapse:collapse;width:100%}
    page draws every unfilled pod as `.cell.empty`, and an unscoped rule would put 1.6rem of
    padding inside all thirty-five of them. */
 #logBox .empty{color:var(--muted);font-size:.86rem;padding:1.6rem;text-align:center}
+/* ── THE CHANGE LOG'S COLUMNS — 8 Aug ─────────────────────────────────────────────────────────
+   Why it looked wrong: core.js draws the table `table-layout:fixed`, and under fixed layout the
+   column widths come from the FIRST row only. The first row is the header, and the headers carry
+   no widths — so the careful percentages on the body cells were never read at all and the browser
+   split the table into five equal columns. That is the whole of Ali's "inconsistent tabling": a
+   two-character pod chip given the same fifth of the page as a person's name, so From and To sat
+   at opposite ends of a gap and BY floated in an ocean of nothing.
+   The widths therefore go on the header cells, which is the only place the layout looks. */
+#logBox th:nth-child(1){width:5.6rem}
+#logBox th:nth-child(3),#logBox th:nth-child(4){width:4.6rem}
+#logBox th:nth-child(5){width:9.2rem}
+/* From and To are one fact — a person moved — so the two chips meet in the middle with the arrow
+   between them, instead of being centred in their own columns and reading as two unrelated pills.
+   The headers follow the chips rather than the other way round. */
+#logBox td.logfrom{text-align:right !important;padding-right:0 !important}
+#logBox td.logfrom + td{text-align:left !important;padding-left:.5rem !important}
+#logBox th:nth-child(3){text-align:right !important;padding-right:.9rem !important}
+#logBox th:nth-child(4){text-align:left !important;padding-left:.5rem !important}
+#logBox th{padding-bottom:.45rem !important;border-bottom:1px solid var(--line)}
+/* Fixed layout lets content run past its column rather than widening it, and one long name or a
+   pasted date range would have sat on top of the next cell. */
+#logBox td{overflow-wrap:anywhere}
+#logBox .logrow:hover td{background:#faf9f6}
+#logBox table{margin-bottom:.2rem !important}
 /* Below, and only below, is what this page's own container needs — the rest is in core.css.
    The narrow-screen log: a five-column table stays a five-column table on a phone and turns into
    the mess Ali photographed, so under 640px each row folds into two lines — rota day and person
@@ -669,18 +744,50 @@ function renderSetup(){
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " +
            d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
+  /* BOTH sources, not one. Cover reads exactly two things — the consultant rota workbook, which it
+     allocates to pods, and the resident rota, read-only, to show who sits under each pod. The panel
+     named only the first, so "why is this person missing?" was answerable for half the page and
+     not the other half. The render suite has been asserting both were named since 6 Aug and going
+     red; it was right and the panel was short. Nothing is invented here: every figure is one the
+     store already carried.
+     Written as one card with two blocks rather than two cards, because they are two halves of the
+     same question and a reader comparing them should not have to look in two places. */
+  const rres = data || {};
+  /* The keys are MONDAYS, so the furthest key is the start of the last week written, not the last
+     day the rota covers. Showing the Monday would understate the reach by six days, which for a
+     page whose whole job is "how far ahead do we know" is the wrong six days to lose. */
+  const resReach = (function(){
+    const ks = Object.keys(rres.weeks || {}); if (!ks.length) return "";
+    const mon = ks.sort().pop();
+    const d = new Date(mon + "T12:00:00");
+    if (isNaN(d)) return "";
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().slice(0, 10);
+  })();
   h += "<div class='card'>" +
     "<div class='stafftop'><span class='sectlab'>SOURCE</span>" +
       (fetched ? "<span class='cnt'>in step</span>" : "<span class='cnt warn'>never fetched</span>") +
       "<button class='btn sec' id='btnSync' style='margin-left:auto;font-size:.78rem;padding:.3rem .7rem'>Sync now</button></div>" +
-    "<div style='font-size:.85rem;margin-bottom:.7rem'>" +
-      (fetched ? esc(src.name) : "<b>the copy kept in the repo</b>") + "</div>" +
+    "<div class='srcname'>" +
+      (fetched ? esc(src.name)
+               : "<b>the copy kept in the repo</b><span>the fetch from SharePoint has " +
+                 "never succeeded, so this is what everything below was worked out from</span>") +
+    "</div>" +
     "<div class='srcgrid'>" +
       "<div><span>workbook edited</span><b>" + when(src.modified) + "</b></div>" +
       "<div><span>last fetched</span><b>" + when(src.fetched) + "</b></div>" +
       "<div><span>last worked out</span><b>" + when(cdata && cdata.savedAt) +
         ((cdata && cdata.savedBy) ? " · " + esc(cdata.savedBy) : "") + "</b></div>" +
       "<div><span>reads to</span><b>" + esc(src.sheetUntil || "—") + "</b></div>" +
+    "</div>" +
+    "<div class='srcsplit'></div>" +
+    "<div class='srcname'><b>Resident rota</b>" +
+      "<span>read only — it is what puts the residents under each pod, and this page cannot " +
+      "write to it</span></div>" +
+    "<div class='srcgrid'>" +
+      "<div><span>last saved</span><b>" + when(rres.savedAt) +
+        (rres.savedBy ? " · " + esc(rres.savedBy) : "") + "</b></div>" +
+      "<div><span>reaches to</span><b>" + (resReach ? esc(fmt(resReach)) : "—") + "</b></div>" +
     "</div></div>";
 
   /* PUBLISHED WEEKS. Raising it is safe. LOWERING it would un-publish weeks people have already
