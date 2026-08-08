@@ -114,7 +114,20 @@ table.rota td:last-child{border-right:0}
 td.rowh{width:52px;font-weight:700;font-size:.85rem}
 td.rowh .sub{display:block;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem}
-.cell{cursor:pointer;border-radius:8px;padding:.15rem .4rem;display:inline-block;min-width:38px;font-weight:700;font-size:.9rem;letter-spacing:-.01em}
+/* THE PILLS HAVE TO LINE UP DOWN THE COLUMN (Ali, 8 Aug: "its annoyinh to my eyes the 18 and COD
+   pills dont quite align"). They didn't, because the pill simply followed the initials and the
+   initials are two, three or four characters — so CMAB pushed its pill 15px further right than JH
+   did, and the eye reads that ragged edge before it reads anything else.
+
+   The comment at cellHTML has always said the badge is "pinned to the cell's right edge". That was
+   the intent and it was never actually implemented: .cellwrap is a flex row and nothing pushed the
+   pill anywhere. Pinning it hard right was the other option, but the pod columns are wide, and it
+   would have parked the badge an inch from the name it belongs to.
+
+   So the NAME gets the fixed width instead, wide enough for the longest initials anyone has (CMAB),
+   and the pills fall into a straight second column a fixed distance from it. Aligned, and still
+   next to the person they describe. */
+.cell{cursor:pointer;border-radius:8px;padding:.15rem .4rem;display:inline-block;min-width:3.5rem;text-align:left;font-weight:700;font-size:.9rem;letter-spacing:-.01em}
 .cell:hover{background:var(--accent-bg)}
 .cell.empty{color:#c9cbd1;font-weight:400}
 .cell.diff{outline:1.5px dashed var(--amber);color:var(--amber)}
