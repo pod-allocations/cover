@@ -106,6 +106,7 @@ function loadPage({ url, testMode, keys, localKeys, resident, store }) {
     get cdata(){ return cdata; }, setCdata: v => { cdata = v; },
     setJun: v => { showJun = v; }, renderRota, renderAll, setCurWeek: k => { curWeek = k; },
     renderAhead, aheadWeeks, pubUntil, PUB_WEEKS, showTab, draftOverrides, redraftDrafts,
+    setAheadWeek: k => { aheadWeek = k; }, nameOf, saveName, unnamed, consList,
     applyFinSwap: typeof applyFinSwap !== "undefined" ? applyFinSwap : null,
     profileFor: typeof profileFor !== "undefined" ? profileFor : null }; };`;
   html = html.replace("load().catch(", hook + "\nload().catch(");
@@ -419,7 +420,7 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
        what's coming up is the question the rota team opens the shield to answer. */
     ok("no password set: shield opens the inset menu",
       win.document.body.classList.contains("teamopen") &&
-      win.document.querySelectorAll("#teamPanel .tpi").length === 4 &&
+      win.document.querySelectorAll("#teamPanel .tpi").length === 6 &&
       win.document.querySelector("#tab-ahead").style.display !== "none" &&
       win.document.querySelector("#tab-fair").style.display === "none");
     win.document.querySelector("#tpBack").click();
@@ -438,11 +439,21 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       !win.document.body.classList.contains("teamopen"));
     ok("the lock is a page, not a floating dialog", !win.document.querySelector("#whoOverlay"));
     ok("and every team page stays hidden behind it",
-      ["ahead","fair","log","setup"].every(t => win.document.querySelector("#tab-" + t).style.display === "none"));
-    /* It does not offer to SET or RESET the password: data.staffPw belongs to the resident board,
-       and a second place to change one password is how two passwords appear. */
-    ok("it does not offer to set or reset the password — that lives on the resident board",
-      !win.document.querySelector("#lockReset") && /Unlock/.test(win.document.querySelector("#lockBtn").textContent));
+      ["attn","ahead","fair","log","staff","setup"].every(t => win.document.querySelector("#tab-" + t).style.display === "none"));
+    /* It still does not SET the password — data.staffPw belongs to the resident board, and a second
+       place to change one password is how two passwords appear. What it does now offer is a way to
+       ask a named admin to ALLOW a reset, because the dead end was worse (Ali, 8 Aug). */
+    ok("it does not offer to set the password — that lives on the resident board",
+      !win.document.querySelector("#lockSetBtn") && /Unlock/.test(win.document.querySelector("#lockBtn").textContent));
+    ok("but it does offer a way out when everyone has forgotten",
+      !!win.document.querySelector("#lockReset"));
+    api.alloc.admins = ["alistair.cranfield@nhs.net", "scott.houston@nhs.net"];
+    win.document.querySelector("#lockReset").click();
+    const opts = [...win.document.querySelectorAll("#lockAdmin option")].map(o => o.textContent);
+    ok("the reset goes to a named admin, chosen from a list", opts.length === 2, opts.join(" | "));
+    /* Anybody with the link reaches this screen, so it must not publish consultants' addresses. */
+    ok("and their addresses are masked, because anyone can reach this screen",
+      opts.every(o => /•••/.test(o) && !/alistair\.cranfield/.test(o)), opts.join(" | "));
     const lp = win.document.querySelector("#lockPw");
     lp.value = "nope"; win.document.querySelector("#lockBtn").click();
     await new Promise(r => setTimeout(r, 10));
@@ -510,26 +521,78 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       api.aheadWeeks().length === 11, api.aheadWeeks().length + " weeks");
     ok("it starts at this Monday", api.aheadWeeks()[0] === MON);
 
+    /* Look ahead IS the Pods page — one week, the same arrows — that carries on past the edge
+       (Ali, 6 Aug). So: exactly one grid, not a stack of them. */
     api.showTab("ahead");
     const box = win.document.querySelector("#aheadBox");
-    ok("a week table per week", box.querySelectorAll("table.rota").length === 11,
-      box.querySelectorAll("table.rota").length + " tables");
-    ok("the first four weeks are marked published",
-      box.querySelectorAll(".ahchip.pub").length === 4,
-      box.querySelectorAll(".ahchip.pub").length + " published");
-    ok("the rest are marked draft, so nobody mistakes one for a promise",
-      box.querySelectorAll(".ahchip:not(.pub)").length === 7,
-      box.querySelectorAll(".ahchip:not(.pub)").length + " draft");
-    ok("it says how far the rota actually reaches",
-      /reaches/.test(box.textContent) && /11 weeks/.test(box.textContent));
+    const grid = win.document.querySelector("#ahGrid");
+    ok("one week on screen, like Pods — not a stack of every week",
+      grid.querySelectorAll("table.rota").length === 1,
+      grid.querySelectorAll("table.rota").length + " tables");
+    ok("it opens on this week", win.document.querySelector("#ahTitle").textContent.length > 0 &&
+      !!grid.querySelector("td[data-date='" + MON + "']"));
+    ok("this week is marked as one everyone can see",
+      win.document.querySelector("#ahChip").classList.contains("pub"));
+    ok("the back arrow is dead on the first week, so it cannot page into the past",
+      win.document.querySelector("#ahPrev").disabled === true);
+    /* The chip must not sit upstream of a control people click repeatedly: its two labels are very
+       different lengths, so between the title and Next it shoved the arrow sideways on every page
+       — and crossing the four-week line is exactly when you are clicking fastest (Ali, 7 Aug).
+       Fixed twice over: it is last in the bar, and its width is measured from a ghost copy of the
+       longer label rather than guessed. */
+    const bar = [...win.document.querySelectorAll("#tab-ahead .weekbar > *")].map(e => e.id);
+    ok("the chip is last in the week bar, downstream of both arrows",
+      bar.indexOf("ahChip") === bar.length - 1 &&
+      bar.indexOf("ahChip") > bar.indexOf("ahNext"), bar.join(" "));
+    ok("and carries a ghost of the longer label, so its width never changes",
+      !!win.document.querySelector("#ahChip .ghost"));
+    /* The chip carries an invisible copy of the LONG label so its width never changes with its
+       text; without it the Next arrow slides sideways at the four-week line, which is exactly
+       where you are clicking fastest (Ali, 7 Aug). jsdom has no layout, so the assertion is on
+       the mechanism: the ghost is present, it holds the longest label, and it is the one hidden. */
+    const ghost = () => win.document.querySelector("#ahChip > .ghost");
+    ok("the chip is sized by a hidden copy of its longest label, so the arrows cannot move",
+      !!ghost() && ghost().textContent === "EVERYONE SEES THIS" &&
+      win.document.querySelectorAll("#ahChip > span").length === 2 &&
+      win.document.querySelector("#ahChip > span:last-child") !== ghost());
+
+    /* The whole point: the arrows do not stop at the four-week lock. */
+    for (let n = 0; n < 6; n++) win.document.querySelector("#ahNext").click();
+    ok("the forward arrow pages straight past the published edge",
+      !!grid.querySelector("td[data-date='" + addDays(MON, 42) + "']"),
+      win.document.querySelector("#ahTitle").textContent);
+    ok("and says plainly that this one is draft",
+      !win.document.querySelector("#ahChip").classList.contains("pub") &&
+      win.document.querySelector("#ahChip > span:last-child").textContent === "DRAFT");
+    ok("and the ghost still holds the long label, so the chip has not shrunk",
+      win.document.querySelector("#ahChip > .ghost").textContent === "EVERYONE SEES THIS");
+    ok("a draft week shows its names — the shield is what unlocks them",
+      /TF/.test(grid.querySelector("td[data-pod='A'][data-date='" + addDays(MON, 42) + "']").textContent));
+    for (let n = 0; n < 4; n++) win.document.querySelector("#ahNext").click();
+    ok("the forward arrow stops at the end of the rota", win.document.querySelector("#ahNext").disabled === true);
+    /* The horizon used to be three sentences and is now the ribbon (Ali, 8 Aug: "looks messy and
+       unprofessional with stupid explainers"). These assert the FACTS survived the redraw, not the
+       wording — where you are, how far it runs, and one segment per week with the published ones
+       marked — because the whole point of rule 2 is that the facts are the part that matters. */
+    ok("it still says how far the rota reaches, and where you are in it",
+      /of 11/.test(box.textContent) && /to /.test(box.textContent), box.textContent.slice(0, 90));
+    ok("the horizon is a ribbon of one segment per week, not a paragraph",
+      box.querySelectorAll(".ahrib span").length === 11 && !/reaches|Everyone sees/.test(box.textContent));
+    ok("and the published weeks are the marked ones",
+      box.querySelectorAll(".ahrib span.live").length === 4);
+    ok("the week you are looking at is marked on the ribbon",
+      box.querySelectorAll(".ahrib span.now").length === 1);
+    win.document.querySelector("#ahToday").click();
+    ok("This week comes back to the start", !!grid.querySelector("td[data-date='" + MON + "']"));
 
     /* Editable, like the Pods grid — and by exactly the same code, which is what this asserts:
        a cell you can click and a badge you can pick up, in a week beyond the published edge. */
     const draftDay = addDays(MON, 56);
-    const cell = box.querySelector("td[data-pod='A'][data-date='" + draftDay + "'] .cell[data-d]");
+    api.setAheadWeek(addDays(MON, 56)); api.renderAhead();          // page to a draft week
+    const cell = grid.querySelector("td[data-pod='A'][data-date='" + draftDay + "'] .cell[data-d]");
     ok("draft weeks are editable, not a read-only preview", !!cell && cell.dataset.k === "A");
     ok("and carry the same drag handles as the Pods grid",
-      !!box.querySelector("td[data-pod='A'][data-date='" + draftDay + "'] .cell[draggable='true']"));
+      !!grid.querySelector("td[data-pod='A'][data-date='" + draftDay + "'] .cell[draggable='true']"));
 
     /* Re-running the algorithm on the draft weeks. The button releases hand-made placements past
        the published edge so the nightly sync can reallocate them — a hand-edit makes `cur` differ
@@ -559,9 +622,57 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
 
     /* A viewer who never got through the shield must not be able to reach this by any route. */
     win.sessionStorage.removeItem("consTeamUnlocked");
-    api.renderAhead();
+    api.setAheadWeek(addDays(MON, 56)); api.renderAhead();
     ok("locked out, Look ahead shows no names either",
-      !/TF/.test(win.document.querySelector("#aheadBox td[data-pod='A'][data-date='" + draftDay + "']").textContent));
+      !/TF/.test(grid.querySelector("td[data-pod='A'][data-date='" + draftDay + "']").textContent));
+  }
+
+  console.log("Naming a consultant needs no code change (project rule 1)");
+  {
+    /* Ali, 7 Aug: "new initials a way to add as new staff list. probably needs an attention pane
+       for admin". Until now INITIALS_MAP lived in consultant_rota.py, so somebody joining the rota
+       showed on the board as their initials until the Python was edited and redeployed — a plain
+       breach of rule 1, which says every functional thing must be editable from the front end by
+       an authorised user, never requiring code edits or repo access. */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    api.alloc.days[MON].cur.A = "ZZZ";              // somebody the code has never heard of
+    /* Names moved off Setup to a page of their own on 8 Aug. A panel that only appears when
+       something is wrong is a nag with nowhere to go when nothing is; Staff is somewhere you can
+       look at the list whenever you like. Setup is settings and nothing else now. */
+    api.showTab("staff");
+    const box = win.document.querySelector("#staffBox");
+    ok("the Staff page lists everyone the rota uses",
+      !!box.querySelector(".nmin[data-ini='ZZZ']"), box.textContent.slice(0, 80));
+    ok("an unnamed one is marked apart from the rest",
+      box.querySelector(".nmin[data-ini='ZZZ']").classList.contains("miss"));
+    api.showTab("setup");
+    ok("and Setup no longer carries the naming panel",
+      !win.document.querySelector("#setupBox .nmin[data-ini]"));
+    ok("the board shows them as initials until named", api.nameOf("ZZZ") === "ZZZ");
+
+    win.localStorage.setItem("consEditor", "TF");
+    await api.saveName("ZZZ", "Zara Zaman");
+    ok("naming them takes effect everywhere at once", api.nameOf("ZZZ") === "Zara Zaman");
+    ok("it is stored with the cover, not in the code", (api.alloc.names || {}).ZZZ === "Zara Zaman");
+    ok("and logged, so nobody wonders where the name came from",
+      /named as Zara Zaman/.test((api.cdata.log[0] || {}).msg || ""), (api.cdata.log[0]||{}).msg);
+    api.showTab("setup");
+    ok("the panel goes away once there is nobody left to name",
+      !win.document.querySelector("#setupBox .card.attn"));
+    ok("a named person becomes pickable as the editor", api.consList().includes("ZZZ"));
+
+    /* The sync writes days/map/fair/window/source and nothing else, so what is typed here has to
+       survive it. Asserted against cover_sync.py itself rather than by simulating a run. */
+    const sync = fs.readFileSync(path.join(__dirname, "..", "..", "allocate-pull", "cover_sync.py"), "utf8");
+    const keys = (sync.match(/ALLOC_KEYS = \(([^)]*)\)/) || [])[1] || "";
+    ok("the sync cannot overwrite names — it is not one of the keys it writes",
+      !/["']names["']/.test(keys), keys.trim());
+    const page = fs.readFileSync(PAGE, "utf8");
+    ok("but the page counts names as a legitimate cover key, not a stray",
+      /COVER_ONLY = \[[^\]]*"names"/.test(page));
+    /* A correction must beat the code, or a name the sync has wrong could never be fixed here. */
+    api.alloc.map.QQ = "Wrong Name"; api.alloc.names.QQ = "Right Name";
+    ok("a name typed here overrides one the code got wrong", api.nameOf("QQ") === "Right Name");
   }
 
   console.log("The change log is drawn by the shared code, and styled for it");
@@ -594,6 +705,31 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
 
     ok("the log is drawn by core.js's logPanel, not a second copy here",
       /logPanel\(/.test(css) && !/function logPanel/.test(css));
+
+    /* THE SAVE KEY. The live copy of this folder's k.js had drifted to holding the two READ keys
+       and no cover SAVE key, so Cover showed the rota perfectly and could not write a single edit.
+       The site serves a complete k.js at its root; the page now borrows it rather than keeping a
+       second copy of a secret that can drift. These assert the guard rails on that: live host
+       only, missing-key only, and — the important one — that pulling in the site-wide keys still
+       does not give this page any way to write the RESIDENT rota. */
+    const src0 = fs.readFileSync(PAGE, "utf8");
+    ok("it falls back to the site-wide keys when its own copy has no cover save key",
+      /__POD_KEYS \|\| \{\}\)\.cs/.test(src0) && /src="\/k\.js/.test(src0));
+    ok("...but only on the live host, so staging can never gain a save key",
+      /location\.hostname === LIVE_HOST/.test(src0));
+    ok("...and still never reads the resident save key, whatever k.js contains",
+      !/\bK\.s\b/.test(src0) && !/q\.get\("s"\)/.test(src0));
+
+    /* THE CACHE-BUSTER MUST MOVE WHEN THE SHARED FILES DO. Moving the log rules into core.css on
+       6 Aug while leaving ?v= alone meant every browser holding the old core.css kept using it —
+       a stylesheet with no log rules in it — so the page shipped looking exactly as broken as
+       before the fix. Nothing in the HTML gives that away, which makes it wretched to debug. This
+       asserts the two are at least consistent with each other and not still on the old stamp. */
+    const raw = fs.readFileSync(PAGE, "utf8");
+    const vers = [...raw.matchAll(/core\.(?:css|js)\?v=([0-9a-z-]+)/g)].map(m => m[1]);
+    ok("core.css and core.js are asked for at the same version", vers.length === 2 && vers[0] === vers[1], vers.join(" vs "));
+    ok("that version is not the pre-6-Aug one, now that core.css has changed",
+      vers[0] !== "20260731-02", vers[0]);
 
     /* Derived from the source, not typed here — a hand-written list is the same duplication one
        level up, and would go stale the same way the stylesheet did. */
@@ -680,7 +816,11 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
   console.log("Combined fairness page");
   {
     const { win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
-    ok("the Totals tab is gone — one combined page", !win.document.querySelector("#tab-staff") && !win.document.querySelector("aside button[data-tab='staff']"));
+    /* The old Totals tab merged into Fairness. #tab-staff exists again, but it is the Staff page
+       now — a rota-team page, so it must not appear in the PUBLIC nav. */
+    ok("the Totals tab is gone — one combined page",
+      !win.document.querySelector("aside button[data-tab='staff']") &&
+      !!win.document.querySelector("#teamPanel button[data-tab='staff']"));
     const heads = [...win.document.querySelectorAll("#fairBox table.fair th")].map(x => x.textContent.trim());
     ok("fairness table carries A&B, C&D, % neuro AND the staffing counts",
       ["A&B","C&D","% neuro","Pods/wk","On call","COD","Fairfield"].every(k => heads.some(hh => hh.includes(k))), heads.join(" | "));
@@ -859,6 +999,146 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       use(2, "past") && win.document.querySelectorAll("#logBox .logrow").length === 1 &&
       win.document.querySelectorAll("#logBox .logrow.auto").length === 1,
       win.document.querySelectorAll("#logBox .logrow").length + " rows");
+  }
+
+  console.log("The pills line up down the column");
+  {
+    /* Ali, 8 Aug: "its annoyinh to my eyes the 18 and COD pills dont quite align". They followed
+       the initials, and initials are 2-4 characters, so the badge moved with the name. jsdom does
+       no layout, so this asserts the thing that MAKES them align rather than the alignment itself:
+       the name box is a fixed width, so whatever is next to it starts at the same place. */
+    const css = require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8")
+      .split("<style>")[1].split("</style>")[0];
+    const cellRule = (css.match(/\n\.cell\{[^}]*\}/) || [""])[0];
+    ok("the name box is a fixed width, so the pill beside it cannot wander",
+      /min-width:\s*3\.5rem/.test(cellRule), cellRule.slice(0, 90));
+    ok("and neither pill can stretch or shrink to spoil it",
+      /\.codpill\{[^}]*flex:0 0 auto/.test(css) && /\.finpill\{[^}]*flex:0 0 auto/.test(css));
+    /* Only ever one pill per cell — COD suppresses the finish-time pill — so there is no second
+       thing that could push the first one sideways. */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    const cells = [...win.document.querySelectorAll("#weekGrid .cellwrap")];
+    ok("a cell never carries two pills, which would move one of them",
+      cells.every(c => c.querySelectorAll(".codpill, .finpill").length <= 1),
+      Math.max(...cells.map(c => c.querySelectorAll(".codpill, .finpill").length)) + " at most");
+    ok("and the pill always follows the name, never precedes it",
+      cells.filter(c => c.querySelector(".codpill, .finpill"))
+           .every(c => c.firstElementChild.classList.contains("cell")));
+  }
+
+  console.log("The attention page");
+  {
+    /* Work waiting for a person, separate from the log. The distinction that matters is between an
+       item you can dismiss and one you cannot: hiding "this day has an empty pod" does not staff
+       the pod, so those items have no dismiss button at all and clear only when the thing is
+       actually done (Ali, 8 Aug: "Is there a way to clear them?"). */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    const D = addDays(MON, 2);
+    api.showTab("attn");
+    ok("with nothing outstanding it says so rather than showing an empty list",
+      /Nothing needs you/.test(win.document.querySelector("#attnBox").textContent));
+    ok("and the menu carries no badge",
+      win.document.querySelector("#attnBadge").textContent === "");
+
+    api.alloc.days[D].alert = { gone: ["TF", "JRG"], new: ["VG"] };
+    api.showTab("attn");
+    const rows = win.document.querySelectorAll("#attnBox .attnrow");
+    ok("a day the sync could not resolve turns up as an item", rows.length === 1);
+    ok("...and says who went and who came, in names not codes",
+      /came off the rota/.test(rows[0].textContent) && /came on/.test(rows[0].textContent),
+      rows[0].textContent.trim().slice(0, 90));
+    ok("it cannot simply be dismissed — that would hide an unstaffed pod",
+      !rows[0].querySelector(".attnack"));
+    ok("but it can be answered deliberately, by a named person",
+      !!rows[0].querySelector(".attnalt"));
+    ok("the menu badge counts it", win.document.querySelector("#attnBadge").textContent === "1");
+
+    /* Fixing the day clears the flag THERE AND THEN. The sync clears it too, but the sync runs
+       overnight, and amber that outlives its cause teaches people to ignore amber. */
+    win.localStorage.setItem("consEditor", "TF");
+    api.alloc.days[D].alert = { gone: ["TF"], new: ["VG"] };
+    await api.applyEdit(D, "A", "VG");
+    ok("putting the right person on clears the flag immediately, not overnight",
+      !api.alloc.days[D].alert);
+
+    api.alloc.days[D].alert = { gone: ["TF", "JRG"], new: ["VG", "RTP"] };
+    await api.applyEdit(D, "A", "VG");
+    ok("half a job leaves it flagged", !!api.alloc.days[D].alert);
+  }
+
+  console.log("Setup is settings, and every one of them is a control");
+  {
+    /* Rule 1: every functional thing editable from the front end. These four were constants in the
+       code or in the Python, which meant a deploy to change them. */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    win.localStorage.setItem("consEditor", "TF");
+    api.showTab("setup");
+    const box = win.document.querySelector("#setupBox");
+    ok("published weeks is a control, not a constant", !!box.querySelector("#setPub"));
+    ok("the two balance numbers are controls too",
+      !!box.querySelector("#setCap") && !!box.querySelector("#setHard"));
+    ok("and the sync can be asked for by hand", !!box.querySelector("#btnSync"));
+    ok("the source panel gives times, not bare dates",
+      /last fetched/.test(box.textContent) && /workbook edited/.test(box.textContent));
+
+    /* The floor is the important half. Raising it publishes more, which is always safe; lowering it
+       would take back weeks people have already been shown. */
+    const pub = box.querySelector("#setPub");
+    pub.value = "6"; pub.dispatchEvent(new win.Event("change"));
+    await new Promise(r => setTimeout(r, 10));
+    ok("it can be raised", api.alloc.pubWeeks === 6, String(api.alloc.pubWeeks));
+    api.showTab("setup");
+    const pub2 = win.document.querySelector("#setPub");
+    pub2.value = "2"; pub2.dispatchEvent(new win.Event("change"));
+    await new Promise(r => setTimeout(r, 10));
+    ok("but never below what has already been shown", api.alloc.pubWeeks === 6, String(api.alloc.pubWeeks));
+
+    /* Removing the last reset address would recreate the lockout the whole mechanism exists to
+       prevent. */
+    api.alloc.admins = ["only.one@nhs.net"];
+    api.showTab("setup");
+    win.document.querySelector(".adminrm").click();
+    await new Promise(r => setTimeout(r, 10));
+    ok("the last reset address cannot be removed", (api.alloc.admins || []).length === 1);
+  }
+
+  /* Ali, 8 Aug: "on some of the cover rota team bits boxes are poorly rendeerd and incosistent use
+     of tabling, just make all look bettter and high end." Look is not usually a thing to assert
+     on, but the two CAUSES are, and both were the kind of fault that comes back the moment
+     somebody adds a control or a column without thinking about it. */
+  console.log("\nThe shielded pages are drawn, not left to the browser");
+  {
+    const css = fs.readFileSync(PAGE, "utf8");
+
+    /* A control has to be styled because it IS a control, not because whoever added it remembered
+       a class. Every bare input and select on this page was browser-default until 8 Aug. */
+    ok("the form control is styled on the element, so a new one is right without being told",
+      /(^|\n)input,select,textarea\{/.test(css));
+    ok("...and .nmin no longer carries a second, drifting copy of it",
+      /\.nmin\{flex:1;min-width:190px\}/.test(css));
+    ok("the select's arrow is drawn rather than left to the platform",
+      /select\{[^}]*background-image:url\("data:image\/svg\+xml/.test(css));
+    ok("the pod-cell picker keeps its own tighter size", /select\.cellsel\{/.test(css));
+
+    /* THE actual tabling bug. core.js draws the log table `table-layout:fixed`, and fixed layout
+       reads column widths from the FIRST row only — the header. The header carried none, so five
+       columns of wildly different content were given a fifth of the page each and the percentages
+       on the body cells were never looked at. If these widths are ever removed the table silently
+       goes back to five equal columns, which is exactly how it looked when Ali photographed it. */
+    ok("the change log's widths sit on the header, which is where fixed layout reads them",
+      /#logBox th:nth-child\(1\)\{width:/.test(css) && /#logBox th:nth-child\(5\)\{width:/.test(css));
+    ok("From and To meet in the middle, so a move reads as one fact",
+      /#logBox td\.logfrom\{text-align:right/.test(css));
+
+    /* And the panel that started it: it names both of the two things Cover reads. The render suite
+       asserts the words; this asserts the figures are real ones off the store rather than dashes. */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    api.showTab("setup");
+    const t = win.document.querySelector("#setupBox").textContent;
+    ok("Setup names the resident rota as a source in its own right", /Resident rota/.test(t));
+    ok("...and says it cannot be written to", /cannot\s+write to it/.test(t.replace(/\s+/g, " ")));
+    ok("...with a reach that is the end of the last week, not its Monday",
+      /reaches to/.test(t));
   }
 
   console.log("\n" + (fail ? "=== " + pass + " passed, " + fail + " failed ===" : "=== " + pass + " passed, 0 failed ==="));
