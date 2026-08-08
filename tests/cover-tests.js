@@ -30,6 +30,8 @@ const PAGE = path.join(__dirname, "..", "index.html");
 const RESIDENT = path.join(__dirname, "resident-fixture.html");
 const CORE_CSS = path.join(__dirname, "..", "core.css");
 const CORE_JS = path.join(__dirname, "..", "core.js");
+/* The resident board itself, read only to prove the two pages agree where they claim to. */
+const RESIDENT_PAGE = path.join(__dirname, "..", "..", "resident", "index.html");
 
 const LIVE = "https://rota.salford.icu/consultants.html";
 const TEST = "https://alistaircranfield.github.io/pod-staging/consultants.html";
@@ -108,7 +110,8 @@ function loadPage({ url, testMode, keys, localKeys, resident, store }) {
     renderAhead, aheadWeeks, pubUntil, PUB_WEEKS, showTab, draftOverrides, redraftDrafts,
     setAheadWeek: k => { aheadWeek = k; }, nameOf, saveName, unnamed, consList,
     applyFinSwap: typeof applyFinSwap !== "undefined" ? applyFinSwap : null,
-    renderAttn, attnCount,
+    renderAttn, attnCount, feedbackDialog, sendFeedback, renderFeedback,
+    unreadFeedback, markFeedbackRead, trialOn, TRIAL_END,
     profileFor: typeof profileFor !== "undefined" ? profileFor : null }; };`;
   html = html.replace("load().catch(", hook + "\nload().catch(");
 
@@ -147,7 +150,7 @@ function loadPage({ url, testMode, keys, localKeys, resident, store }) {
       };
     }
   });
-  return new Promise(res => setTimeout(() => res({ api: dom.window.__api && dom.window.__api(), win: dom.window, posts, cposts, lastPayload }), 700));
+  return new Promise(res => setTimeout(() => res({ api: dom.window.__api && dom.window.__api(), win: dom.window, posts, cposts, cbodies, lastPayload }), 700));
 }
 
 const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cread", cs:"https://flow/csave" };
@@ -417,11 +420,13 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       !win.document.querySelector("aside button[data-tab='admin']"));
     // no password set: the shield opens the inset menu straight onto Fairness
     win.document.querySelector("#btnTeam").click();
-    /* Four items now, and the shield lands on Look ahead rather than Fairness (Ali, 6 Aug):
-       what's coming up is the question the rota team opens the shield to answer. */
+    /* Seven items as of 8 Aug — Feedback joined them — and the shield lands on Look ahead rather
+       than Fairness (Ali, 6 Aug): what's coming up is the question the rota team opens the shield
+       to answer. The count is asserted deliberately: a tab added without being thought about is
+       exactly how a menu turns into a list of everything anybody ever built. */
     ok("no password set: shield opens the inset menu",
       win.document.body.classList.contains("teamopen") &&
-      win.document.querySelectorAll("#teamPanel .tpi").length === 6 &&
+      win.document.querySelectorAll("#teamPanel .tpi").length === 7 &&
       win.document.querySelector("#tab-ahead").style.display !== "none" &&
       win.document.querySelector("#tab-fair").style.display === "none");
     win.document.querySelector("#tpBack").click();
@@ -763,8 +768,13 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       !/^\.logrow\{/m.test(css) && !/^\.loghead\{/m.test(css));
     ok("what it does keep is scoped to its own container",
       /#logBox \.empty\{/.test(css) && /#logBox tr\{display:grid/.test(css) && !/^\.empty\{/m.test(css));
-    ok("dead selectors for controls that no longer exist are gone",
-      !/\.segbtn\{/.test(css) && !/\.logbar\{/.test(css));
+    /* `.segbtn` came BACK on 8 Aug and is no longer dead — the feedback dialog's Problem /
+       Suggestion / Question picker is a segmented control, the same one the resident board uses.
+       Left in the test as a live selector rather than deleted, so the pair still says something:
+       .segbtn must exist because something uses it, .logbar must not because nothing does. */
+    ok("the segmented control is styled, because the feedback dialog uses one",
+      /\.segbtn\{/.test(css) && /\.segbtn\.on\{/.test(css));
+    ok("dead selectors for controls that no longer exist are still gone", !/\.logbar\{/.test(css));
     ok("the Menu back button is hidden by default and revealed only on a phone",
       /\.tpback\{display:none/.test(css) && /\.tpback\{display:flex\}/.test(css) &&
       css.indexOf(".tpback{display:flex}") > css.indexOf("@media(max-width:760px)"));
@@ -1166,6 +1176,78 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       .find(r => /could not replace/.test(r.textContent));
     ok("...and cannot be dismissed while it is still true", !row.querySelector(".attnack"));
     ok("...and it counts on the menu badge", api.attnCount() > 0);
+  }
+
+  /* Ali, 8 Aug: "it also needs the feedback page and button just identical to residents (visually
+     and functionally)." "Identical" is the assertion worth making, so several of these compare
+     Cover's source against the RESIDENT board's rather than against a value typed in here — if
+     either drifts, this goes red, which is the only way a promise like that survives. */
+  console.log("\nFeedback, the same on both boards");
+  {
+    const css = fs.readFileSync(PAGE, "utf8");
+    const res = fs.readFileSync(RESIDENT_PAGE, "utf8");
+
+    ok("the button is open to everyone, in the top bar, not behind the shield",
+      /id="btnFeedback"/.test(css) && css.indexOf('id="btnFeedback"') < css.indexOf('id="tab-rota"'));
+    ok("...with the resident board's pulse, values and all",
+      /#btnFeedback\{position:relative;border-color:#c7cdf2/.test(css) &&
+      /@keyframes fbpulse\{0%\{box-shadow:0 0 0 0 rgba\(76,93,214,\.45\)/.test(css));
+    ok("...and the same icon path, so it is recognisably the same button",
+      /M20 15\.5a2\.5 2\.5 0 01-2\.5 2\.5H8l-4 3V6\.5A2\.5 2\.5 0 016\.5 4h11A2\.5 2\.5 0 0120 6\.5z/.test(css));
+    ok("the page listing what people sent is behind the shield",
+      /TEAM_TABS = \[[^\]]*"feedback"/.test(css));
+    ok("the ask is for the trial and then stops", /if \(!trialOn\(\)\) \$\("#btnFeedback"\)\.style\.display = "none"/.test(css));
+    ok("...ending on the same day as the resident board's trial",
+      (css.match(/TRIAL_END = "([\d-]+)"/) || [])[1] === (res.match(/TRIAL_END = "([\d-]+)"/) || [])[1]);
+    ok("the three kinds of message are the resident board's three",
+      /\[\["Problem","Something's wrong"\],\["Suggestion","An idea"\],\["Question","A question"\]\]/.test(css));
+
+    const { api, win, cposts, lastPayload } = await loadPage({ url: LIVE, testMode: false, keys: KEYS });
+
+    /* The dialog. Not a screenshot comparison — the parts, in the order the resident one has them. */
+    api.feedbackDialog();
+    const m = win.document.querySelector("#modal");
+    ok("the dialog opens", win.document.querySelector("#modalBg").style.display === "flex");
+    ok("...with three kinds to choose from", m.querySelectorAll(".segbtn").length === 3);
+    ok("...a message box", !!m.querySelector("textarea"));
+    ok("...and a name field that is optional",
+      (m.querySelector("input[type=text]") || {}).placeholder === "Optional");
+
+    /* Nothing is sent when the message is empty — an empty report wastes the sender's goodwill and
+       tells the reader nothing. */
+    const before = cposts.length;
+    [...m.querySelectorAll("button")].find(b => b.textContent === "Send").click();
+    await new Promise(r => setTimeout(r, 30));
+    ok("an empty message sends nothing", cposts.length === before);
+    ok("...and leaves the dialog open so it can be typed into",
+      win.document.querySelector("#modalBg").style.display === "flex");
+
+    /* It writes to the COVER store, which is the only file this page has a key for. */
+    const ok1 = await api.sendFeedback({ t: new Date().toISOString(), kind: "Problem",
+                                         name: "", msg: "Pod C looks wrong on Thursday" });
+    ok("feedback is saved", ok1 === true);
+    ok("...into the cover store, the only file this page can write",
+      cposts.length > before && /csave/i.test(cposts[cposts.length - 1]));
+    const sent = await lastPayload();
+    ok("...as an entry with the message, kind and time",
+      sent.feedback[0].msg === "Pod C looks wrong on Thursday" && sent.feedback[0].kind === "Problem");
+    ok("...and anonymous really is anonymous — no name recorded unless typed",
+      sent.feedback[0].name === "" && !("who" in sent.feedback[0]));
+    ok("...and it never touches the resident rota", !sent.staff && !sent.weeks);
+
+    /* Reading it. Unread first, cleared by opening the page — the same as the resident board, where
+       a button to mark it read was a second thing to remember for no gain. */
+    ok("an unread message counts", api.unreadFeedback() === 1);
+    api.showTab("feedback");
+    ok("the page shows it", /Pod C looks wrong on Thursday/.test(win.document.querySelector("#fbList").textContent));
+    ok("...and opening the page is what marks it read", api.unreadFeedback() === 0);
+    ok("...and the count on the rail goes quiet",
+      !win.document.querySelector("#tabFbCount").classList.contains("on"));
+
+    api.setCdata(Object.assign({}, api.cdata, { feedback: [] }));
+    api.renderFeedback();
+    ok("with nothing sent yet it says so rather than showing an empty box",
+      /Nothing yet/.test(win.document.querySelector("#fbList").textContent));
   }
 
   console.log("\n" + (fail ? "=== " + pass + " passed, " + fail + " failed ===" : "=== " + pass + " passed, 0 failed ==="));
