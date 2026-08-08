@@ -997,6 +997,22 @@ function attnItems(){
     if (!seenAck["notice:" + n.id]) out.push({ kind: "notice", id: "notice:" + n.id,
       title: n.msg, detail: n.who ? "by " + esc(n.who) + " · " + shortDate(String(n.t).slice(0, 10)) : "",
       ack: true });
+  /* LAST NIGHT'S BACKUP WENT SOMEWHERE ELSE. A file open in Excel is locked against every write
+     API there is, so the nightly job writes beside it rather than losing the night (Ali, 8 Aug:
+     "thats an issue" — a backup that only works when nobody is looking at the folder is not one).
+     But a spare copy nobody is told about is one tidy-up away from being no copy at all, so it is
+     said here. Deliberately NOT acknowledgeable: the flag is removed by the next night that can
+     write the usual name, which is to say by the problem going away. Something you can tick off
+     while it is still true is how a folder ends up with nine files and no one knowing which is
+     the rota.
+     It reads this off the RESIDENT store, which is where the backup job stamps it and which this
+     page already holds — nothing new is fetched, and nothing is written back. */
+  const sp = (data || {}).backupSpare;
+  if (sp && sp.name)
+    out.push({ kind: "backup", id: "backup:spare",
+      title: "Last night's backup could not replace the usual file",
+      detail: "It was written beside it as " + sp.name + ". The usual copy is untouched but is now "
+            + "a day older than it looks. Close it in Excel and tonight's run will replace it." });
   return out;
 }
 function attnCount(){ return attnItems().length; }
