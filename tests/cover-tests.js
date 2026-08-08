@@ -108,6 +108,7 @@ function loadPage({ url, testMode, keys, localKeys, resident, store }) {
     renderAhead, aheadWeeks, pubUntil, PUB_WEEKS, showTab, draftOverrides, redraftDrafts,
     setAheadWeek: k => { aheadWeek = k; }, nameOf, saveName, unnamed, consList,
     applyFinSwap: typeof applyFinSwap !== "undefined" ? applyFinSwap : null,
+    renderAttn, attnCount,
     profileFor: typeof profileFor !== "undefined" ? profileFor : null }; };`;
   html = html.replace("load().catch(", hook + "\nload().catch(");
 
@@ -1139,6 +1140,32 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
     ok("...and says it cannot be written to", /cannot\s+write to it/.test(t.replace(/\s+/g, " ")));
     ok("...with a reach that is the end of the last week, not its Monday",
       /reaches to/.test(t));
+  }
+
+  /* A backup that only works when nobody has the folder open is not a backup (Ali, 8 Aug: "thats
+     an issue"). The job now writes beside a locked file instead of losing the night — and says so
+     here, because a spare copy nobody knows about is one tidy-up from being no copy at all. */
+  console.log("\nA backup that had to go somewhere else says so");
+  {
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    api.showTab("attn");
+    const before = win.document.querySelector("#attnBox").textContent;
+    ok("a normal night raises nothing about the backup", !/backup/i.test(before));
+
+    api.data.backupSpare = { name: "CCU-pods-Sat (could not replace, 00:05).xlsx",
+                                 at: new Date().toISOString(), why: "locked for shared use" };
+    api.renderAttn();
+    const after = win.document.querySelector("#attnBox").textContent;
+    ok("a spare copy is raised on Attention", /could not replace the usual file/.test(after));
+    ok("...and names the file, so it can be found", /CCU-pods-Sat \(could not replace/.test(after));
+    ok("...and says the usual copy is older than it looks",
+      /a day older than it looks/.test(after));
+    /* If this could be ticked off the folder ends up with nine files and nobody knowing which is
+       the rota. It clears itself on the first night that can write the usual name. */
+    const row = [...win.document.querySelectorAll(".attnrow")]
+      .find(r => /could not replace/.test(r.textContent));
+    ok("...and cannot be dismissed while it is still true", !row.querySelector(".attnack"));
+    ok("...and it counts on the menu badge", api.attnCount() > 0);
   }
 
   console.log("\n" + (fail ? "=== " + pass + " passed, " + fail + " failed ===" : "=== " + pass + " passed, 0 failed ==="));
