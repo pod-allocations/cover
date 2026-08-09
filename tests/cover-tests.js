@@ -965,8 +965,9 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
        ever since — a test that describes a UI nobody built is worse than no test, because the
        red is dismissed on sight. Rewritten 4 Aug against what is actually on the page. */
     const sels = [...win.document.querySelectorAll("#logBox select")];
+    /* 6, not 5, since 9 Aug: Group by gained Person alongside When changed and Rota day. */
     ok("both controls are on the page and neither needs a sentence to explain it",
-      sels.length === 2 && sels.reduce((n, s2) => n + s2.options.length, 0) === 5,
+      sels.length === 2 && sels.reduce((n, s2) => n + s2.options.length, 0) === 6,
       sels.length + " controls, " + sels.reduce((n, s2) => n + s2.options.length, 0) + " options");
     ok("the software's own changes are marked apart from a person's",
       win.document.querySelectorAll("#logBox .logrow.auto").length === 1);
