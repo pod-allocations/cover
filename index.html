@@ -9,7 +9,7 @@
      did not, so every browser holding the old copy carried on using it — and that copy has no log
      rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
      thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
-<link rel="stylesheet" href="core.css?v=20260809-01">
+<link rel="stylesheet" href="core.css?v=20260809-02">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -381,6 +381,42 @@ body.teamopen #teamPanel{display:block}
 .tpi svg{width:16px;height:16px;flex-shrink:0;opacity:.55}
 .tpi:hover{background:var(--hair)}
 .tpi.active{background:var(--accent-bg);color:var(--accent)}
+/* THE TABLE SCROLLS IN ITS OWN PANE, not by widening the page (Ali, 9 Aug: "the scroll to see the
+   oncall/fgh is glitchy. Scrolls the whole page and the top header doesnt extend that far - surely
+   would be better if it was just the table that scrolled within its pane").
+
+   He was right, and the measurement was stark: a 1512px viewport against a 1733px document, so the
+   page slid 221px sideways while the sticky topbar — sized to the viewport at 1434px — stopped
+   dead and left bare background beside it.
+
+   Three rules, and they have to arrive together. `overflow:auto` makes the wrapper the scroll
+   container, which is the fix, but it also means the header row's `position:sticky` is no longer
+   measured against the VIEWPORT — so `top` becomes 0 (the pane's own top edge) rather than the
+   topbar's height, or the header silently stops sticking. And once the pane scrolls sideways the
+   day column has to be pinned with `left:0`, or you scroll to Fairfield and can no longer see
+   which day you are looking at, which is worse than the problem being fixed.
+
+   `border-collapse:separate` because collapsed borders are owned by the table rather than the
+   cell, and a sticky cell carries its own border away with it, leaving a gap that flickers as you
+   scroll. The seam is drawn with box-shadow instead, which travels with the cell. */
+.rota-wrap{overflow:auto;max-height:calc(100vh - 168px);overscroll-behavior:contain}
+table.rota{border-collapse:separate;border-spacing:0}
+table.rota th{position:sticky;top:0;z-index:30;background:var(--card);
+  box-shadow:inset 0 -1px 0 var(--line)}
+table.rota td.rowh{position:sticky;left:0;z-index:20;background:var(--card);
+  box-shadow:inset -1px 0 0 var(--hair)}
+table.rota th:first-child{left:0;z-index:40}
+
+/* THE BUTTON BAR (Ali, 9 Aug: "when editing the button height in the bar becomes inconsistent
+   (some double line some single"). One cause, not several: `.pill`, `.chip` and `.statchip` all
+   carry white-space:nowrap and the BUTTONS were missed, so a label like "Auto-fill week" wrapped
+   to two lines and that button alone grew. `.weekbar` centres rather than stretches, so its
+   neighbours stayed short and the bar went ragged. Arrows are a fixed 36px square while the text
+   buttons computed to about 26px, so they were never quite level even on one line — hence one
+   height for everything in the bar rather than a nudge per button. */
+button.btn,.hbtn{white-space:nowrap}
+.weekbar>button,.weekbar .btn{min-height:36px;display:inline-flex;align-items:center}
+
 @media(max-width:760px){aside{display:none}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
   #topbar h1{font-size:1rem}
   .hbtn{font-size:.7rem;padding:.45rem .6rem}
@@ -388,7 +424,56 @@ body.teamopen #teamPanel{display:block}
   /* The name is the first thing to give up room — the icons must not wrap. */
   #btnWho{font-size:.64rem;padding:.4rem .5rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #teamPanel{position:fixed;left:0;top:0;bottom:0;height:auto;z-index:60;box-shadow:0 0 40px rgba(23,24,28,.18)}
-  .tpback{display:flex}}
+  .tpback{display:flex}
+
+  /* THE PHONE LAYOUT. Seven days by seven columns is 49 cells and will not go on a phone however
+     it is arranged, so — exactly as the Pod Board does — ONE day shows and a strip of pills moves
+     between them. The pane stops being a scroll container here; there is nothing to scroll
+     sideways once the table is a grid. */
+  .rota-wrap{overflow:visible;max-height:none;border:0;background:transparent}
+  .daypills{display:flex;gap:3px;margin:0 0 .6rem}
+  .daypill{flex:1;min-width:0;background:var(--card);border:0.5px solid var(--line);border-radius:9px;
+    padding:.4rem .1rem;font:inherit;font-size:.62rem;font-weight:600;line-height:1.25;color:var(--ink);
+    cursor:pointer;text-align:center}
+  .daypill span{display:block;font-size:.58rem;font-weight:500;color:var(--muted)}
+  .daypill.wknd{background:var(--hair);color:var(--muted)}
+  .daypill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .daypill.active span{color:rgba(255,255,255,.75)}
+
+  table.rota,table.rota tbody{display:block}
+  table.rota tr:first-child{display:none}            /* the column headings; each card says its own */
+  tr.dayrow{display:none}
+  tr.dayrow.mday{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+  tr.dayrow td.rowh{display:none}                    /* the day is in the strip */
+  tr.dayrow td{display:block;border:0;border-radius:12px;padding:.55rem .65rem;box-shadow:none}
+  /* DOM order is A B C D E oncall fgh; the ROW we want is E beside Fairfield with on call spanning
+     underneath (Ali's call, and better than mine — on call is the one thing on the day that is not
+     a place, so the full width says so). `order` does it without a second markup path. */
+  td.col-fgh{order:1;background:#fbfbf9;box-shadow:inset 0 0 0 0.5px var(--line)!important}
+  td.col-oncall{order:2;grid-column:1 / -1;background:var(--card);
+    box-shadow:inset 0 0 0 0.5px var(--line)!important}
+  td.col-fgh.empty{display:none}                     /* blank most weekends; an empty labelled box is a small lie */
+  tr.dayrow td::before{display:block;font-size:.55rem;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:.1rem;color:var(--muted)}
+  td.col-A::before{content:"Pod A";color:var(--podAb)}
+  td.col-B::before{content:"Pod B";color:var(--podBb)}
+  td.col-C::before{content:"Pod C";color:var(--podCb)}
+  td.col-D::before{content:"Pod D";color:var(--podDb)}
+  td.col-E::before{content:"Pod E";color:var(--podEb)}
+  td.col-oncall::before{content:"On call"}
+  td.col-fgh::before{content:"Fairfield"}
+  /* The initials get BIGGER than desktop, not smaller: the card has the room, and they are the
+     one thing on it anybody came to read. */
+  tr.dayrow .cell{font-size:1.15rem;min-width:0;padding:0;background:transparent}
+  tr.dayrow .cell:hover{background:transparent}
+  tr.dayrow .cellwrap{gap:.4rem;align-items:flex-end}
+  tr.dayrow .codpill,tr.dayrow .finpill{margin-left:auto}
+  /* Residents on: three name pills will not sit in half a phone, so the grid drops to one column
+     and the day scrolls. The layout follows the content instead of fighting it — one class, no
+     second layout to keep in step. */
+  body.showjun tr.dayrow.mday{grid-template-columns:1fr}
+  body.showjun td.col-oncall{grid-column:auto}
+  tr.dayrow .rpills{margin-top:.4rem}}
 </style>
 
 </head>
@@ -500,7 +585,7 @@ body.teamopen #teamPanel{display:block}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260809-01"></script>
+<script src="core.js?v=20260809-02"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
 /* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js, and on the live
@@ -1361,14 +1446,35 @@ function weekTableHTML(mondayISO){
        fix happens — the attention page can only send you here. The CSS shows it only inside
        body.teamopen: everyone can see the day, but only the rota team can do anything about it,
        and an amber warning you cannot act on is just alarming (Ali, 8 Aug). */
-    const needs = cons[d] && cons[d].alert ? " class='needs'" : "";
+    /* `col-X` on every cell, and `day-<iso>` on the row. Both exist for the PHONE: the desktop
+       table is read by position, but once it reflows there are no column headings left, so each
+       card has to say what it is (`td.col-A::before`) and the day strip has to be able to find
+       one row and show it. Costs nothing on desktop and saves a second markup path. */
+    const needs = " class='dayrow day-" + d + (cons[d] && cons[d].alert ? " needs" : "") + "'";
     h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span></td>";
     for (const [p] of PODROWS)
-      h += "<td style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
-    h += "<td data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
-    h += "<td data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
+      h += "<td class='col-" + p + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
+    h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
+    h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
-  return h + "</table>";
+  return dayStripHTML(dates) + h + "</table>";
+}
+
+/* THE DAY STRIP — phone only, hidden by CSS above 760px.
+   A week of Cover is seven days by seven columns, and 49 cells will not go on a phone however
+   they are arranged. The Pod Board solved this long ago by showing ONE day and keeping a row of
+   day pills (`mobileDay`); this is the same idea, so somebody moving between the two boards is
+   not learning a second way to get about. The pills are drawn even on desktop and hidden there,
+   rather than being conditional on a width the JS would have to measure and re-measure. */
+let mobileDay = 0;
+function dayStripHTML(dates){
+  return "<div class='daypills'>" + dates.map((d, i) => {
+    const dt = new Date(d + "T12:00:00");
+    const wk = dt.getDay() === 0 || dt.getDay() === 6;
+    return "<button class='daypill" + (i === mobileDay ? " active" : "") + (wk ? " wknd" : "") +
+      "' data-di='" + i + "'>" + DAYS[i] +
+      "<span>" + dt.getDate() + "</span></button>";
+  }).join("") + "</div>";
 }
 
 function renderRota(){
@@ -1399,6 +1505,14 @@ function renderRota(){
    changed. Called after every innerHTML — the handlers are on the elements, not delegated, so
    they die with the markup that carried them. */
 function wireGrid(root){
+  /* The day strip. Redrawing the whole grid to change which day shows would throw away the drag
+     handlers and any open cell, so it just moves two classes instead. */
+  root.querySelectorAll(".daypill").forEach(p => p.onclick = () => {
+    mobileDay = +p.dataset.di;
+    root.querySelectorAll(".daypill").forEach(q => q.classList.toggle("active", q === p));
+    root.querySelectorAll("tr.dayrow").forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
+  });
+  root.querySelectorAll("tr.dayrow").forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
   root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => editCell(c.dataset.d, c.dataset.k, c));
   /* Badge drag: a consultant carries their badge onto another pod and the two exchange pods.
      This is the ONE edit open to any consultant without unlocking — everything else is rota-master. */
@@ -1960,6 +2074,9 @@ $("#btnJuniors").onclick = () => {
      rest. This is the whole reason the toolbar fits on a phone now. */
   $("#btnJuniors").classList.toggle("on", showJun);
   $("#btnJuniors").title = showJun ? "Hide the residents" : "Show the residents in each pod";
+  /* On the body as well as in the variable: the phone layout drops from two columns to one when
+     residents are showing, and that is a CSS decision, not a JS one. */
+  document.body.classList.toggle("showjun", showJun);
   renderGrids();
 };
 /* One shield, one inset menu, one password — the resident board's pattern exactly. The gate
