@@ -399,6 +399,15 @@ body.teamopen #teamPanel{display:block}
    `border-collapse:separate` because collapsed borders are owned by the table rather than the
    cell, and a sticky cell carries its own border away with it, leaving a gap that flickers as you
    scroll. The seam is drawn with box-shadow instead, which travels with the cell. */
+/* THE DAY STRIP IS PHONE-ONLY, AND HAS TO BE HIDDEN HERE (Ali, 9 Aug: "theres a weird day grey
+   boxes showing above header row on desktiop now"). It is drawn into every grid unconditionally so
+   the JS never has to measure a viewport, which is right — but the rules that style it all live in
+   the max-width:760px block, so on a desktop the browser was left rendering a bare div of seven
+   default-styled buttons above the table. My comment at dayStripHTML claimed it was "hidden by CSS
+   above 760px" and I never wrote the line that hid it. Default OFF, and the media query turns it
+   on: a thing that appears only on phones should be absent by default, not present by default and
+   removed, or exactly this happens again. */
+.daypills{display:none}
 .rota-wrap{overflow:auto;max-height:calc(100vh - 168px);overscroll-behavior:contain}
 table.rota{border-collapse:separate;border-spacing:0}
 table.rota th{position:sticky;top:0;z-index:30;background:var(--card);
