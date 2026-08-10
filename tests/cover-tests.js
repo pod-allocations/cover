@@ -1027,6 +1027,15 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
     const grid = win.document.querySelector("#weekGrid");
     const pills = [...grid.querySelectorAll(".daypill")];
     ok("a phone gets a day strip, one pill per day", pills.length === 7, pills.length + " pills");
+    /* It is DRAWN unconditionally, so the JS never has to measure a viewport — which means the
+       hiding is entirely the stylesheet's job, and on 9 Aug it was not done: every .daypills rule
+       sat inside the max-width:760px block, so a desktop rendered seven default-styled buttons
+       above the table ("theres a weird day grey boxes showing above header row on desktiop now").
+       Default OFF, media query turns it on. */
+    ok("...but on a desktop it is hidden, and hidden by DEFAULT rather than by exception",
+      /\n\.daypills\{display:none\}/.test(
+        require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8")
+          .split("<style>")[1].split("</style>")[0]));
     ok("exactly one day is shown at a time",
       grid.querySelectorAll("tr.dayrow.mday").length === 1);
     ok("and it is Monday to start with",
