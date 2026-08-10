@@ -1013,6 +1013,72 @@ const KEYS = { r:"https://flow/read", s:"https://flow/save", cr:"https://flow/cr
       win.document.querySelectorAll("#logBox .logrow").length + " rows");
   }
 
+  console.log("The phone layout, and the table's own scroll pane");
+  {
+    /* Ali, 9 Aug: "the cover site doesnt render at all well on mobile". Seven days by seven
+       columns is 49 cells and will not go on a phone however it is arranged, so one day shows and
+       a strip of pills moves between them — the Pod Board's `mobileDay`, reused rather than
+       reinvented, so nobody learns a second way to get about.
+
+       jsdom does no layout, so none of this can assert what it LOOKS like. It asserts the things
+       that make the look possible: the strip exists, exactly one day is shown, the pills move it,
+       and every cell carries the class its ::before label hangs off. */
+    const { api, win } = await loadPage({ url: TEST, testMode: true, keys: KEYS });
+    const grid = win.document.querySelector("#weekGrid");
+    const pills = [...grid.querySelectorAll(".daypill")];
+    ok("a phone gets a day strip, one pill per day", pills.length === 7, pills.length + " pills");
+    ok("exactly one day is shown at a time",
+      grid.querySelectorAll("tr.dayrow.mday").length === 1);
+    ok("and it is Monday to start with",
+      grid.querySelectorAll("tr.dayrow")[0].classList.contains("mday"));
+    pills[3].click();
+    ok("tapping a pill moves the day, without redrawing the grid",
+      grid.querySelectorAll("tr.dayrow")[3].classList.contains("mday") &&
+      grid.querySelectorAll("tr.dayrow.mday").length === 1);
+    ok("...and the pill itself shows which day you are on",
+      pills[3].classList.contains("active") && !pills[0].classList.contains("active"));
+    ok("the weekend pills are marked, so Saturday reads as Saturday",
+      pills[5].classList.contains("wknd") && pills[6].classList.contains("wknd") &&
+      !pills[0].classList.contains("wknd"));
+
+    /* Every cell has to say what it is once the column headings are gone. */
+    const row = grid.querySelector("tr.dayrow.mday");
+    ok("every cell carries its own column class",
+      ["A","B","C","D","E"].every(p => row.querySelector("td.col-" + p)) &&
+      !!row.querySelector("td.col-oncall") && !!row.querySelector("td.col-fgh"));
+    ok("an empty Fairfield is marked so it can be hidden rather than left blank",
+      [...grid.querySelectorAll("td.col-fgh")].some(t => t.classList.contains("empty")) ||
+      [...grid.querySelectorAll("td.col-fgh")].every(t => t.textContent.trim() && t.textContent.trim() !== "—"));
+
+    const css = require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8")
+      .split("<style>")[1].split("</style>")[0];
+    /* DOM order is A B C D E oncall fgh. The row wanted is E beside Fairfield with on call
+       spanning under it, so `order` reshuffles them rather than a second markup path existing. */
+    ok("Fairfield is ordered up beside Pod E, and on call spans beneath",
+      /td\.col-fgh\{order:1/.test(css) && /td\.col-oncall\{order:2;grid-column:1 \/ -1/.test(css));
+    ok("residents showing drops the grid to one column",
+      /body\.showjun tr\.dayrow\.mday\{grid-template-columns:1fr\}/.test(css));
+
+    /* The desktop scroll pane. Ali: "surely would be better if it was just the table that scrolled
+       within its pane". These three rules only work together — see the note in the stylesheet. */
+    ok("the table scrolls inside its own pane, so the page cannot slide past the topbar",
+      /\.rota-wrap\{overflow:auto/.test(css));
+    ok("the header row sticks to the PANE, not the viewport",
+      /table\.rota th\{position:sticky;top:0/.test(css));
+    ok("and the day column is pinned left, so you can still tell which day you are reading",
+      /table\.rota td\.rowh\{position:sticky;left:0/.test(css));
+    ok("borders are separate, or a sticky cell carries its border away and the seam flickers",
+      /table\.rota\{border-collapse:separate/.test(css));
+    ok("the phone hands the pane back — a grid has nothing to scroll sideways",
+      /\.rota-wrap\{overflow:visible;max-height:none/.test(css));
+
+    /* The bar. One cause, one pair of rules. */
+    ok("button labels cannot wrap, which is what made the bar ragged",
+      /button\.btn,\.hbtn\{white-space:nowrap\}/.test(css));
+    ok("and everything in the week bar is one height",
+      /\.weekbar>button,\.weekbar \.btn\{min-height:36px/.test(css));
+  }
+
   console.log("The pills line up down the column");
   {
     /* Ali, 8 Aug: "its annoyinh to my eyes the 18 and COD pills dont quite align". They followed
