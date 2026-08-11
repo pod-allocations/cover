@@ -9,7 +9,7 @@
      did not, so every browser holding the old copy carried on using it — and that copy has no log
      rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
      thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
-<link rel="stylesheet" href="core.css?v=20260809-02">
+<link rel="stylesheet" href="core.css?v=20260810-02">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -407,7 +407,7 @@ body.teamopen #teamPanel{display:block}
    above 760px" and I never wrote the line that hid it. Default OFF, and the media query turns it
    on: a thing that appears only on phones should be absent by default, not present by default and
    removed, or exactly this happens again. */
-.daypills{display:none}
+.daystrip{display:none}
 .rota-wrap{overflow:auto;max-height:calc(100vh - 168px);overscroll-behavior:contain}
 table.rota{border-collapse:separate;border-spacing:0}
 table.rota th{position:sticky;top:0;z-index:30;background:var(--card);
@@ -440,14 +440,39 @@ button.btn,.hbtn{white-space:nowrap}
      between them. The pane stops being a scroll container here; there is nothing to scroll
      sideways once the table is a grid. */
   .rota-wrap{overflow:visible;max-height:none;border:0;background:transparent}
-  .daypills{display:flex;gap:3px;margin:0 0 .6rem}
-  .daypill{flex:1;min-width:0;background:var(--card);border:0.5px solid var(--line);border-radius:9px;
-    padding:.4rem .1rem;font:inherit;font-size:.62rem;font-weight:600;line-height:1.25;color:var(--ink);
-    cursor:pointer;text-align:center}
-  .daypill span{display:block;font-size:.58rem;font-weight:500;color:var(--muted)}
-  .daypill.wknd{background:var(--hair);color:var(--muted)}
-  .daypill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .daypill.active span{color:rgba(255,255,255,.75)}
+  /* THE PILLS THEMSELVES ARE NOT STYLED HERE any more — dayStrip() in core.js carries its own
+     inline styling, which is what stops this page and the Pod Board drifting apart again. All
+     that is left is what a shared component cannot know: that the strip is phone-only here, and
+     how it behaves once it is sticky.
+
+     FROSTED (Ali, 10 Aug: "they look a bit weird when scrolling up and stuff disappears under
+     header"). A solid strip cuts a consultant's initials dead at the seam; blurring lets them pass
+     under it so the eye can follow where they went. Already this design's language — the desktop
+     sidebar has used backdrop-filter blur(16px) from the start. Flat colour is declared first so a
+     browser without backdrop-filter gets an opaque strip rather than text over moving names. */
+  .daystrip{display:flex;position:sticky;top:0;z-index:30;margin:0 -0.7rem;padding:.45rem .7rem .55rem;
+    background:var(--bg);
+    background:rgba(246,246,244,.62);
+    backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);
+    border-bottom:1px solid transparent;transition:border-color .18s}
+  body.scrolled .daystrip{border-bottom-color:rgba(23,24,28,.10)}
+
+  /* THE WEEK CARD, matching the Pod Board's (Ali, 10 Aug: "the residents one looks way slicker so
+     please change the cover to look like this"). Same grid, same rounded card, same circle arrows
+     — this is a straight lift of the rule from the resident page rather than an approximation of
+     it, because two headers that merely look similar are how the strips ended up different. */
+  .weekbar{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem .4rem;align-items:center;
+    background:#fff;border:0.5px solid rgba(29,31,36,.05);box-shadow:0 1px 3px rgba(29,31,36,.10);
+    border-radius:16px;padding:.55rem .6rem;margin-bottom:.5rem}
+  .weekbar b{min-width:0;font-size:1.05rem;white-space:nowrap;text-align:center;cursor:default}
+  .weekbar b small{display:block;font-size:.66rem;color:#8a8f98;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .navarrow{border:0;background:var(--hair);width:42px;height:42px}
+  /* Hidden on phones, exactly as the Pod Board hides it — the week you are on is said by the tint
+     below instead (Ali, 10 Aug: "I just wante dthe week date badge slighlty different visually
+     ehen on current week and fiture weeks as a hint"). Wordless, per hard rule 2, and nothing
+     moves or resizes as you page between weeks. */
+  .weekbar #btnToday{display:none}
+  body[data-week="now"] .weekbar{background:var(--accent-bg);border-color:var(--accent)}
 
   table.rota,table.rota tbody{display:block}
   table.rota tr:first-child{display:none}            /* the column headings; each card says its own */
@@ -480,8 +505,19 @@ button.btn,.hbtn{white-space:nowrap}
   /* Residents on: three name pills will not sit in half a phone, so the grid drops to one column
      and the day scrolls. The layout follows the content instead of fighting it — one class, no
      second layout to keep in step. */
-  body.showjun tr.dayrow.mday{grid-template-columns:1fr}
-  body.showjun td.col-oncall{grid-column:auto}
+  /* TWO-UP STAYS TWO-UP WITH RESIDENTS SHOWING (Ali, 10 Aug: "on cover from what i can see the
+     residents wouldnt spill outside even if kept as 2 pods together given their size, try that
+     please"). He was right, and it measures out: at 393px each column is about 182px, the shift
+     badge and its gap take 34, leaving ~148 for a surname where the longest on a normal week
+     (Shanmugham) needs about 68. This used to drop to one column whenever residents were shown,
+     which halved how much of the day you could see for no reason anyone had checked.
+     Double-barrelled names are the only ones that run out of room, so they ellipsis rather than
+     push the column wide and break the grid. */
+  body.showjun tr.dayrow .rpill{min-width:0}
+  body.showjun tr.dayrow .rpill .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  /* On call spans the full width whether or not residents are showing. It used to stop spanning
+     in that case, which was a consequence of the grid dropping to one column — now that it does
+     not, the exception has nothing left to correct. */
   tr.dayrow .rpills{margin-top:.4rem}}
 </style>
 
@@ -594,7 +630,7 @@ button.btn,.hbtn{white-space:nowrap}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260809-02"></script>
+<script src="core.js?v=20260810-02"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
 /* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js, and on the live
@@ -1466,29 +1502,43 @@ function weekTableHTML(mondayISO){
     h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
     h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
-  return dayStripHTML(dates) + h + "</table>";
+  return "<div class='daystrip-slot'></div>" + h + "</table>";
 }
 
-/* THE DAY STRIP — phone only, hidden by CSS above 760px.
-   A week of Cover is seven days by seven columns, and 49 cells will not go on a phone however
-   they are arranged. The Pod Board solved this long ago by showing ONE day and keeping a row of
-   day pills (`mobileDay`); this is the same idea, so somebody moving between the two boards is
-   not learning a second way to get about. The pills are drawn even on desktop and hidden there,
-   rather than being conditional on a width the JS would have to measure and re-measure. */
+/* THE DAY STRIP LIVES IN core.js NOW — dayStrip(), shared with the Pod Board.
+   Ali, 10 Aug, told that the two boards had two different strips: "tey dont need to be thoguh do
+   they, and shiould be." They did not, and they should be. What used to be here was this page's
+   own dayStripHTML: seven small two-line pills, no status dots, weekend greyed. The Pod Board had
+   a scrolling strip of wide pills WITH dots. Nobody chose that split; it just happened, the way
+   two copies of anything drift.
+
+   This page builds its grid as a string, and dayStrip() returns a real element, so the string
+   leaves a slot behind and wireGrid puts the component into it. That is the only reason the slot
+   exists — it is not a placeholder for anything else. */
 let mobileDay = 0;
-function dayStripHTML(dates){
-  return "<div class='daypills'>" + dates.map((d, i) => {
-    const dt = new Date(d + "T12:00:00");
-    const wk = dt.getDay() === 0 || dt.getDay() === 6;
-    return "<button class='daypill" + (i === mobileDay ? " active" : "") + (wk ? " wknd" : "") +
-      "' data-di='" + i + "'>" + DAYS[i] +
-      "<span>" + dt.getDate() + "</span></button>";
-  }).join("") + "</div>";
-}
 
 function renderRota(){
   const dates = Array.from({length:7}, (_, i) => addDays(curWeek, i));
-  $("#weekTitle").textContent = fmt(curWeek) + " – " + fmt(dates[6]) + " " + new Date(dates[6] + "T12:00:00").getFullYear();
+  /* The year drops to the second line instead of trailing the dates. The Pod Board puts its
+     "tap to pick a date" hint there; this page has no date picker, so it must not borrow that
+     wording — a subtitle that offers something the page cannot do is worse than no subtitle. The
+     year is the honest thing to put in the space, and it takes the clutter off the title. */
+  const _yr = document.createElement("small");
+  _yr.textContent = String(new Date(dates[6] + "T12:00:00").getFullYear());
+  $("#weekTitle").textContent = fmt(curWeek) + " – " + fmt(dates[6]);
+  $("#weekTitle").append(_yr);
+  const _now = $("#btnToday");
+  if (_now) {
+    const _today = new Date();
+    const _iso = _today.getFullYear() + "-" +
+      String(_today.getMonth() + 1).padStart(2, "0") + "-" +
+      String(_today.getDate()).padStart(2, "0");
+    const isNow = curWeek === mondayOf(_iso);
+    _now.setAttribute("aria-current", isNow ? "true" : "false");
+    _now.title = isNow ? "You are on this week" : "Jump back to this week";
+    document.body.dataset.week =
+      isNow ? "now" : (curWeek > mondayOf(_iso) ? "ahead" : "past");
+  }
   let h = weekTableHTML(curWeek);
   /* If the cover on screen was worked out from anything other than the live rota, that goes
      ABOVE the grid, not on a settings page nobody opens. Every name below is only as right as
@@ -1515,13 +1565,26 @@ function renderRota(){
    they die with the markup that carried them. */
 function wireGrid(root){
   /* The day strip. Redrawing the whole grid to change which day shows would throw away the drag
-     handlers and any open cell, so it just moves two classes instead. */
-  root.querySelectorAll(".daypill").forEach(p => p.onclick = () => {
-    mobileDay = +p.dataset.di;
-    root.querySelectorAll(".daypill").forEach(q => q.classList.toggle("active", q === p));
-    root.querySelectorAll("tr.dayrow").forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
-  });
-  root.querySelectorAll("tr.dayrow").forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
+     handlers and any open cell, so picking a day moves classes and re-draws the strip alone.
+
+     The dates and the attention flag are both read back off the rows rather than passed in: the
+     rows already carry data-date, and weekTableHTML has already worked out which days need
+     attention and marked them `needs`. Deriving both from the DOM means the two callers of
+     wireGrid — this page and Look ahead — need no new argument, and there is no second copy of
+     "which days are a problem" to fall out of step with the first. */
+  const rows = Array.from(root.querySelectorAll("tr.dayrow"));
+  const dates = rows.map(r => { const c = r.querySelector("td[data-date]"); return c ? c.dataset.date : ""; });
+  const showDay = () => rows.forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
+  const drawStrip = () => {
+    const slot = root.querySelector(".daystrip-slot, .daystrip");
+    if (!slot || typeof dayStrip !== "function") return;
+    slot.replaceWith(dayStrip(dates, mobileDay, {
+      dot: (iso, i) => rows[i] && rows[i].classList.contains("needs") ? "soft" : "ok",
+      onPick: i => { mobileDay = i; showDay(); drawStrip(); }
+    }));
+  };
+  drawStrip();
+  showDay();
   root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => editCell(c.dataset.d, c.dataset.k, c));
   /* Badge drag: a consultant carries their badge onto another pod and the two exchange pods.
      This is the ONE edit open to any consultant without unlocking — everything else is rota-master. */
