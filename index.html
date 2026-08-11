@@ -9,7 +9,7 @@
      did not, so every browser holding the old copy carried on using it — and that copy has no log
      rules in it at all. The page looked exactly as broken as before the fix, which is a miserable
      thing to debug because the HTML is demonstrably new and the stylesheet silently is not. -->
-<link rel="stylesheet" href="core.css?v=20260810-03">
+<link rel="stylesheet" href="core.css?v=20260810-04">
 <style>
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
@@ -630,7 +630,7 @@ button.btn,.hbtn{white-space:nowrap}
   <button class="hbtn ghost" id="btnTestReset" title="Throw away the changes made here and re-read the live cover">Reload live cover</button>
 </div>
 <div id="hovercard"></div>
-<script src="core.js?v=20260810-03"></script>
+<script src="core.js?v=20260810-04"></script>
 <script src="k.js?v=20260804-02"></script>
 <script>
 /* ONE SET OF KEYS FOR THE SITE (7 Aug). This folder kept its own copy of k.js, and on the live
@@ -768,8 +768,22 @@ async function load(){
   state("saved");
   whoBtn();
   await loadC();
+  /* The repair writes itself back, once, the first time anybody opens the page. It has to: nothing
+     else writes this file — the sync is the only other writer and it is the thing that is stuck —
+     so waiting for a rota-master to happen to make an edit would leave the board stale for days.
+     It is our own key being renamed, no allocation is touched, and it can only ever run once
+     because the old key is gone afterwards. */
+  if (typeof coverNeedsRepairSave !== "undefined" && coverNeedsRepairSave && COVER_SAVE) {
+    coverNeedsRepairSave = false;
+    clog("Reset-address list renamed so the nightly sync can run again", "auto", null, " (repair)");
+    try { await saveC(); } catch (e) {}
+  }
   renderAll();
 }
+
+/* Set by loadC() when it renames the reset list off the old `admins` key; cleared by the one
+   repair save that follows. Declared here, above both, rather than left to run-order luck. */
+let coverNeedsRepairSave = false;
 
 /* ── The COVER STORE: its own SharePoint file behind its own flow keys, holding one thing —
    which consultant covers which pod. Its whole shape is:
@@ -793,7 +807,7 @@ async function load(){
    never have one, so writing consultants' feedback into that file is not something it can do, and
    the isolation is worth more than one shared array. */
 const COVER_ONLY = ["days","map","names","fair","window","source","pw","log","v","savedAt","savedBy",
-                    "acked","notices","admins","pubWeeks","pubHighWater","cap","hard","syncRequest",
+                    "acked","notices","resetAdmins","pubWeeks","pubHighWater","cap","hard","syncRequest",
                     "feedback"];
 /* pw is on that list so a carve that moved the old rota-master PIN in here is not thrown away,
    but nothing on this page reads it: editing needs a name, not a password (6 Aug). */
@@ -812,6 +826,38 @@ async function loadC(){
       try { const t = localStorage.getItem(TEST_KEY); if (t) j = JSON.parse(t); } catch(e){}
     }
     cdata = (j && j.v) ? j : seedC();
+    /* ── ONE NAME, TWO MEANINGS — repaired 11 Aug ──────────────────────────────────────────────
+       The nightly cover sync had been refusing to run since 8 Aug, so the board sat on the answer
+       it worked out that morning (Pod A showing Nick when the workbook said Ozerah). It was not
+       crashing; it was stopping on purpose:
+
+         "The cover store has consultant rota paperwork in it again: admins. Something is writing
+          it back. Fix that before syncing — this script would drop those keys."
+
+       cover_sync.py knows `admins` as the CONSULTANT ROTA's admin list, carved out of this file on
+       4 Aug and never to return. This page then gave the same name to something entirely
+       different: the e-mail addresses the password reset can send to. The guard cannot tell two
+       meanings of one word apart, so it did the safe thing and stopped rather than overwrite a
+       file it did not understand. It was right to.
+
+       Blinding the guard would have been the one-line fix and the wrong one — it exists to catch
+       exactly the leak it appeared to be seeing. So the reset list takes a name of its own, and
+       the guard keeps its meaning intact.
+
+       Adopted only when the stored value looks like OURS — a non-empty list of e-mail addresses.
+       Anything else is left exactly where it is and reported, because a real leak of consultant
+       rota paperwork must still trip the guard tomorrow. */
+    if (cdata && Array.isArray(cdata.admins) && !cdata.resetAdmins) {
+      var looksLikeReset = cdata.admins.length &&
+        cdata.admins.every(function(x){ return typeof x === "string" && x.indexOf("@") > 0; });
+      if (looksLikeReset) {
+        cdata.resetAdmins = cdata.admins.slice();
+        delete cdata.admins;
+        coverNeedsRepairSave = true;
+      } else {
+        console.warn("cover store holds an `admins` key that is not the reset list — left alone");
+      }
+    }
     /* A store carved before this page was updated, or one the carve hasn't reached yet: take
        the allocation out of the old wrapper so the page draws rather than showing nothing.
        This is a read-side kindness only — the page never writes the wrapper back. */
@@ -998,7 +1044,7 @@ function renderSetup(){
   /* WHO CAN ALLOW A RESET. Full addresses only here, behind the shield — the lock screen shows them
      masked, because anybody with the link reaches the lock screen and there is no reason to publish
      consultants' email addresses to them. */
-  const admins = (CR().admins || []);
+  const admins = (CR().resetAdmins || []);
   h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>WHO CAN ALLOW A PASSWORD RESET</div>" +
     admins.map((a, n) => "<div class='nmrow'><input class='nmin admin' data-n='" + n + "' value='" + esc(a) + "'>" +
       "<button class='btn sec adminrm' data-n='" + n + "'>Remove</button></div>").join("") +
@@ -1042,25 +1088,25 @@ function renderSetup(){
   num($("#setHard"), "hard", 0, 0.5, "Weekend override");
   const sy = $("#btnSync"); if (sy) sy.onclick = syncNow;
   box.querySelectorAll(".admin").forEach(inp => inp.onchange = () => {
-    const list = (CR().admins || []).slice();
+    const list = (CR().resetAdmins || []).slice();
     const v = (inp.value || "").trim();
     if (!v || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { renderSetup(); toast("That isn't an email address"); return; }
     list[+inp.dataset.n] = v;
-    setSetting("admins", list, "Reset admin changed to " + v);
+    setSetting("resetAdmins", list, "Reset admin changed to " + v);
   });
   box.querySelectorAll(".adminrm").forEach(b => b.onclick = () => {
-    const list = (CR().admins || []).slice();
+    const list = (CR().resetAdmins || []).slice();
     /* Removing the last one would leave nobody able to allow a reset, which is the lockout this
        whole mechanism exists to prevent. */
     if (list.length <= 1) { toast("Keep at least one address, or nobody can allow a reset"); return; }
     const [gone] = list.splice(+b.dataset.n, 1);
-    setSetting("admins", list, "Reset admin removed: " + gone);
+    setSetting("resetAdmins", list, "Reset admin removed: " + gone);
   });
   const add = $("#adminAdd");
   if (add) add.onclick = () => {
     const el = $("#adminNew"), v = (el.value || "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast("That isn't an email address"); return; }
-    setSetting("admins", (CR().admins || []).concat([v]), "Reset admin added: " + v);
+    setSetting("resetAdmins", (CR().resetAdmins || []).concat([v]), "Reset admin added: " + v);
   };
 }
 
@@ -2395,7 +2441,7 @@ const maskEmail = a => {
 };
 $("#lockReset").onclick = e => {
   e.preventDefault();
-  const admins = ((CR() || {}).admins || []);
+  const admins = ((CR() || {}).resetAdmins || []);
   if (!admins.length) { $("#lockMsg").textContent = "No reset address is set up yet."; return; }
   const sel = $("#lockAdmin");
   sel.innerHTML = admins.map((a, n) => "<option value='" + n + "'>" + esc(maskEmail(a)) + "</option>").join("");
@@ -2403,7 +2449,7 @@ $("#lockReset").onclick = e => {
   $("#lockReset").style.display = "none";
 };
 $("#lockSend").onclick = async () => {
-  const admins = ((CR() || {}).admins || []);
+  const admins = ((CR() || {}).resetAdmins || []);
   const n = +$("#lockAdmin").value;
   if (!admins[n]) return;
   if (!COVER_RESET) { $("#lockMsg").textContent = "The reset flow isn't connected yet."; return; }
