@@ -1260,6 +1260,33 @@ function attnItems(){
       act: "Open the day", alt: "Leave it empty"
     });
   }
+  /* ── THE BOARD HAS STOPPED BEING UPDATED ──────────────────────────────────────────────────────
+     Added 11 Aug, and it is the fault that hid all the others. The nightly sync stopped on 8 Aug
+     and the board carried on looking completely healthy for three days — same layout, same names,
+     no warning anywhere — while quietly showing a three-day-old answer. Ali only found it by
+     noticing a wrong name on a pod. Nothing in the product was watching whether the thing that
+     feeds it was still running.
+
+     Deliberately NOT acknowledgeable. A stale board is not a note to tick off; it is either true
+     or it has gone away, and the only thing that clears it is the sync running again. Something
+     you can dismiss while it is still wrong is exactly how three days pass.
+
+     36 hours, not 24: the job runs daily, so a single missed night is a blip and two is a fault.
+     Reading `fetched` rather than `savedAt` because it is the WORKBOOK being re-read that matters
+     — a save that changed nothing still proves the chain is alive. */
+  const fetched = (cons.source || {}).fetched;
+  const ageHrs = fetched ? (Date.now() - Date.parse(fetched)) / 3600000 : null;
+  if (ageHrs == null || ageHrs > 36) {
+    const days = ageHrs == null ? null : Math.floor(ageHrs / 24);
+    out.push({ kind: "stale", id: "stale",
+      title: ageHrs == null ? "This board has never been worked out from the rota"
+                            : "This board has not been updated for " + (days >= 1 ? days + " day" + (days === 1 ? "" : "s") : Math.round(ageHrs) + " hours"),
+      detail: "The nightly job reads the consultant rota workbook and works out the cover. It has "
+            + "not done so since " + (fetched ? shortDate(String(fetched).slice(0, 10)) : "ever")
+            + ", so what is on screen may not match the rota. Everything below this may be out of date too.",
+      act: "Sync now" });
+  }
+
   const miss = unnamed();
   if (miss.length)
     out.push({ kind: "name", id: "unnamed", title: miss.length + " consultant" +
@@ -1323,6 +1350,9 @@ function renderAttn(){
           ackBtn = row.querySelector(".attnack");
     if (doBtn) doBtn.onclick = () => {
       if (it.kind === "day") { aheadWeek = mondayOf(it.date); showTab("ahead"); }
+      /* A stale board's one useful action is to make it not stale. Setup already owns Sync now —
+         going there rather than duplicating the button keeps one way to do it. */
+      else if (it.kind === "stale") showTab("setup");
       else showTab("staff");
     };
     if (altBtn) altBtn.onclick = () => leaveEmpty(it.date);
