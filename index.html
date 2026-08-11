@@ -1057,6 +1057,31 @@ function renderSetup(){
     "<div class='nmrow'><input class='nmin' id='adminNew' placeholder='Add an address' autocomplete='off'>" +
     "<button class='btn sec' id='adminAdd'>Add</button></div></div>";
 
+  /* ── THE SAVING LINK ───────────────────────────────────────────────────────────────────────────
+     Added 11 Aug, after Cover moved to consultants.salford.icu and quietly went read-only.
+
+     k.js on this domain hands out `r`, `cr` and `fb` — three READ keys. The saving key is
+     deliberately not among them, and must not be: k.js is served publicly here, so anything in it
+     can be read by anyone who opens the site, and the saving key is the write capability for the
+     whole cover file. Keeping it out is correct.
+
+     It therefore lives per browser, and browser storage does not follow a domain change — so the
+     key set up long ago on rota.salford.icu stayed there, and on the new address every edit looked
+     like it worked and then vanished. Until now the only way to set it was to visit the page with
+     ?cs=… on the end, which puts a write credential into the address bar, browser history and
+     anything reading a referrer. That is a poor place for it.
+
+     So: a field, like the resident board has had all along. type=password so it is not shouted
+     across a shared screen, autocomplete off so no manager offers to remember it, and the value is
+     never written to the log — only the fact that somebody set one. */
+  h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>SAVING LINK</div>" +
+    "<div class='hint' style='margin-bottom:.6rem'>" +
+      (canSave() ? "This browser can save changes."
+                 : "This browser can read the cover but <b>cannot save changes</b>. Paste the saving link to fix it.") +
+    "</div>" +
+    "<div class='nmrow'><input class='nmin' id='saveLink' type='password' placeholder='Paste the saving link' autocomplete='off' spellcheck='false'>" +
+    "<button class='btn sec' id='saveLinkSet'>Set</button></div></div>";
+
   /* The naming panel used to sit here, and the unmatched-initials card with it. Both have moved:
      the names to the Staff page, where they are a place you can go rather than a panel that
      appears and disappears, and the nagging to the Attention page (Ali, 8 Aug: "I'd rather those
@@ -1113,6 +1138,24 @@ function renderSetup(){
     const el = $("#adminNew"), v = (el.value || "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast("That isn't an email address"); return; }
     setSetting("resetAdmins", (CR().resetAdmins || []).concat([v]), "Reset admin added: " + v);
+  };
+
+  /* Setting the saving link. The value goes straight into this browser's own storage under the
+     key the page already reads at startup, and NOWHERE else — not the cover store, not the log,
+     not the address bar. What gets logged is that somebody set one, which is the accountable fact;
+     the link itself is a credential and writing it into a shared file would hand every reader the
+     ability to overwrite the rota.
+     Checked for shape only. A wrong link would otherwise sit there looking set and fail silently
+     on the first save, which is exactly the failure being fixed. */
+  const slBtn = $("#saveLinkSet");
+  if (slBtn) slBtn.onclick = () => {
+    const el = $("#saveLink"), v = (el.value || "").trim();
+    if (!/^https:\/\/[^\s]+$/i.test(v)) { toast("That doesn't look like a link"); return; }
+    try { localStorage.setItem("podCS", v); } catch (e) { toast("This browser won't store it"); return; }
+    el.value = "";
+    clog("Saving link set on a browser", "manual", null, " (Setup)");
+    toast("Saved — this browser can now save changes");
+    setTimeout(() => location.reload(), 700);
   };
 }
 
