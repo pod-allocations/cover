@@ -1287,6 +1287,34 @@ function attnItems(){
       act: "Sync now" });
   }
 
+  /* ── A DAY THAT WAS ALREADY CIRCULATED HAS MOVED ──────────────────────────────────────────────
+     The swap itself is already done, and rightly — the rota decided it, and stopping a tired
+     registrar at 5am to approve it would be friction they click through every time (Ali, 11 Aug:
+     "Are you saying it should just swap OC in as its a simple swap wihtout asking - thats better").
+
+     This is not asking permission. It is the telling. People were handed one version and the board
+     now shows another, and until today nothing anywhere said so — the allocator only print()ed it
+     into a run log nobody opens.
+
+     So the two actions are both about what happens NEXT, not about whether to allow it:
+       Tell the team   it stands; mark it as said, and it leaves this list.
+       Put it back     restore what was circulated, because the ward has already worked to it.
+     There is no plain dismiss. Ticking away "the rota moved under people" without either telling
+     them or undoing it is the one outcome that helps nobody. */
+  for (const d of Object.keys(cons.days || {}).sort()) {
+    const ch = (cons.days[d] || {}).pubChanged;
+    if (!Array.isArray(ch) || !ch.length) continue;
+    if (seenAck["pub:" + d]) continue;
+    out.push({
+      kind: "pub", id: "pub:" + d, date: d,
+      title: shortDate(d) + " changed after it was circulated",
+      detail: ch.map(x => rowLabel(x.pod) + ": " + (nameOf(x.from) || "nobody") +
+                          " → " + (nameOf(x.to) || "nobody")).join(" · ") +
+              " — the rota was updated after this day went out, and the board has followed it.",
+      act: "Tell the team", alt: "Put it back"
+    });
+  }
+
   const miss = unnamed();
   if (miss.length)
     out.push({ kind: "name", id: "unnamed", title: miss.length + " consultant" +
@@ -1349,13 +1377,17 @@ function renderAttn(){
     const doBtn = row.querySelector(".attndo"), altBtn = row.querySelector(".attnalt"),
           ackBtn = row.querySelector(".attnack");
     if (doBtn) doBtn.onclick = () => {
+      /* "Tell the team" does not send anything — there is no list of who was told, and inventing
+         one would be a worse lie than saying nothing. What it does is record that a person took
+         responsibility for saying it, with their name on it, and take the item off the list. */
+      if (it.kind === "pub") { ack(it.id); return; }
       if (it.kind === "day") { aheadWeek = mondayOf(it.date); showTab("ahead"); }
       /* A stale board's one useful action is to make it not stale. Setup already owns Sync now —
          going there rather than duplicating the button keeps one way to do it. */
       else if (it.kind === "stale") showTab("setup");
       else showTab("staff");
     };
-    if (altBtn) altBtn.onclick = () => leaveEmpty(it.date);
+    if (altBtn) altBtn.onclick = () => (it.kind === "pub" ? putItBack(it.date) : leaveEmpty(it.date));
     if (ackBtn) ackBtn.onclick = () => ack(id);
   });
   paintAttnBadge();
@@ -1388,6 +1420,41 @@ async function leaveEmpty(date){
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
     try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Recorded"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
+    renderAttn(); renderAll();
+  });
+}
+
+/* PUT IT BACK. The rota moved a day that had already gone out; this restores what people were
+   actually given and tells the allocator to stop moving it.
+
+   `cur` only — never `auto`. The two are a deliberate pair: `auto` is what the algorithm thinks
+   and `cur` is what the unit is working to, and the whole ownership model depends on a human
+   decision changing the second without pretending the first never happened. Overwriting `auto`
+   here would erase the evidence that the rota and the board now disagree, which is precisely the
+   fact somebody may need next week.
+
+   `pinned` is what stops tonight's run undoing this. Without it the sync would re-apply the same
+   swap tomorrow morning and the item would reappear, which is how a board teaches people to
+   ignore it. */
+async function putItBack(date){
+  const cons = CR(); if (!cons || !cons.days[date] || !COVER_SAVE) return;
+  const rec = cons.days[date];
+  const ch = rec.pubChanged || [];
+  if (!ch.length) return;
+  ensureWho(async () => {
+    for (const x of ch) {
+      if (rec.cur) rec.cur[x.pod] = x.from;
+      clog(rowLabel(x.pod) + " put back to " + (nameOf(x.from) || "nobody") +
+           " as circulated", "manual", date, "",
+           { act: "set", subj: rowLabel(x.pod), facet: "consultant", from: x.to, to: x.from });
+    }
+    rec.pinned = true;
+    delete rec.pubChanged;
+    cdata.savedAt = new Date().toISOString();
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Put back"); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
     renderAttn(); renderAll();
   });
