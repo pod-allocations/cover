@@ -777,9 +777,22 @@ async function postLive(url, payload){
    Both checks fail SOFT: if the verifying read itself fails we do not block the save and do not
    claim success — we say we could not confirm it. A page that refuses to save because the network
    is flaky is worse than one that admits uncertainty. */
+/* DID THE LAST SAVE REACH THE WIRE? Two different falses come out of saveCover and the caller has
+   to tell them apart (12 Aug). A CONFLICT is refused BEFORE the post, so nothing was written and
+   the page can safely put the change back. "Couldn't confirm" happens AFTER it, and the write may
+   well have landed — putting the board back there would show the old name over a store holding the
+   new one, which is worse than the fault being fixed. A flag rather than a third return value,
+   because twelve call sites test this function for truthiness and a string like "refused" is
+   truthy. */
+let coverSaveWrote = false;
 async function saveCover(){
-  if (!COVER_SAVE || !cdata) { toast("Cover store not connected — nothing was saved"); return false; }
-  if (TESTMODE) { await postLive(COVER_SAVE, JSON.stringify(cdata)); return true; }
+  coverSaveWrote = false;
+  /* canSave(), not !COVER_SAVE. Staging has never had a save key, so testing the key directly is
+     always wrong there — the reason this helper exists at all (6 Aug). The TESTMODE branch below
+     was unreachable while this line tested the key, which is how staging ended up unable to
+     rehearse a single one of the 11 Aug buttons. */
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return false; }
+  if (TESTMODE) { coverSaveWrote = true; await postLive(COVER_SAVE, JSON.stringify(cdata)); return true; }
   let live = null;
   try {
     const r = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
@@ -793,6 +806,7 @@ async function saveCover(){
   }
   const stamp = new Date().toISOString();
   cdata.savedAt = stamp;
+  coverSaveWrote = true;                       // past this line a rollback would be a lie
   await postLive(COVER_SAVE, JSON.stringify(cdata));
   /* Give the flow a moment to land before asking whether it did. */
   await new Promise(r => setTimeout(r, 900));
@@ -811,6 +825,43 @@ async function saveCover(){
      leaving the baseline behind would make the NEXT save look like somebody else's conflict. */
   coverSavedAtOnLoad = stamp;
   return true;
+}
+/* ── A REFUSED SAVE MUST NOT LEAVE THE CHANGE ON SCREEN — 12 Aug ────────────────────────────────
+   applyEdit, applySwap and applyFinSwap all move people and write the log BEFORE saveCover runs.
+   So when saveCover refused — somebody else saved while this page was open — the board went on
+   showing a swap that never happened and the log went on showing the two rows for it, while the
+   store held neither. The refusal itself was correct and said so; what was wrong is that the page
+   then kept the change. The toast is three seconds and #saveState is a word in the corner.
+
+   With Ali as the only editor a refusal was rare. With a consultant body it will not be, which is
+   precisely what go-live changes — so "the board is showing something that did not happen" stops
+   being a curiosity and becomes the thing somebody staffs a shift from.
+
+   The log is copied wholesale rather than counted: clog unshifts and caps the array at 300, so
+   counting rows added is wrong the moment the log is full. */
+function dayShot(cons, d){
+  const rec = (cons.days || {})[d];
+  return { d, rec: rec ? JSON.parse(JSON.stringify(rec)) : null,
+           log: (cdata && Array.isArray(cdata.log)) ? cdata.log.slice() : null };
+}
+/* Returns true when the change is safely stored. On false the day and the log are back as they
+   were and the page has been redrawn, so the caller can simply return. */
+async function saveOrPutBack(cons, shot){
+  let ok = false, threw = false;
+  try { ok = await saveCover(); } catch(e){ threw = true; }
+  if (ok) return true;
+  /* ONLY when nothing reached the wire. If the post went out and we merely could not confirm it,
+     the store may well hold the new version — reverting the screen would then be the lie, not the
+     fix. saveCover says so itself and the change stands. */
+  if (coverSaveWrote) { state("unsaved"); renderAll(); return false; }
+  if (shot.rec) cons.days[shot.d] = shot.rec; else delete (cons.days || {})[shot.d];
+  if (shot.log) cdata.log = shot.log;
+  state("unsaved");
+  /* saveCover has already said why it refused, and its sentence is the useful one. Only a thrown
+     error is unspoken for. */
+  if (threw) toast("Save failed — the change has been put back");
+  renderAll();
+  return false;
 }
 let data = null, cdata = null, showJun = false, curWeek = null, EDIT_MODE = false;
 const $ = s => document.querySelector(s);
@@ -1018,7 +1069,7 @@ const strayPaperwork = () => cdata
   : [];
 
 async function saveC(){
-  if (!COVER_SAVE || !cdata) return;
+  if (!canSave()) return;
   /* saveCover() stamps savedAt, because it is the value it then reads back to prove the write
      actually landed. Stamping it here as well would only mean checking our own homework. */
   /* Cover's keys, plus anything else already in the file, carried through untouched.
@@ -1333,7 +1384,7 @@ function renderSetup(){
 /* One way in for every setting on this page, so each one is saved, logged and re-rendered the same
    way rather than each control growing its own copy of that. */
 async function setSetting(key, value, msg){
-  const cons = CR(); if (!cons || !COVER_SAVE) { toast("Cover store not connected"); return; }
+  const cons = CR(); if (!cons || !canSave()) { toast("Cover store not connected"); return; }
   ensureWho(async () => {
     cons[key] = value;
     clog(msg, "manual", null, " (Setup)");
@@ -1349,7 +1400,7 @@ async function setSetting(key, value, msg){
    "run it soon", not "run it this second", and the button says so by going quiet rather than
    claiming success it cannot verify. */
 async function syncNow(){
-  const cons = CR(); if (!cons || !COVER_SAVE) { toast("Cover store not connected"); return; }
+  const cons = CR(); if (!cons || !canSave()) { toast("Cover store not connected"); return; }
   ensureWho(async () => {
     cons.syncRequest = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
     clog("Sync requested", "manual", null, " (Setup)");
@@ -1436,7 +1487,7 @@ let staffFind = "";
 const SORTED_GREY_DAYS = 3;
 /* Kinds whose row is re-derived from the world every time this function runs, so silencing one
    can only ever be temporary. Everything not on this list is a record of something that happened. */
-const LIVE_KINDS = ["stale", "backup", "name", "empty", "day", "pinned"];
+const LIVE_KINDS = ["stale", "backup", "name", "empty", "day", "pinned", "stray"];
 /* `sorted` is the new key; `acked` is what the same idea was called before 11 Aug. Read both so
    that anything already ticked off stays ticked, and write only the new one. */
 function sortedOf(cons, id){
@@ -1611,6 +1662,23 @@ function attnItems(){
       detail: "It was written beside it as " + sp.name + ". The usual copy is untouched but is now "
             + "a day older than it looks. Close it in Excel and tonight's run will replace it." });
 
+  /* ── SOMETHING THAT IS NOT COVER'S IS IN COVER'S FILE ─────────────────────────────────────────
+     strayPaperwork() has existed since the 4 Aug carve and was called by nothing, so the guard
+     CLAUDE.md leans on — "if a key outside the Cover list turns up in the Cover store, say so" —
+     was a safety net attached to nothing (found 12 Aug). The cost of it being silent is not
+     hypothetical: `admins` meaning two different things is what killed the nightly sync for three
+     days, and the page could have named the collision the morning it appeared.
+
+     It SAYS SO and does nothing else. The page never deletes what it does not understand — there
+     is no undo for a job plan — so this is a row, not a tidy-up. A live condition: it comes back
+     while the key is still there, and goes when the carve reaches it. */
+  const stray = strayPaperwork();
+  if (stray.length)
+    raw.push({ kind: "stray", id: "stray:" + stray.slice().sort().join(","),
+      title: "The cover file is holding something that isn't cover's",
+      detail: stray.join(" · ") + " — this file should hold the allocation and nothing else. "
+            + "Nothing has been changed or removed; it needs carving out deliberately, with a backup." });
+
   /* THE SORTED PASS. Everything above says what is true; this says what somebody has already dealt
      with. Kept as one place at the end rather than a check inside each push, because the old code
      did it three different ways in three different rows and that is how the stale board ended up
@@ -1700,7 +1768,7 @@ function renderAttn(){
    could not write, every button on this list did nothing at all and said nothing about why. */
 async function markSorted(id){
   const cons = CR(); if (!cons) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   ensureWho(async () => {
     cons.sorted = cons.sorted || {};
     cons.sorted[id] = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
@@ -1715,7 +1783,7 @@ async function markSorted(id){
    person decided the pod stands empty, so the day shows a deliberate blank rather than an
    accident, and the change log says who decided it. */
 async function leaveEmpty(date){
-  const cons = CR(); if (!cons || !cons.days[date] || !COVER_SAVE) return;
+  const cons = CR(); if (!cons || !cons.days[date] || !canSave()) return;
   ensureWho(async () => {
     const rec = cons.days[date];
     delete rec.alert;
@@ -1743,7 +1811,7 @@ async function leaveEmpty(date){
    ignore it. */
 async function putItBack(date, pod, id){
   const cons = CR(); if (!cons || !cons.days[date]) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   const rec = cons.days[date];
   const ch = rec.pubChanged || [];
   /* ONE POD, not the whole day. Each row on Attention is now one pod's change, so putting one back
@@ -1785,7 +1853,7 @@ async function putItBack(date, pod, id){
    until the algorithm has actually said otherwise. */
 async function unpinDay(date){
   const cons = CR(); if (!cons || !cons.days[date]) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   const rec = cons.days[date];
   if (!rec.pinned) return;
   ensureWho(async () => {
@@ -1807,7 +1875,7 @@ async function unpinDay(date){
 async function saveName(ini, name){
   if (!ini) return;
   if (!name) { toast("Type a name first"); return; }
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   ensureWho(async () => {
     const cons = CR(); if (!cons) return;
     cons.names = cons.names || {};
@@ -2397,7 +2465,7 @@ function draftOverrides(){
 
 async function redraftDrafts(){
   const cons = CR(); if (!cons) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   const held = draftOverrides();
   if (!held.length) { toast("Nothing held by hand in the draft weeks"); return; }
   const days = new Set(held.map(x => x.d));
@@ -2510,7 +2578,8 @@ const rowLabel = k => k.length === 1 ? "Pod " + k : k === "oncall" ? "on call" :
 
 async function applyEdit(d, k, ini, note){
   const cons = CR(); if (!cons) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
+  const shot = dayShot(cons, d);               // before the first mutation, including creating the day
   const blank = () => ({ A:"",B:"",C:"",D:"",E:"",oncall:"",cod:"",fgh:"",wkend:false,fin:{} });
   const rec = cons.days[d] || (cons.days[d] = { auto: blank(), cur: blank() });
   const who = localStorage.getItem("consEditor") || "?";
@@ -2550,11 +2619,9 @@ async function applyEdit(d, k, ini, note){
   }
   cdata.savedBy = who;
   state("saving");
-  try {
-    if (!await saveCover()) return;
-    state("saved");
-    toast("Saved — " + (ini || "cleared") + (ini === (rec.auto[k] || "") ? "" : " (flagged: differs from the rota sheet)"));
-  } catch(e){ state("unsaved"); toast("Save failed — try again"); }
+  if (!await saveOrPutBack(cons, shot)) return;
+  state("saved");
+  toast("Saved — " + (ini || "cleared") + (ini === (rec.auto[k] || "") ? "" : " (flagged: differs from the rota sheet)"));
   renderAll();
 }
 
@@ -2562,10 +2629,11 @@ async function applyEdit(d, k, ini, note){
    held against the person, not the pod, so both badges travel with them automatically. */
 async function applySwap(d, k1, k2){
   const cons = CR(); if (!cons) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   const rec = (cons.days || {})[d]; if (!rec) return;
   const a = rec.cur[k1] || "", b = rec.cur[k2] || "";
   if (!a || !b || a === b) return;
+  const shot = dayShot(cons, d);
   rec.cur[k1] = b; rec.cur[k2] = a;
   const who = localStorage.getItem("consEditor") || "?";
   /* One row per person, so the swap reads as the two moves it actually is and each consultant
@@ -2577,10 +2645,8 @@ async function applySwap(d, k1, k2){
        { act: "move", subj: b, from: podk(k2), to: podk(k1) });
   cdata.savedBy = who;
   state("saving");
-  try {
-    if (!await saveCover()) return;
-    state("saved"); toast(a + " ↔ " + b);
-  } catch(e){ state("unsaved"); toast("Save failed — try again"); }
+  if (!await saveOrPutBack(cons, shot)) return;
+  state("saved"); toast(a + " ↔ " + b);
   renderAll();
 }
 
@@ -2588,13 +2654,14 @@ async function applySwap(d, k1, k2){
    moving. Finish times are held against the person, not the pod — the two swap values. */
 async function applyFinSwap(d, k1, k2){
   const cons = CR(); if (!cons) return;
-  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
   const rec = (cons.days || {})[d]; if (!rec) return;
   const a = rec.cur[k1] || "", b = rec.cur[k2] || "";
   if (!a || !b || a === b) return;
   rec.cur.fin = rec.cur.fin || {};
   const fa = rec.cur.fin[a], fb = rec.cur.fin[b];
   if ((fa || "") === (fb || "")) return;
+  const shot = dayShot(cons, d);
   if (fb == null) delete rec.cur.fin[a]; else rec.cur.fin[a] = fb;
   if (fa == null) delete rec.cur.fin[b]; else rec.cur.fin[b] = fa;
   const who = localStorage.getItem("consEditor") || "?";
@@ -2602,10 +2669,8 @@ async function applyFinSwap(d, k1, k2){
        "manual", d, " (consultant page)");
   cdata.savedBy = who;
   state("saving");
-  try {
-    if (!await saveCover()) return;
-    state("saved"); toast("Finish times swapped");
-  } catch(e){ state("unsaved"); toast("Save failed — try again"); }
+  if (!await saveOrPutBack(cons, shot)) return;
+  state("saved"); toast("Finish times swapped");
   renderAll();
 }
 
