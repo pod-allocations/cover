@@ -131,11 +131,27 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
 .cell:hover{background:var(--accent-bg)}
 .cell.empty{color:#c9cbd1;font-weight:400}
 .cell.diff{outline:1.5px dashed var(--amber);color:var(--amber)}
+/* PICKED UP. Solid where "differs" is dashed, so the two never read as the same state, and filled
+   rather than outlined so it is obvious on a phone at arm's length. Only ever one on screen. */
+.cell.armed,.codpill.armed,.finpill.armed{outline:2px solid var(--accent);outline-offset:1px;
+  background:var(--accent-bg);color:var(--accent)}
 .cellwrap{display:flex;align-items:center;gap:.42rem}
 .codpill{flex:0 0 auto;display:inline-block;text-align:center;font-size:.6rem;border-radius:6px;padding:.08rem .35rem;font-weight:600;letter-spacing:.04em;background:transparent;border:1px solid #b4b2a9;color:#444441;cursor:grab}
 .codpill:active{cursor:grabbing}
 .finpill{flex:0 0 auto;display:inline-block;min-width:20px;text-align:center;font-size:.6rem;border-radius:6px;padding:.08rem .3rem;font-weight:600;letter-spacing:.04em;background:transparent;border:1px solid #fac775;color:#854f0b;cursor:grab}
 .finpill:active{cursor:grabbing}
+/* Outline, muted, and smaller than a pod chip: a held day is a state of the rota, not a warning
+   and not a person, so it must not compete with either. */
+/* MOVED BY THE LAST SYNC. An inset ring rather than a border: the cells sit edge to edge in a
+   grid, so a real border shifts everything beside it by a pixel and the whole table twitches when
+   a day changes. Inset shadow occupies no space. Amber because it is information, not a fault —
+   the rota moved and the board followed, which is the system working. Hover gives the old name.
+   It clears itself: `prev` is rewritten by the next sync, so the marks show what THAT run did. */
+td.moved{box-shadow:inset 0 0 0 2px var(--accent)}
+td.moved .cell{position:relative}
+.heldpill{display:inline-block;margin-top:.2rem;font-size:.55rem;letter-spacing:.05em;
+  text-transform:uppercase;font-weight:700;border:1px solid var(--hair);color:var(--muted);
+  border-radius:5px;padding:.02rem .28rem}
 .cell[draggable="true"]{cursor:grab}
 .cell[draggable="true"]:active{cursor:grabbing}
 td.dropok{outline:2px dashed var(--accent);outline-offset:-3px}
@@ -193,6 +209,12 @@ table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-siz
 .attnrow .txt b{font-size:.87rem;font-weight:600;display:block}
 .attnrow .sub{font-size:.76rem;color:var(--muted);margin-top:.12rem;line-height:1.4}
 .attnrow .btn{flex:none;font-size:.76rem;padding:.3rem .7rem}
+/* A row somebody has dealt with. It stays for three days rather than vanishing, because the
+   question after a change is usually "did anyone deal with that?" and a row that disappears
+   answers it with silence. Greyed, not hidden, and it stops counting towards the badge. */
+.attnrow.done{opacity:.5}
+.attnrow.done .dot{background:var(--muted)}
+.attnrow .who{font-size:.7rem;color:var(--muted);flex:none;align-self:center}
 .tpbadge{margin-left:auto;font-size:.62rem;font-weight:700;color:#fff;background:var(--amber);
   border-radius:999px;padding:.05rem .38rem;min-width:1.1rem;text-align:center}
 .srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.6rem}
@@ -426,7 +448,13 @@ table.rota th:first-child{left:0;z-index:40}
 button.btn,.hbtn{white-space:nowrap}
 .weekbar>button,.weekbar .btn{min-height:36px;display:inline-flex;align-items:center}
 
-@media(max-width:760px){aside{display:none}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
+/* The phone-only shield is the exact complement of the rail: it exists where the rail does not,
+   and nowhere else, so there is never a moment with two ways to the same panel on one screen. */
+.phoneonly{display:none}
+#btnTeamM{position:relative}
+#btnTeamM .tpbadge{position:absolute;top:-3px;right:-3px;margin:0;min-width:.95rem;font-size:.55rem;
+  line-height:1.05rem;padding:0 .2rem}
+@media(max-width:760px){aside{display:none}.phoneonly{display:inline-flex}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
   #topbar h1{font-size:1rem}
   .hbtn{font-size:.7rem;padding:.45rem .6rem}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
@@ -559,6 +587,13 @@ button.btn,.hbtn{white-space:nowrap}
        resident board's, because a consultant who has used one board should not have to find it
        again on the other. -->
   <button class="hbtn ghost hicon" id="btnFeedback" title="Feedback" aria-label="Feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5a2.5 2.5 0 01-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5z"/></svg></button>
+  <!-- THE PHONE'S DOOR TO THE ROTA-TEAM PAGES. The rail that holds the only other shield is
+       display:none below 761px, so on a phone Attention, Look ahead, Fairness, the change log,
+       Staff and Setup had no entrance at all — the panel they live in is already styled to slide
+       in full-height at that exact width, so it was only ever the button that was missing. Same
+       icon and same handler as the rail's, and it carries its own copy of the attention count,
+       because a badge nobody can see is the same as no badge. Shown only where the rail is not. -->
+  <button class="hbtn ghost hicon phoneonly" id="btnTeamM" title="Rota team" aria-label="Rota team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.6v5c0 4.3-3 8.1-7.5 9.4-4.5-1.3-7.5-5.1-7.5-9.4v-5z"/></svg><span id="attnBadgeM" class="tpbadge"></span></button>
   <button class="hbtn" id="btnEdit" title="Unlock to change who covers what">Edit</button>
   <button class="hbtn ghost" id="btnDone" title="Back to read-only">Done</button>
 </div>
@@ -715,6 +750,68 @@ async function postLive(url, payload){
   await fetch(url, { method: "POST", mode: "no-cors", body: new Blob([payload], { type: "application/json" }) });
   return true;
 }
+
+/* ── SAVING THE COVER: CHECK BEFORE, CONFIRM AFTER — 11 Aug ─────────────────────────────────────
+   The cover is one file, not a database, and every save sends the WHOLE file. So two people with
+   the page open at the same time is a silent overwrite:
+
+     09:00  you open the board          09:00  Nick opens the board
+     09:05  you move somebody           -> sends everything as of 09:00, plus your move
+     09:06  Nick presses Sorted         -> sends everything as of 09:00, plus his tick
+                                           and WITHOUT your move, because his copy predates it
+
+   Your change is gone and neither of you is told. Worse, both log entries survive, so the change
+   log says the swap happened while the board does not have it — the record and the rota disagree,
+   which is harder to unpick than simply losing it. Rare while Ali is the only editor; not rare at
+   all once consultants can swap their own pods, which is the point of going live.
+
+   BEFORE: re-read the file and compare `savedAt` against what it said when we loaded. If it has
+   moved, somebody got there first — refuse, and reload rather than overwrite. Refusing is the
+   whole point; merging two versions of a rota without asking is not something a page should invent.
+
+   AFTER: the post is `mode:"no-cors"`, so the browser cannot read the reply and `await` resolves
+   whether Power Automate stored it or threw it away. "Saved" therefore only ever proved that the
+   message left the building. Reading the file back and looking for our own stamp is the only way
+   to know, and it costs one request on an action that happens a few times a day.
+
+   Both checks fail SOFT: if the verifying read itself fails we do not block the save and do not
+   claim success — we say we could not confirm it. A page that refuses to save because the network
+   is flaky is worse than one that admits uncertainty. */
+async function saveCover(){
+  if (!COVER_SAVE || !cdata) { toast("Cover store not connected — nothing was saved"); return false; }
+  if (TESTMODE) { await postLive(COVER_SAVE, JSON.stringify(cdata)); return true; }
+  let live = null;
+  try {
+    const r = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: "{}", cache: "no-store" });
+    if (r.ok) live = await r.json();
+  } catch(e){ live = null; }
+  if (live && live.v && (live.savedAt || "") !== coverSavedAtOnLoad) {
+    state("unsaved");
+    toast("Somebody else changed the cover while this was open — reload before editing");
+    return false;
+  }
+  const stamp = new Date().toISOString();
+  cdata.savedAt = stamp;
+  await postLive(COVER_SAVE, JSON.stringify(cdata));
+  /* Give the flow a moment to land before asking whether it did. */
+  await new Promise(r => setTimeout(r, 900));
+  try {
+    const r2 = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
+                                         body: "{}", cache: "no-store" });
+    if (r2.ok) {
+      const back = await r2.json();
+      if (back && back.savedAt === stamp) { coverSavedAtOnLoad = stamp; return true; }
+      state("unsaved");
+      toast("Couldn't confirm the save — check the board before relying on it");
+      return false;
+    }
+  } catch(e){}
+  /* Could not verify either way. Move our baseline on regardless: the write probably landed, and
+     leaving the baseline behind would make the NEXT save look like somebody else's conflict. */
+  coverSavedAtOnLoad = stamp;
+  return true;
+}
 let data = null, cdata = null, showJun = false, curWeek = null, EDIT_MODE = false;
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -812,9 +909,13 @@ let coverNeedsRepairSave = false;
    than sharing the resident board's: this page has no save key for the resident store and must
    never have one, so writing consultants' feedback into that file is not something it can do, and
    the isolation is worth more than one shared array. */
+/* `sorted` joins the list on 11 Aug — the record of which Attention rows somebody has dealt with.
+   `acked` stays on it: it is the same idea's old name, still read so that nothing already ticked
+   comes back, and a key left off this list would read as consultant rota paperwork leaking in.
+   `movedOut` likewise — the sync writes it, so it is a cover key whatever else it is. */
 const COVER_ONLY = ["days","map","names","fair","window","source","pw","log","v","savedAt","savedBy",
-                    "acked","notices","resetAdmins","pubWeeks","pubHighWater","cap","hard","syncRequest",
-                    "feedback"];
+                    "acked","sorted","notices","resetAdmins","pubWeeks","pubHighWater","cap","hard",
+                    "syncRequest","feedback","movedOut","prev","prevAt"];
 /* pw is on that list so a carve that moved the old rota-master PIN in here is not thrown away,
    but nothing on this page reads it: editing needs a name, not a password (6 Aug). */
 function seedC(){
@@ -872,8 +973,41 @@ async function loadC(){
         if (cdata[k] == null && cdata.consRota[k] != null) cdata[k] = cdata.consRota[k];
       delete cdata.consRota;
     }
-  } catch(e){ cdata = seedC(); }
+    coverLoadFailed = false;
+    coverSavedAtOnLoad = cdata.savedAt || "";
+  } catch(e){
+    /* ── A FAILED READ IS "NO DATA", NOT "EMPTY DATA" — 11 Aug ──────────────────────────────────
+       This used to be `cdata = seedC()`, and that one word was the worst thing in the file.
+
+       seedC() is a valid, empty cover store. It is truthy. So when the read flow blipped — throttled,
+       offline, Power Automate having a moment — the page carried on holding a blank rota that
+       LOOKED like a quiet week, said nothing about having failed, and left every edit control live,
+       because each one guards on `!cdata` and cdata was perfectly real. The first change anybody
+       made then wrote 77 bytes over the whole file.
+
+       The sync rebuilds `days` from the workbook overnight. Nothing rebuilds the rest: `fair` is
+       seeded once from the old sheet and never re-derived (so the entire Fairness page would restart
+       from zero, quietly and wrongly), and the change log, the typed names and the reset address
+       exist nowhere else. cover_backup.py writes a readable 14-day XLSX, not the store, so there is
+       no restore.
+
+       null is the state the page already knows how to be honest about — every save path says
+       "Cover store not connected — nothing was saved" and writes nothing. It simply never got here.
+
+       seedC() is still right one line above, where the flow ANSWERED and had no store yet. That is
+       a real empty cover. This is a question we did not get an answer to, and the two must not
+       share a value. */
+    cdata = null;
+    coverLoadFailed = true;
+    coverSavedAtOnLoad = "";
+  }
 }
+/* Set when the read failed, so the page can say so where somebody will actually see it rather than
+   only on the Attention page, which is behind the shield and — until today — unreachable on a phone. */
+let coverLoadFailed = false;
+/* What `savedAt` said when we loaded. The whole basis of the conflict check below: if the stored
+   value has moved since, somebody else has saved in between and our copy is stale. */
+let coverSavedAtOnLoad = "";
 /* Anything in the store that is not on cover's list. Today that means the consultant rota's
    paperwork, in a store the carve hasn't reached yet. Written as "not on the list" rather than
    as a list of the six known keys so that whatever gets mixed in NEXT is caught too — the six
@@ -885,14 +1019,15 @@ const strayPaperwork = () => cdata
 
 async function saveC(){
   if (!COVER_SAVE || !cdata) return;
-  cdata.savedAt = new Date().toISOString();
+  /* saveCover() stamps savedAt, because it is the value it then reads back to prove the write
+     actually landed. Stamping it here as well would only mean checking our own homework. */
   /* Cover's keys, plus anything else already in the file, carried through untouched.
      The temptation is to write cover's keys and drop the rest — it would leave a clean file
      in one step. But if split_stores.py has not been run against this store yet, that first
      save would destroy the job plans and PINs with no backup anywhere, and there is no undo
      for that. So the page never deletes: it declines to add, and says so on Setup. The carve
      is a deliberate act with a verified backup, and it stays that way. */
-  try { await postLive(COVER_SAVE, JSON.stringify(cdata)); if (!TESTMODE) toast("Saved"); }
+  try { if (!await saveCover()) return; if (!TESTMODE) toast("Saved"); }
   catch(e){ toast("Save failed — try again"); }
 }
 async function sha(s){
@@ -937,6 +1072,18 @@ function clog(msg, kind, on, whoSuffix, det){
 function renderSetup(){
   const box = $("#setupBox");
   if (!box) return;
+  /* NO STORE AT ALL — the read failed, as opposed to there being no key to read with. Everything
+     below reads settings straight off CR(), so it needs one to exist. Caught by the test that
+     asserts a failed read leaves cdata null: seedC() used to paper over this, which is precisely
+     why "cdata is null" looked like a supported state without ever having been one. There is
+     nothing to configure in a store we could not fetch, so say that and stop. */
+  if (COVER_READ && !CR()){
+    box.innerHTML = "<div class='card'><h2>The cover didn't load</h2>" +
+      "<p style='color:var(--muted);font-size:.85rem'>Settings live in the cover store, and it " +
+      "could not be fetched. This is a connection problem, not a change to the rota — nothing has " +
+      "been lost. Reload the page to try again.</p></div>";
+    return;
+  }
   if (!COVER_READ){
     box.innerHTML = "<div class='card'><h2>Connect the cover store</h2>" +
       "<p style='font-size:.85rem'>Paste the two flow URLs (Cover Data - Read and - Save) and this builds the full link for this page.</p>" +
@@ -1051,6 +1198,36 @@ function renderSetup(){
      masked, because anybody with the link reaches the lock screen and there is no reason to publish
      consultants' email addresses to them. */
   const admins = (CR().resetAdmins || []);
+  /* ── PUT THE LAST SYNC BACK ────────────────────────────────────────────────────────────────────
+     Ali, 11 Aug: "there needs to be a way to go back." There was not. No backup of this store has
+     ever existed, so when a run moved 73 days the only truthful answer was that it could not be
+     undone — which is not a defensible position for a rota people work to.
+
+     `prev` is the photograph the allocator takes before each run. This restores `cur` from it, for
+     every day, in one go. Deliberately all-or-nothing: picking days out of a snapshot leaves a
+     board that matches neither what the rota says nor what was circulated, which is worse than
+     either. Individual days are corrected by hand on the grid.
+
+     Only offered when there is something to undo AND it would actually change something, so it is
+     not a button sitting there inviting a press on a morning when the sync moved nothing. */
+  const _pv = CR().prev || {}, _pvAt = CR().prevAt;
+  /* Compared slot by slot, not by stringifying the two objects: `cur` also carries wkend, finish
+     times and extras, and key order is not guaranteed, so a whole-object compare reports days as
+     moved when nobody moved. */
+  const SLOTS = ["A", "B", "C", "D", "E", "oncall", "fgh"];
+  const _differs = (a, b) => SLOTS.some(k => ((a || {})[k] || "") !== ((b || {})[k] || ""));
+  const _wouldChange = Object.keys(_pv).filter(d =>
+    (CR().days || {})[d] && _differs(_pv[d], CR().days[d].cur));
+  if (_pvAt && _wouldChange.length) {
+    h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>THE LAST SYNC</div>" +
+      "<div class='hint' style='margin-bottom:.6rem'>It ran <b>" + esc(when(_pvAt)) + "</b> and moved <b>" +
+      _wouldChange.length + " day" + (_wouldChange.length === 1 ? "" : "s") +
+      "</b>. Those are outlined on the board. Putting them back does not stop the next sync moving " +
+      "them again — hold the days you want kept, on the day itself.</div>" +
+      "<button class='btn sec' id='undoSync'>Put those " + _wouldChange.length + " day" +
+      (_wouldChange.length === 1 ? "" : "s") + " back</button></div>";
+  }
+
   h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>WHO CAN ALLOW A PASSWORD RESET</div>" +
     admins.map((a, n) => "<div class='nmrow'><input class='nmin admin' data-n='" + n + "' value='" + esc(a) + "'>" +
       "<button class='btn sec adminrm' data-n='" + n + "'>Remove</button></div>").join("") +
@@ -1109,6 +1286,41 @@ function renderSetup(){
     const [gone] = list.splice(+b.dataset.n, 1);
     setSetting("resetAdmins", list, "Reset admin removed: " + gone);
   });
+  /* Putting the last sync back. Writes `cur` only — `auto` stays as the allocator left it, so the
+     board still records that the algorithm and the unit disagree, which is the fact somebody may
+     need next week. Every restored day is logged individually with its from and to, so the change
+     log shows the undo as clearly as it showed the change. */
+  const undoBtn = $("#undoSync");
+  if (undoBtn) undoBtn.onclick = async () => {
+    const C = CR(), pv = C.prev || {};
+    const SL = ["A", "B", "C", "D", "E", "oncall", "fgh"];
+    const hit = Object.keys(pv).filter(d => C.days[d] &&
+      SL.some(k => ((pv[d] || {})[k] || "") !== ((C.days[d].cur || {})[k] || "")));
+    if (!hit.length) return;
+    if (!(await uiConfirm("This puts " + hit.length + " day" + (hit.length === 1 ? "" : "s") +
+        " back to how they were before the last sync ran. The rota itself is not changed, so the " +
+        "next sync may move them again unless you hold them.",
+        { title: "Put " + hit.length + " day" + (hit.length === 1 ? "" : "s") + " back?",
+          okLabel: "Put them back" }))) return;
+    ensureWho(async () => {
+      for (const d of hit) {
+        for (const k of SL) {
+          const was = (pv[d] || {})[k] || "", now = (C.days[d].cur || {})[k] || "";
+          if (was === now) continue;
+          C.days[d].cur[k] = was;
+          clog(rowLabel(k) + " put back to " + (nameOf(was) || "nobody") + " as it was before the sync",
+               "manual", d, "", { act: "set", subj: rowLabel(k), facet: "consultant", from: now, to: was });
+        }
+      }
+      cdata.savedAt = new Date().toISOString();
+      cdata.savedBy = localStorage.getItem("consEditor") || "?";
+      state("saving");
+      try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast(hit.length + " day(s) put back"); }
+      catch (e) { state("unsaved"); toast("Save failed — try again"); return; }
+      renderSetup(); renderAll();
+    });
+  };
+
   const add = $("#adminAdd");
   if (add) add.onclick = () => {
     const el = $("#adminNew"), v = (el.value || "").trim();
@@ -1125,10 +1337,9 @@ async function setSetting(key, value, msg){
   ensureWho(async () => {
     cons[key] = value;
     clog(msg, "manual", null, " (Setup)");
-    cdata.savedAt = new Date().toISOString();
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Saved"); }
+    try { if (!await saveCover()) return; state("saved"); toast("Saved"); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
     renderAll(); renderSetup();
   });
@@ -1142,7 +1353,7 @@ async function syncNow(){
   ensureWho(async () => {
     cons.syncRequest = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
     clog("Sync requested", "manual", null, " (Setup)");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); toast("Asked for — the next run will pick it up"); }
+    try { if (!await saveCover()) return; toast("Asked for — the next run will pick it up"); }
     catch(e){ toast("Couldn't ask — try again"); }
   });
 }
@@ -1191,31 +1402,87 @@ let staffFind = "";
 
 /* THE ATTENTION PAGE. Everything waiting for a person, in one place, separate from the log —
    because a log is history you go looking for and this is work that has come looking for you
-   (Ali, 8 Aug). Two kinds of item, and they behave differently on purpose:
+   (Ali, 8 Aug).
 
-     NEEDS DOING     no dismiss button at all. It clears when the thing is actually done. A
-                     dismiss here would be dangerous: hiding "Wednesday has an empty pod" does
-                     not staff the pod, it just means nobody finds out until Wednesday.
-     JUST TELLING    "Got it" and gone.
+   ── ONE RULE FOR EVERY ROW: SORTED (Ali, 11 Aug) ──────────────────────────────────────────────
+   "any attention thing that leaves a badge must have a way of showing youve sorted and the
+   attention badge disappearing. And on attention page when say youve sorted grey out and drop
+   off after 3 days."
 
-   The gap in that is the item nobody CAN fix — a pod there is genuinely nobody to cover, a locum
-   whose initials will never have a name. Nagging for ever is its own kind of broken, so those get
-   the deliberate alternative instead of a dismiss: a named decision, logged. Nothing here
-   disappears without either the problem being solved or somebody putting their name to it. */
+   This replaced three different behaviours that had grown up one item at a time: some rows had
+   "Got it", some had a named alternative, and three — the stale board, the spare backup, the
+   unnamed consultants — had no way out at all. Each of those was defensible on its own and the
+   set was not: a badge you cannot clear is a badge people stop looking at, which is the exact
+   opposite of what the badge is for. Every row now takes Sorted, and the count on the rail is
+   the number of rows nobody has dealt with yet.
+
+   Pressing it does not make the row vanish. It greys and stays for three days, because the
+   question after a change is usually "did somebody deal with that?" and a row that disappears
+   answers it with silence. The name of whoever pressed it sits on the row.
+
+   What happens on the fourth day depends on what KIND of fact the row is, and this is the part
+   worth keeping:
+
+     A LIVE CONDITION — the board is stale, a pod is empty, an initial has no name — is only ever
+     as true as it is right now. Sorted quiets it for three days; if it is STILL true when they
+     are up it comes back, un-greyed and counting again. You can quiet it, you cannot make it lie.
+
+     A HISTORICAL FACT — a published day moved, an initial the sheet used once — happened, and a
+     named person saying they have dealt with it is the end of it. Those stay gone.
+
+   So the stale-board warning keeps the property that actually mattered on 8 Aug (it cannot be
+   permanently ticked away while the sync is still dead) and loses the property that made the
+   whole badge easy to ignore (it could not be quieted at all, so it sat there for ever). */
+const SORTED_GREY_DAYS = 3;
+/* Kinds whose row is re-derived from the world every time this function runs, so silencing one
+   can only ever be temporary. Everything not on this list is a record of something that happened. */
+const LIVE_KINDS = ["stale", "backup", "name", "empty", "day", "pinned"];
+/* `sorted` is the new key; `acked` is what the same idea was called before 11 Aug. Read both so
+   that anything already ticked off stays ticked, and write only the new one. */
+function sortedOf(cons, id){
+  return (cons.sorted || {})[id] || (cons.acked || {})[id] || null;
+}
 function attnItems(){
   const cons = CR(); if (!cons) return [];
-  const out = [];
-  const seenAck = (cons.acked || {});
+  const raw = [];
   for (const d of Object.keys(cons.days || {}).sort()) {
     const a = cons.days[d].alert;
     if (!a || typeof a !== "object") continue;
     const gone = a.gone || [], came = a.new || [];
-    out.push({
+    raw.push({
       kind: "day", id: "day:" + d, date: d,
       title: shortDate(d) + " has a pod with nobody on it",
       detail: (gone.length ? gone.map(nameOf).join(" and ") + " came off the rota" : "") +
               (gone.length && came.length ? " · " : "") +
               (came.length ? came.map(nameOf).join(" and ") + " came on" : ""),
+      act: "Open the day", alt: "Leave it empty"
+    });
+  }
+  /* ── A POD WITH NOBODY ON IT, FOUND BY LOOKING ────────────────────────────────────────────────
+     The row above only fires when the ALLOCATOR raised an alert, which it does only for a change
+     it could not resolve inside the published weeks. So a pod that is simply empty — because the
+     sheet never filled it — produced no row at all, and the page said "Nothing needs you" while
+     holding five such days (25 May and four over Christmas, both already your call). The item was
+     named "has a pod with nobody on it" and could not detect a pod with nobody on it.
+
+     Scoped to the next eight weeks. Scanning all 371 days would raise Christmas in August, which
+     is true and useless, and a row that is not actionable yet is how a list becomes wallpaper.
+     `leaveEmpty()` is still the way out for a day nobody can staff: it writes the deliberate note,
+     and a day carrying that note is skipped here for good. */
+  const _todayISO = new Date().toISOString().slice(0, 10);
+  const _emptyEdge = addDays(_todayISO, 56);
+  for (const d of Object.keys(cons.days || {}).sort()) {
+    if (d < _todayISO || d > _emptyEdge) continue;
+    const rec = cons.days[d];
+    if (rec.alert) continue;                                  // already said above, once is enough
+    if (String(rec.note || "").includes("left empty deliberately")) continue;
+    const bare = ["A","B","C","D","E"].filter(p => !(rec.cur || {})[p]);
+    if (!bare.length) continue;
+    raw.push({
+      kind: "empty", id: "empty:" + d, date: d,
+      title: shortDate(d) + " has a pod with nobody on it",
+      detail: bare.map(rowLabel).join(" and ") + " — nobody is down to cover "
+            + (bare.length === 1 ? "it" : "them") + " on the rota sheet.",
       act: "Open the day", alt: "Leave it empty"
     });
   }
@@ -1236,12 +1503,20 @@ function attnItems(){
   const fetched = (cons.source || {}).fetched;
   const ageHrs = fetched ? (Date.now() - Date.parse(fetched)) / 3600000 : null;
   if (ageHrs == null || ageHrs > 36) {
+    /* HOURS UNTIL TWO FULL DAYS, then days. The first version computed Math.floor(ageHrs / 24),
+       which is always at least 1 once the threshold is 36 hours — so the "hours" wording could
+       never be reached and 37 hours read "1 day". That understated it at exactly the moment the
+       row first appears, which is the moment it most needs to be precise: 36 hours is the point
+       where one missed night became two. */
     const days = ageHrs == null ? null : Math.floor(ageHrs / 24);
-    out.push({ kind: "stale", id: "stale",
+    const howLong = ageHrs == null ? "" :
+      ageHrs < 48 ? Math.round(ageHrs) + " hours" : days + " day" + (days === 1 ? "" : "s");
+    raw.push({ kind: "stale", id: "stale:" + (fetched ? String(fetched).slice(0, 10) : "never"),
       title: ageHrs == null ? "This board has never been worked out from the rota"
-                            : "This board has not been updated for " + (days >= 1 ? days + " day" + (days === 1 ? "" : "s") : Math.round(ageHrs) + " hours"),
+                            : "This board has not been updated for " + howLong,
       detail: "The nightly job reads the consultant rota workbook and works out the cover. It has "
-            + "not done so since " + (fetched ? shortDate(String(fetched).slice(0, 10)) : "ever")
+            + (fetched ? "not done so since " + shortDate(String(fetched).slice(0, 10))
+                       : "never done so")
             + ", so what is on screen may not match the rota. Everything below this may be out of date too.",
       act: "Sync now" });
   }
@@ -1260,35 +1535,65 @@ function attnItems(){
        Put it back     restore what was circulated, because the ward has already worked to it.
      There is no plain dismiss. Ticking away "the rota moved under people" without either telling
      them or undoing it is the one outcome that helps nobody. */
+  /* ONE ROW PER CHANGE, NOT PER DAY. The first version keyed the row on the date alone and marked
+     it dealt with under "pub:<date>". Since telling the team deliberately does NOT delete
+     rec.pubChanged — the change log keeps the permanent record and the store keeps the transient
+     one — a SECOND change to the same day on a later night appended a second entry that the row
+     never showed: the date was already ticked, so the whole day was skipped and nobody was told
+     the second time. Proved on the live store on 11 Aug: two entries, nought rows.
+
+     The allocator already writes one entry per pod with its own `at` stamp and says so in a
+     comment ("kept as a list so two changes on one day are two things to say, not one overwriting
+     the other"). The page now honours that. `at` makes the id unique per run, so putting one pod
+     back leaves the other still asking. */
   for (const d of Object.keys(cons.days || {}).sort()) {
     const ch = (cons.days[d] || {}).pubChanged;
     if (!Array.isArray(ch) || !ch.length) continue;
-    if (seenAck["pub:" + d]) continue;
-    out.push({
-      kind: "pub", id: "pub:" + d, date: d,
+    ch.forEach((x, n) => raw.push({
+      kind: "pub", id: "pub:" + d + ":" + (x.pod || n) + ":" + (x.at || n), date: d, pod: x.pod,
       title: shortDate(d) + " changed after it was circulated",
-      detail: ch.map(x => rowLabel(x.pod) + ": " + (nameOf(x.from) || "nobody") +
-                          " → " + (nameOf(x.to) || "nobody")).join(" · ") +
+      detail: rowLabel(x.pod) + ": " + (nameOf(x.from) || "nobody") + " → " + (nameOf(x.to) || "nobody") +
               " — the rota was updated after this day went out, and the board has followed it.",
-      act: "Tell the team", alt: "Put it back"
+      /* No plain dismiss, and Sorted wears the name of the thing it actually means here: the
+         change stands, and a named person has taken responsibility for saying so. */
+      sortLabel: "Tell the team", alt: "Put it back"
+    }));
+  }
+  /* ── A DAY BEING HELD TO THE CIRCULATED VERSION ───────────────────────────────────────────────
+     `pinned` is set by Put it back and honoured by the allocator, which skips the day entirely —
+     including the alert path. Until now nothing on the page ever showed that a day was pinned and
+     nothing could ever clear it, so a day put back in August was frozen for good and invisible.
+     That fails project rule 1 twice over: a functional state you can set from the front end and
+     cannot see or clear from it.
+
+     Only worth saying while the day is still ahead — a pinned day in the past is just history. */
+  for (const d of Object.keys(cons.days || {}).sort()) {
+    if (!(cons.days[d] || {}).pinned || d < _todayISO) continue;
+    raw.push({
+      kind: "pinned", id: "pinned:" + d, date: d,
+      title: shortDate(d) + " is being held to the version that was circulated",
+      detail: "The rota moved this day after it went out and somebody put it back, so the nightly "
+            + "job leaves it alone. It will stay exactly as it is until it is handed back.",
+      act: "Open the day", alt: "Hand it back"
     });
   }
 
   const miss = unnamed();
+  /* Keyed on WHO is unnamed, not on the bare word "unnamed". Sorting the row when two people are
+     unnamed must not also silence it when a third turns up next week. */
   if (miss.length)
-    out.push({ kind: "name", id: "unnamed", title: miss.length + " consultant" +
+    raw.push({ kind: "name", id: "unnamed:" + miss.join(","), title: miss.length + " consultant" +
       (miss.length === 1 ? " has" : "s have") + " no name",
       detail: miss.join(" · "), act: "Name them" });
-  const unknown = ((cons.source || {}).unknownInitials || []).filter(i => !seenAck["unk:" + i]);
-  for (const i of unknown)
-    out.push({ kind: "unknown", id: "unk:" + i,
+  for (const i of ((cons.source || {}).unknownInitials || []))
+    raw.push({ kind: "unknown", id: "unk:" + i,
       title: "An initial on the sheet isn't recognised",
       detail: i + " — the spelling in the workbook needs fixing, or the initials adding to the sync",
-      ack: true });
+      sortLabel: "Got it" });
   for (const n of (cons.notices || []))
-    if (!seenAck["notice:" + n.id]) out.push({ kind: "notice", id: "notice:" + n.id,
+    raw.push({ kind: "notice", id: "notice:" + n.id,
       title: n.msg, detail: n.who ? "by " + esc(n.who) + " · " + shortDate(String(n.t).slice(0, 10)) : "",
-      ack: true });
+      sortLabel: "Got it" });
   /* LAST NIGHT'S BACKUP WENT SOMEWHERE ELSE. A file open in Excel is locked against every write
      API there is, so the nightly job writes beside it rather than losing the night (Ali, 8 Aug:
      "thats an issue" — a backup that only works when nobody is looking at the folder is not one).
@@ -1301,18 +1606,40 @@ function attnItems(){
      page already holds — nothing new is fetched, and nothing is written back. */
   const sp = (data || {}).backupSpare;
   if (sp && sp.name)
-    out.push({ kind: "backup", id: "backup:spare",
+    raw.push({ kind: "backup", id: "backup:" + sp.name,
       title: "Last night's backup could not replace the usual file",
       detail: "It was written beside it as " + sp.name + ". The usual copy is untouched but is now "
             + "a day older than it looks. Close it in Excel and tonight's run will replace it." });
-  return out;
+
+  /* THE SORTED PASS. Everything above says what is true; this says what somebody has already dealt
+     with. Kept as one place at the end rather than a check inside each push, because the old code
+     did it three different ways in three different rows and that is how the stale board ended up
+     with no way out at all. */
+  const now = Date.now();
+  return raw.map(it => {
+    const s = sortedOf(cons, it.id);
+    if (!s) return it;
+    const ageDays = (now - Date.parse(s.t)) / 86400000;
+    if (!(ageDays >= 0)) return it;                    // unparseable stamp: treat as not sorted
+    if (ageDays < SORTED_GREY_DAYS)
+      return Object.assign({}, it, { done: true, doneBy: s.who, doneAt: s.t });
+    /* Three days up. A live condition that is still true comes back and counts again; a record of
+       something that happened stays dealt with. */
+    return LIVE_KINDS.includes(it.kind) ? it : null;
+  }).filter(Boolean);
 }
-function attnCount(){ return attnItems().length; }
+/* The badge counts what nobody has dealt with. A greyed row is still on the page — that is the
+   point of it — but it must not keep the number up, or pressing Sorted would appear to do nothing. */
+function attnCount(){ return attnItems().filter(it => !it.done).length; }
 function paintAttnBadge(){
-  const b = $("#attnBadge"); if (!b) return;
   const n = attnCount();
-  b.textContent = n ? String(n) : "";
-  b.style.display = n ? "" : "none";
+  /* Both shields — the rail's and the phone's. Only ever one of them is on screen, but painting
+     whichever exists is one line and means the phone cannot end up with a silent badge. */
+  for (const id of ["#attnBadge", "#attnBadgeM"]) {
+    const b = $(id); if (!b) continue;
+    b.textContent = n ? String(n) : "";
+    b.style.display = n ? "" : "none";
+  }
 }
 function renderAttn(){
   const box = $("#attnBox"); if (!box) return;
@@ -1322,46 +1649,65 @@ function renderAttn(){
       "<span style='color:var(--muted);font-size:.9rem'>Nothing needs you</span></div>";
     paintAttnBadge(); return;
   }
+  /* A dealt-with row keeps its title and loses its buttons: there is nothing left to press, and
+     leaving a live Sorted button on a sorted row invites people to wonder whether it took. */
   box.innerHTML = "<div class='card'>" + items.map(it =>
-    "<div class='attnrow' data-id='" + esc(it.id) + "'>" +
+    "<div class='attnrow" + (it.done ? " done" : "") + "' data-id='" + esc(it.id) + "'>" +
       "<span class='dot'></span>" +
       "<div class='txt'><b>" + esc(it.title) + "</b>" +
         (it.detail ? "<div class='sub'>" + esc(it.detail) + "</div>" : "") + "</div>" +
-      (it.act ? "<button class='btn sec attndo'>" + esc(it.act) + "</button>" : "") +
-      (it.alt ? "<button class='btn sec attnalt'>" + esc(it.alt) + "</button>" : "") +
-      (it.ack ? "<button class='btn sec attnack'>Got it</button>" : "") +
+      (it.done
+        ? "<span class='who'>" + esc(it.doneBy && it.doneBy !== "?" ? "Sorted by " + it.doneBy : "Sorted") + "</span>"
+        : (it.act ? "<button class='btn sec attndo'>" + esc(it.act) + "</button>" : "") +
+          (it.alt ? "<button class='btn sec attnalt'>" + esc(it.alt) + "</button>" : "") +
+          "<button class='btn sec attnsort'>" + esc(it.sortLabel || "Sorted") + "</button>") +
     "</div>").join("") + "</div>";
   box.querySelectorAll(".attnrow").forEach(row => {
     const id = row.dataset.id, it = items.find(x => x.id === id);
+    if (!it) return;
     const doBtn = row.querySelector(".attndo"), altBtn = row.querySelector(".attnalt"),
-          ackBtn = row.querySelector(".attnack");
+          sortBtn = row.querySelector(".attnsort");
+    /* `act` now only ever NAVIGATES — it takes you to where the thing gets fixed. Marking a row
+       dealt with is the Sorted button's job on every row without exception, which is what makes
+       the rule explainable in one sentence. */
     if (doBtn) doBtn.onclick = () => {
-      /* "Tell the team" does not send anything — there is no list of who was told, and inventing
-         one would be a worse lie than saying nothing. What it does is record that a person took
-         responsibility for saying it, with their name on it, and take the item off the list. */
-      if (it.kind === "pub") { ack(it.id); return; }
-      if (it.kind === "day") { aheadWeek = mondayOf(it.date); showTab("ahead"); }
+      if (it.kind === "day" || it.kind === "empty" || it.kind === "pinned") {
+        aheadWeek = mondayOf(it.date); showTab("ahead");
+      }
       /* A stale board's one useful action is to make it not stale. Setup already owns Sync now —
          going there rather than duplicating the button keeps one way to do it. */
       else if (it.kind === "stale") showTab("setup");
       else showTab("staff");
     };
-    if (altBtn) altBtn.onclick = () => (it.kind === "pub" ? putItBack(it.date) : leaveEmpty(it.date));
-    if (ackBtn) ackBtn.onclick = () => ack(id);
+    if (altBtn) altBtn.onclick = () => {
+      if (it.kind === "pub") putItBack(it.date, it.pod, it.id);
+      else if (it.kind === "pinned") unpinDay(it.date);
+      else leaveEmpty(it.date);
+    };
+    /* "Tell the team" sends nothing — there is no list of who was told, and inventing one would be
+       a worse lie than saying nothing. What it records is that a named person took responsibility
+       for saying it. Same mechanism as every other Sorted, different word on the button. */
+    if (sortBtn) sortBtn.onclick = () => markSorted(id);
   });
   paintAttnBadge();
 }
-/* Acknowledging is itself a change to the store, so it is saved and logged like any other. Kept in
-   `acked` rather than deleting the thing acknowledged, because the underlying fact — the sheet has
-   an initial nobody recognises — is still true and should not be erased by somebody reading it. */
-async function ack(id){
-  const cons = CR(); if (!cons || !COVER_SAVE) return;
+/* Marking a row sorted is itself a change to the store, so it is saved and logged like any other.
+   Kept as a record against the row rather than by deleting the thing itself, because the
+   underlying fact — the sheet has an initial nobody recognises — is still true and must not be
+   erased by somebody reading it.
+
+   It fails LOUDLY. The old version bailed silently when there was no save key, so on a page that
+   could not write, every button on this list did nothing at all and said nothing about why. */
+async function markSorted(id){
+  const cons = CR(); if (!cons) return;
+  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
   ensureWho(async () => {
-    cons.acked = cons.acked || {};
-    cons.acked[id] = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
-    cdata.savedAt = new Date().toISOString();
+    cons.sorted = cons.sorted || {};
+    cons.sorted[id] = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" };
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); } catch(e){ toast("Save failed — try again"); return; }
+    state("saving");
+    try { if (!await saveCover()) return; state("saved"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
     renderAttn();
   });
 }
@@ -1375,10 +1721,9 @@ async function leaveEmpty(date){
     delete rec.alert;
     rec.note = (rec.note ? rec.note + " · " : "") + "pod left empty deliberately";
     clog("Pod left empty on " + shortDate(date) + " — nobody available", "manual", date, "");
-    cdata.savedAt = new Date().toISOString();
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Recorded"); }
+    try { if (!await saveCover()) return; state("saved"); toast("Recorded"); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
     renderAttn(); renderAll();
   });
@@ -1396,24 +1741,60 @@ async function leaveEmpty(date){
    `pinned` is what stops tonight's run undoing this. Without it the sync would re-apply the same
    swap tomorrow morning and the item would reappear, which is how a board teaches people to
    ignore it. */
-async function putItBack(date){
-  const cons = CR(); if (!cons || !cons.days[date] || !COVER_SAVE) return;
+async function putItBack(date, pod, id){
+  const cons = CR(); if (!cons || !cons.days[date]) return;
+  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
   const rec = cons.days[date];
   const ch = rec.pubChanged || [];
-  if (!ch.length) return;
+  /* ONE POD, not the whole day. Each row on Attention is now one pod's change, so putting one back
+     must not silently undo a second change to the same day that somebody else may still be
+     deciding about. Falls back to the whole day if the row predates the per-pod ids. */
+  const mine = pod ? ch.filter(x => x.pod === pod) : ch;
+  if (!mine.length) return;
   ensureWho(async () => {
-    for (const x of ch) {
+    for (const x of mine) {
       if (rec.cur) rec.cur[x.pod] = x.from;
       clog(rowLabel(x.pod) + " put back to " + (nameOf(x.from) || "nobody") +
            " as circulated", "manual", date, "",
            { act: "set", subj: rowLabel(x.pod), facet: "consultant", from: x.to, to: x.from });
     }
     rec.pinned = true;
-    delete rec.pubChanged;
-    cdata.savedAt = new Date().toISOString();
+    const left = ch.filter(x => mine.indexOf(x) === -1);
+    if (left.length) rec.pubChanged = left; else delete rec.pubChanged;
+    /* The row this came from is gone either way — putting it back IS dealing with it — so it is
+       recorded as sorted too. Without this the same row returns the moment the array still holds
+       a sibling entry and the list re-derives. */
+    if (id) { cons.sorted = cons.sorted || {};
+      cons.sorted[id] = { t: new Date().toISOString(), who: localStorage.getItem("consEditor") || "?" }; }
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Put back"); }
+    try { if (!await saveCover()) return; state("saved"); toast("Put back"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
+    renderAttn(); renderAll();
+  });
+}
+
+/* HAND IT BACK. The other half of Put it back, and the reason project rule 1 was being broken:
+   `pinned` could be set from the page and cleared by nothing, anywhere, ever. A day put back in
+   August stayed frozen for good, and since the allocator skips a pinned day completely — including
+   the path that raises "this day has a pod with nobody on it" — a pinned day whose consultant
+   later came off the rota would have shown a name that was not coming, silently.
+
+   Clearing it hands the day back to tonight's run, which will re-derive it from the workbook like
+   any other. `cur` is left exactly as it is: the board keeps showing what the unit is working to
+   until the algorithm has actually said otherwise. */
+async function unpinDay(date){
+  const cons = CR(); if (!cons || !cons.days[date]) return;
+  if (!cdata || !COVER_SAVE) { toast("Cover store not connected — nothing was saved"); return; }
+  const rec = cons.days[date];
+  if (!rec.pinned) return;
+  ensureWho(async () => {
+    delete rec.pinned;
+    clog(shortDate(date) + " handed back to the rota — it is no longer held to the circulated version",
+         "manual", date, "");
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { if (!await saveCover()) return; state("saved"); toast("Handed back"); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
     renderAttn(); renderAll();
   });
@@ -1435,10 +1816,9 @@ async function saveName(ini, name){
     cons.names[ini] = name;
     clog((was ? "Renamed " + ini + ": " + was + " → " + name : ini + " named as " + name),
          "manual", null, " (Setup)");
-    cdata.savedAt = new Date().toISOString();
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast(ini + " is now " + name); }
+    try { if (!await saveCover()) return; state("saved"); toast(ini + " is now " + name); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); }
     renderAll();
   });
@@ -1597,10 +1977,16 @@ function teamUnlocked(){
 }
 function cellHTML(rec, key, d){
   if (d > pubUntil() && !teamUnlocked()) return "<div class='cellwrap'><span class='cell empty' title='Consultant cover is published four weeks ahead'>—</span></div>";
-  const cur = (rec && rec.cur[key]) || "", auto = (rec && rec.auto[key]) || "";
+  /* `rec.cur` and `rec.auto` are read defensively, and it is not paranoia (found 11 Aug). The
+     guard used to be `rec && rec.cur[key]`, which checks the RECORD exists and then trusts that it
+     has a `cur` — so one day in the store missing either half threw, and because every cell is
+     built in one pass, that took the WHOLE BOARD down, not the day. A rota nobody can see because
+     of one malformed record is a far worse failure than a rota with one blank cell. */
+  const rc = (rec && rec.cur) || {}, ra = (rec && rec.auto) || {};
+  const cur = rc[key] || "", auto = ra[key] || "";
   const diff = rec && cur !== auto;
-  const fin = rec && (rec.cur.fin || {})[cur];
-  const isCod = rec && cur && rec.cur.cod === cur && "ABCDE".includes(key);
+  const fin = (rc.fin || {})[cur];
+  const isCod = cur && rc.cod === cur && "ABCDE".includes(key);
   const podCell = "ABCDE".includes(key);
   /* Ghost pills (Ali, 1 Aug — variant 6): initials lead at the shared inset; the badge is an
      OUTLINE-ONLY pill pinned to the cell's right edge, light enough not to fight the name.
@@ -1646,12 +2032,39 @@ function weekTableHTML(mondayISO){
        table is read by position, but once it reflows there are no column headings left, so each
        card has to say what it is (`td.col-A::before`) and the day strip has to be able to find
        one row and show it. Costs nothing on desktop and saves a second markup path. */
+    /* WHAT THE LAST SYNC MOVED (Ali, 11 Aug: "find a way to highlight any changes on the allocator
+       (a coloured outline or something)"). `prev` is the photograph the allocator takes of every
+       day before it touches anything — the same one the Undo control restores from. Comparing
+       against it is the only honest definition of "changed": not changed since it was written,
+       not changed since you last looked, but moved by the run that just happened.
+       Marked per CELL rather than per day, because "Wednesday changed" is nearly useless and
+       "Pod C changed on Wednesday" is what somebody needs. */
+    const _prev = (CR() || {}).prev || {};
+    const movedSlots = (() => {
+      const p = _prev[d], c = (cons[d] || {}).cur;
+      if (!p || !c) return {};
+      const o = {};
+      for (const k of ["A", "B", "C", "D", "E", "oncall", "fgh"])
+        if ((p[k] || "") !== (c[k] || "")) o[k] = p[k] || "nobody";
+      return o;
+    })();
     const needs = " class='dayrow day-" + d + (cons[d] && cons[d].alert ? " needs" : "") + "'";
-    h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span></td>";
+    /* A DAY BEING HELD. `pinned` used to be invisible everywhere — the allocator skipped the day
+       and the board gave no sign, so the one place you would look to understand why a day never
+       moves said nothing. A day is the unit that gets pinned, so the mark goes on the day, not in
+       each of its five cells. */
+    const held = cons[d] && cons[d].pinned
+      ? "<span class='heldpill' title='held to the version that was circulated'>held</span>" : "";
+    h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span>" + held + "</td>";
+    /* `moved` is the outline; the title says what it was, because an outline that only says
+       "this changed" sends you hunting through the change log for the half of the fact you need. */
+    const mv = k => movedSlots[k] !== undefined
+      ? " moved' title='was " + esc(nameOf(movedSlots[k]) || movedSlots[k]) + " before the last sync"
+      : "";
     for (const [p] of PODROWS)
-      h += "<td class='col-" + p + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
-    h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
-    h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
+      h += "<td class='col-" + p + mv(p) + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
+    h += "<td class='col-oncall" + mv("oncall") + "' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
+    h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + mv("fgh") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
   return "<div class='daystrip-slot'></div>" + h + "</table>";
 }
@@ -1666,7 +2079,18 @@ function weekTableHTML(mondayISO){
    This page builds its grid as a string, and dayStrip() returns a real element, so the string
    leaves a slot behind and wireGrid puts the component into it. That is the only reason the slot
    exists — it is not a placeholder for anything else. */
-let mobileDay = 0;
+/* WHICH DAY THE PHONE IS SHOWING, and which week that choice was made for.
+
+   It used to be a bare `let mobileDay = 0`, so the phone always opened on the Monday of whatever
+   week was drawn — on a Tuesday you opened the board and read Monday's consultants. The day strip
+   marked today correctly, but the SELECTED day was Monday, so it looked entirely normal while
+   answering the commonest question on the page wrongly (Ali, 11 Aug: "should open on today not a
+   monday thats gone").
+
+   Remembering the week alongside the day is what stops the fix fighting the user: land on today
+   when the week containing today is drawn, land on Monday for any other week, and once somebody
+   has picked a day, leave their choice alone until the week changes. */
+let mobileDay = 0, mobileDayFor = "";
 
 function renderRota(){
   const dates = Array.from({length:7}, (_, i) => addDays(curWeek, i));
@@ -1689,6 +2113,20 @@ function renderRota(){
     _now.title = isNow ? "You are on this week" : "Jump back to this week";
     document.body.dataset.week =
       isNow ? "now" : (curWeek > mondayOf(_iso) ? "ahead" : "past");
+  }
+  /* THE READ FAILED. Said here, in place of the grid, because an empty grid is indistinguishable
+     from a quiet week and the whole fault was that nothing on screen admitted it. Not on Attention:
+     that is behind the shield, and somebody who cannot load the cover cannot be assumed to have
+     got through it. */
+  if (coverLoadFailed) {
+    $("#weekGrid").innerHTML = "<div class='card' style='text-align:center;padding:2.4rem 1rem'>" +
+      "<b style='display:block;font-size:.95rem'>The cover didn't load</b>" +
+      "<span style='color:var(--muted);font-size:.85rem;display:block;margin-top:.35rem'>" +
+      "This is a connection problem, not a change to the rota. Nothing on the board can be edited " +
+      "until it loads. Try again in a moment.</span>" +
+      "<button class='btn sec' id='btnReload' style='margin-top:1rem'>Try again</button></div>";
+    const rb = $("#btnReload"); if (rb) rb.onclick = () => location.reload();
+    return;
   }
   let h = weekTableHTML(curWeek);
   /* If the cover on screen was worked out from anything other than the live rota, that goes
@@ -1725,6 +2163,15 @@ function wireGrid(root){
      "which days are a problem" to fall out of step with the first. */
   const rows = Array.from(root.querySelectorAll("tr.dayrow"));
   const dates = rows.map(r => { const c = r.querySelector("td[data-date]"); return c ? c.dataset.date : ""; });
+  /* First draw of a week decides which day it opens on: today if today is in it, Monday otherwise.
+     Keyed on the week so a day the user has picked survives a redraw — a save redraws the grid, and
+     snapping back to today every time somebody edited Thursday would be its own small madness. */
+  const _wk = dates[0] || "";
+  if (_wk && _wk !== mobileDayFor) {
+    const ix = dates.indexOf(new Date().toISOString().slice(0, 10));
+    mobileDay = ix >= 0 ? ix : 0;
+    mobileDayFor = _wk;
+  }
   const showDay = () => rows.forEach((r, i) => r.classList.toggle("mday", i === mobileDay));
   const drawStrip = () => {
     const slot = root.querySelector(".daystrip-slot, .daystrip");
@@ -1736,7 +2183,25 @@ function wireGrid(root){
   };
   drawStrip();
   showDay();
-  root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => editCell(c.dataset.d, c.dataset.k, c));
+  /* ── TAP ONE, TAP THE OTHER (Ali, 11 Aug) ────────────────────────────────────────────────────
+     Swapping pods, handing over COD and swapping finish times were all HTML5 drag and drop and
+     nothing else: no touchstart, no pointerdown, anywhere in this file. So the one edit deliberately
+     left open to any consultant without unlocking — "carry your badge onto another pod" — did not
+     exist on a phone, which is what most consultants will open this on. The affordance was a
+     `title` tooltip, which does not exist on touch either.
+
+     Drag still works and is untouched; this is the second way in, and it is the same gesture on
+     both: tap a name to pick it up, tap another to put it down. Tapping the armed one again opens
+     the dropdown, which is how you REPLACE somebody rather than swap them — the old tap-anywhere
+     dropdown could only ever set one slot, so using it to move somebody left them in two pods at
+     once. Nothing here writes anything the drag path did not already write. */
+  root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => tapCell(c.dataset.d, c.dataset.k, c));
+  root.querySelectorAll(".codpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("cod", p.dataset.d, ""); });
+  root.querySelectorAll(".finpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("fin", p.dataset.d, p.dataset.k); });
+  /* The grid is rebuilt from a string on every render, so the class is gone even though the state
+     is not. Re-applied here rather than cleared, or a save would silently put down what you had
+     just picked up. */
+  paintArmed();
   /* Badge drag: a consultant carries their badge onto another pod and the two exchange pods.
      This is the ONE edit open to any consultant without unlocking — everything else is rota-master. */
   root.querySelectorAll(".cell[draggable='true']").forEach(c => {
@@ -1948,10 +2413,9 @@ async function redraftDrafts(){
     clog("Draft weeks handed back to the algorithm — " + held.length + " hand-made placement" +
          (held.length === 1 ? "" : "s") + " across " + days.size + " day" + (days.size === 1 ? "" : "s") +
          " after " + fmt(pubUntil()) + " dropped", "manual", null, " (Look ahead)");
-    cdata.savedAt = new Date().toISOString();
     cdata.savedBy = localStorage.getItem("consEditor") || "?";
     state("saving");
-    try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast("Draft weeks released — the algorithm has them back"); }
+    try { if (!await saveCover()) return; state("saved"); toast("Draft weeks released — the algorithm has them back"); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); }
     renderAll();
   });
@@ -2084,10 +2548,10 @@ async function applyEdit(d, k, ini, note){
       clog("Rota change on " + fmt(d) + " sorted out", "manual", d, " (consultant page)");
     }
   }
-  cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
+  cdata.savedBy = who;
   state("saving");
   try {
-    await postLive(COVER_SAVE, JSON.stringify(cdata));
+    if (!await saveCover()) return;
     state("saved");
     toast("Saved — " + (ini || "cleared") + (ini === (rec.auto[k] || "") ? "" : " (flagged: differs from the rota sheet)"));
   } catch(e){ state("unsaved"); toast("Save failed — try again"); }
@@ -2111,10 +2575,10 @@ async function applySwap(d, k1, k2){
        { act: "move", subj: a, from: podk(k1), to: podk(k2) });
   clog(nameOf(b) + " moves to " + rowLabel(k1) + " on " + fmt(d), "manual", d, " (consultant page)",
        { act: "move", subj: b, from: podk(k2), to: podk(k1) });
-  cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
+  cdata.savedBy = who;
   state("saving");
   try {
-    await postLive(COVER_SAVE, JSON.stringify(cdata));
+    if (!await saveCover()) return;
     state("saved"); toast(a + " ↔ " + b);
   } catch(e){ state("unsaved"); toast("Save failed — try again"); }
   renderAll();
@@ -2136,10 +2600,10 @@ async function applyFinSwap(d, k1, k2){
   const who = localStorage.getItem("consEditor") || "?";
   clog("Finish swap " + d + ": " + a + " " + (fa || "17:00") + " ↔ " + b + " " + (fb || "17:00"),
        "manual", d, " (consultant page)");
-  cdata.savedAt = new Date().toISOString(); cdata.savedBy = who;
+  cdata.savedBy = who;
   state("saving");
   try {
-    await postLive(COVER_SAVE, JSON.stringify(cdata));
+    if (!await saveCover()) return;
     state("saved"); toast("Finish times swapped");
   } catch(e){ state("unsaved"); toast("Save failed — try again"); }
   renderAll();
@@ -2172,6 +2636,71 @@ function hideCard(){ $("#hovercard").style.display = "none"; }
 /* ensureRota — the edit-password gate — was removed on 6 Aug. See enterEdit above: editing
    the grid needs a name, not a password. Nothing calls it and nothing should. */
 
+/* WHAT IS CURRENTLY PICKED UP. One at a time, cleared on every redraw and on leaving Edit, because
+   an armed cell that survives a week change would swap two people who were never on screen
+   together. Held as data rather than as a DOM reference for the same reason. */
+let armed = null;
+function clearArmed(){
+  armed = null;
+  document.querySelectorAll(".cell.armed,.codpill.armed,.finpill.armed")
+    .forEach(e => e.classList.remove("armed"));
+}
+function paintArmed(){
+  document.querySelectorAll(".cell.armed,.codpill.armed,.finpill.armed")
+    .forEach(e => e.classList.remove("armed"));
+  if (!armed) return;
+  const sel = armed.kind === "pod" ? ".cell[data-d='" + armed.d + "'][data-k='" + armed.k + "']"
+            : armed.kind === "cod" ? ".codpill[data-d='" + armed.d + "']"
+            : ".finpill[data-d='" + armed.d + "'][data-k='" + armed.k + "']";
+  const el = document.querySelector(sel); if (el) el.classList.add("armed");
+}
+/* Everything a tap can do to a pod cell, in the order the questions actually arise. */
+function tapCell(d, k, cellEl){
+  requireEdit(() => {
+    const rec = ((CR() || {}).days || {})[d];
+    const cur = (rec && rec.cur[k]) || "";
+    const isPod = "ABCDE".includes(k);
+    if (armed) {
+      /* A swap is between two people on ONE day — the same rule the drop handler enforces, said
+         the same way, because two paths that disagree about that is how a rota gets a person in
+         two places. */
+      if (armed.d !== d) { toast("Swap within the same day"); clearArmed(); return; }
+      const a = armed;
+      if (a.kind === "cod") {
+        clearArmed();
+        if (!cur || !isPod) { toast("Tap a pod with somebody on it to take COD"); return; }
+        if (cur === rec.cur.cod) return;
+        applyEdit(d, "cod", cur, "COD handed to " + cur + " (" + rowLabel(k) + ")");
+        return;
+      }
+      if (a.kind === "fin") {
+        clearArmed();
+        if (!cur || !isPod) { toast("Tap a pod with somebody on it to take the finish"); return; }
+        if (a.k === k) return;
+        applyFinSwap(d, a.k, k);
+        return;
+      }
+      /* Tapping the armed cell again means "I meant to change this one, not move it" — so it
+         falls through to the dropdown. Nothing is labelled on screen (rule 2); it is in the Key. */
+      if (a.k === k) { clearArmed(); editCell(d, k, cellEl); return; }
+      clearArmed();
+      if (!cur) { toast("Tap a pod with somebody to swap with"); return; }
+      ensureWho(() => applySwap(d, a.k, k));
+      return;
+    }
+    /* Nothing picked up yet. An occupied pod arms; anything else has nothing to pick up, so it
+       goes straight to the dropdown — an empty pod, the on-call column, Fairfield. */
+    if (isPod && cur) { armed = { kind: "pod", d, k }; paintArmed(); return; }
+    editCell(d, k, cellEl);
+  });
+}
+function tapPill(kind, d, k){
+  requireEdit(() => {
+    if (armed && armed.kind === kind && armed.d === d && armed.k === (k || "")) { clearArmed(); return; }
+    armed = { kind, d, k: k || "" };
+    paintArmed();
+  });
+}
 function editCell(d, k, cellEl){
   requireEdit(() => {
     const rec = ((CR() || {}).days || {})[d];
@@ -2220,6 +2749,9 @@ function enterEdit(){
 function leaveEdit(){
   EDIT_MODE = false;
   document.body.classList.remove("editing");
+  /* Whatever was picked up is put down. Leaving it armed would mean pressing Edit again tomorrow
+     and finding a cell already half-way through a swap nobody remembers starting. */
+  clearArmed();
   renderAll();
 }
 $("#btnEdit").onclick = enterEdit;
@@ -2258,6 +2790,14 @@ function keyDialog(){
     row("<span class='finpill'>18:00</span>", "Stays until this time. Drag it to swap who stays late."),
     row("<span style='color:var(--muted);font-size:.75rem'>\u2022 differs</span>",
         "Changed by hand, so it no longer matches the rota sheet"),
+    /* The tap gesture belongs here and nowhere else. It has no on-screen label by design (rule 2),
+       so if it is not in the Key it is not discoverable at all \u2014 and on a phone it is the ONLY way
+       to swap anybody, because drag and drop does not exist on touch. */
+    head("Changing it"),
+    row("<span class='cell armed' style='min-width:0'>NJC</span>",
+        "Picked up. Press Edit first, tap a name to pick it up, then tap another name on the same day to swap the two."),
+    row("<span class='cell' style='min-width:0'>NJC</span>",
+        "Tap the picked-up name again to choose somebody different instead of swapping."),
     head("Columns"),
     row("<b style='font-size:.8rem'>On call</b>", "Overnight, and the 24-hour person at weekends"),
     row("<b style='font-size:.8rem'>Fairfield</b>", "Covering FGH that day"),
@@ -2282,7 +2822,10 @@ function shiftWeek(n){
   const wks = weeksAvail();
   const i = wks.indexOf(curWeek);
   const target = wks[i + n];
-  if (target){ curWeek = target; renderRota(); }
+  /* Changing week puts down whatever was picked up. A swap is always within one day, so an armed
+     cell from the week you just left can only ever produce "swap within the same day" — better to
+     drop it than to carry an invisible one across. */
+  if (target){ curWeek = target; clearArmed(); renderRota(); }
 }
 $("#btnPrev").onclick = () => shiftWeek(-1);
 $("#btnNext").onclick = () => shiftWeek(1);
@@ -2509,8 +3052,13 @@ function showLockScreen(then){
   for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (k === "lock") ? "" : "none";
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.remove("active"));
   const bt = $("#btnTeam"); if (bt) bt.classList.add("active");
+  /* "once on this device" was wrong: the unlock is kept in sessionStorage, so it lasts until the
+     tab is closed and not a minute longer. Saying "device" set an expectation the page then broke
+     every morning, which is a small lie that costs trust on a page whose whole job is to be the
+     thing people believe about tomorrow. */
   $("#lockSub").textContent = "One password covers Look ahead, Fairness and the change log. " +
-    "It's the rota team's password from the resident board, and you'll only be asked once on this device.";
+    "It's the rota team's password from the resident board, and you'll be asked again next time " +
+    "you open this page.";
   $("#lockMsg").textContent = "";
   $("#lockPw").value = "";
   setTimeout(() => $("#lockPw").focus(), 40);
@@ -2544,9 +3092,17 @@ const maskEmail = a => {
   const [u, d] = String(a).split("@");
   return (u || "").slice(0, 3) + "•••" + (d ? "@" + d : "");
 };
+/* THE RESET IS A DEAD END AND SAYS SO UP FRONT. The two Power Automate flows this needs are Ali's
+   to build in the trust tenant and do not exist, so `cvr` is not in k.js and COVER_RESET is empty.
+   The old code let you click Reset password, pick an address and press Send link before admitting
+   it — three steps to a wall. Worse, it left somebody stuck: this is the RESIDENT board's password,
+   so the way to change it was never on this page at all, and nothing said that either.
+   Naming where the password actually lives is the useful half, and it costs one sentence. */
 $("#lockReset").onclick = e => {
   e.preventDefault();
   const admins = ((CR() || {}).resetAdmins || []);
+  if (!COVER_RESET) { $("#lockMsg").textContent =
+    "This is the rota team's password from the resident board — change it there, on its Settings page."; return; }
   if (!admins.length) { $("#lockMsg").textContent = "No reset address is set up yet."; return; }
   const sel = $("#lockAdmin");
   sel.innerHTML = admins.map((a, n) => "<option value='" + n + "'>" + esc(maskEmail(a)) + "</option>").join("");
@@ -2569,11 +3125,28 @@ $("#lockSend").onclick = async () => {
     $("#lockMsg").textContent = "Couldn't send — try again.";
   }
 };
+/* FAILS CLOSED WHEN IT CANNOT CHECK. The old test was `unlocked || !data || !data.staffPw`, which
+   opened the rota-team pages whenever the resident store had not loaded — that is, on exactly the
+   network blip this page is most likely to meet. Two different situations were sharing one branch:
+
+     data is null            the read flow failed. We do not KNOW the password, so we cannot say
+                             anybody is entitled. Refuse, and say why.
+     data has no staffPw     the resident board has no password set. There is nothing to check,
+                             deliberately, so opening is right.
+
+   Worth being straight about the size of this: the whole cover store, every future week and the
+   entire change log are already in the browser before this function is ever called, so the lock
+   has always been about who gets shown the rota-team pages rather than about confidentiality.
+   That does not make failing open harmless — it makes it untidy in a way that reads as a control
+   and is not one. */
 function ensureTeam(cb){
   let unlocked = false;
   try { unlocked = sessionStorage.getItem("consTeamUnlocked") === "1"; } catch(e){}
-  if (unlocked || !data || !data.staffPw) return cb();
+  if (unlocked) return cb();
+  if (data && !data.staffPw) return cb();
   showLockScreen(cb);
+  if (!data) $("#lockMsg").textContent =
+    "Can't check the password — the rota didn't load. Try again when you're back on the network.";
 }
 document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
 /* The shield now lands on Look ahead rather than Fairness. What's coming up is the question the
@@ -2581,6 +3154,10 @@ document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]")
    because unlocking has just changed what the Pods grid is allowed to show and it must not be
    left holding dashes behind the tab you switched away from; showTab draws Look ahead itself. */
 $("#btnTeam").onclick = () => ensureTeam(() => { renderRota(); showTab("ahead"); });
+/* The phone's shield. Deliberately the SAME handler rather than a second one that happens to do
+   the same thing — the whole reason this button exists is that the rail's was unreachable, and two
+   copies of "what the shield does" is how they come to differ. */
+$("#btnTeamM").onclick = () => ensureTeam(() => { renderRota(); showTab("ahead"); });
 $("#tpBack").onclick = () => showTab("rota");
 /* Read-only until Edit is pressed. Set here rather than in the markup so a page that fails to
    boot is not left looking editable. */
