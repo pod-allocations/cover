@@ -164,9 +164,14 @@ table.rota th .thsub{display:block;font-size:.56rem;letter-spacing:.05em;color:v
 #hovercard p{margin:.35rem 0 0;color:#4a4f58}
 #hovercard .hcsup{margin-top:.4rem;font-size:.7rem;color:var(--muted);font-weight:600}
 select.cellsel{border:1px solid #dcdcd8;border-radius:9px;padding:.25rem .3rem;font-size:.8rem;font-family:inherit;background:#fff;max-width:100%}
-#whoOverlay{position:fixed;inset:0;background:rgba(23,24,28,.35);display:flex;align-items:center;justify-content:center;z-index:60}
-#whoOverlay .box{background:var(--card);border-radius:16px;padding:1.2rem 1.4rem;max-width:320px;width:90%}
-#whoOverlay b{display:block;margin-bottom:.6rem}
+/* #editOverlay is the unlock prompt and shares every one of these rules. It gets an id of its own
+   rather than borrowing whoOverlay's because "who's editing" can be open at the same time — press
+   Turn on editing and the name picker follows straight after — and two live elements answering to
+   one id makes document.querySelector("#whoOverlay button") a coin toss. render-tests.js caught
+   exactly that on 17 Aug: four assertions started reading the wrong dialog's first button. */
+#whoOverlay,#editOverlay{position:fixed;inset:0;background:rgba(23,24,28,.35);display:flex;align-items:center;justify-content:center;z-index:60}
+#whoOverlay .box,#editOverlay .box{background:var(--card);border-radius:16px;padding:1.2rem 1.4rem;max-width:320px;width:90%}
+#whoOverlay b,#editOverlay b{display:block;margin-bottom:.6rem}
 #whoOverlay select{width:100%;margin-bottom:.7rem}
 tr.junrow td{background:#fafaf8;border-bottom:1px solid var(--hair);font-size:.74rem;color:#5a5f68;padding:.3rem .6rem}
 tr.junrow td.rowh{font-weight:700;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -785,6 +790,56 @@ async function postLive(url, payload){
    because twelve call sites test this function for truthiness and a string like "refused" is
    truthy. */
 let coverSaveWrote = false;
+/* ── WAITING LONG ENOUGH, AND KNOWING OUR OWN HANDWRITING — 17 Aug ──────────────────────────────
+   The 11 Aug verify waited 900ms once and then declared the save unconfirmed. Measured against
+   the live flows on 17 Aug, that was never going to work:
+
+     preflight read   894ms          the read flow alone is slower than the whole verify window
+     post returns    1525ms
+     write VISIBLE   3591-3806ms     measured twice, on two different saves
+
+   So the verify read fired at ~2.4s against a write that lands at ~3.6s, missed it every time,
+   and the corner said "Save failed" over a save that had worked perfectly. That is the worst
+   possible lie to tell an editor, because the obvious response is to do the change again — and
+   doing a SWAP again reverses it. Ali's log for 17 Aug is that loop, twice:
+
+     12:30:03  KB -> Pod D, NEK -> Pod A     landed, reported as failed
+     12:30:16  KB -> Pod A, NEK -> Pod D     done again, so undone
+
+   Every burst ends exactly where it started, which is what "nothing sticks" actually was. The
+   page was not failing to save; it was failing to notice that it had saved.
+
+   Three changes, and they have to go together:
+
+   1. POLL rather than guess a number. A fixed wait is a bet on the slowest flow the NHS network
+      will ever have, and any number picked today is wrong on a bad afternoon. Ask repeatedly for
+      about ten seconds and stop as soon as our stamp appears — a good save now confirms in ~3.6s
+      and a slow one still confirms.
+   2. RECOGNISE OUR OWN STAMPS. The conflict check asked "has savedAt moved since we loaded?",
+      which is the wrong question — it should be "has somebody ELSE moved it?". Every stamp this
+      page has posted is remembered, so finding one of our own in the file reads as ours and the
+      baseline simply catches up. Without this, one unconfirmed save turned every later save in
+      the session into a false "somebody else changed the cover", and THAT one reverts the change
+      on screen. One slow write poisoned the whole sitting.
+   3. THE BASELINE ALWAYS MOVES. It used to advance on success and on a failed verifying read,
+      but not on the mismatch path — the one that actually happened. Whatever we last knew to be
+      true is now remembered as ours, so a stale baseline cannot survive a single call. */
+const VERIFY_WAITS = [400, 600, 1000, 1500, 2000, 2000, 2500];
+/* Every savedAt this page has written. Small, session-only, and never persisted: it answers one
+   question — "is this value in the file something WE put there?" */
+const ourStamps = new Set();
+/* Moving the baseline always banks the value we are leaving behind, so a later read that finds it
+   is recognised rather than mistaken for another editor.
+   "" IS BANKED TOO, and the guard that skipped it was a real bug — caught by cover-tests.js, which
+   went from 3 posts to 1 (17 Aug). A store that has never been saved has no savedAt, so "" is its
+   honest baseline, not a missing value. Skipping it meant that after one unconfirmed save against
+   a fresh store, every later save read "" back, failed to recognise it, and refused as somebody
+   else's conflict — the exact cascade this whole change exists to kill, reintroduced by an
+   `if` that read as harmless. */
+function advanceBaseline(next){
+  ourStamps.add(coverSavedAtOnLoad || "");
+  coverSavedAtOnLoad = next;
+}
 async function saveCover(){
   coverSaveWrote = false;
   /* canSave(), not !COVER_SAVE. Staging has never had a save key, so testing the key directly is
@@ -799,32 +854,47 @@ async function saveCover(){
                                         body: "{}", cache: "no-store" });
     if (r.ok) live = await r.json();
   } catch(e){ live = null; }
-  if (live && live.v && (live.savedAt || "") !== coverSavedAtOnLoad) {
-    state("unsaved");
-    toast("Somebody else changed the cover while this was open — reload before editing");
-    return false;
+  /* Normalised ONCE and then used everywhere below. The comparison said `live.savedAt || ""` and
+     the recognition test said `live.savedAt`, so a store with no savedAt at all compared as "" and
+     was looked up as undefined — never a match, always a conflict. Same value, two spellings, and
+     the mismatch is invisible on the page and obvious in a test. */
+  const liveStamp = (live && live.savedAt) || "";
+  if (live && live.v && liveStamp !== coverSavedAtOnLoad) {
+    /* Ours, from a save this session that we never managed to confirm. Nobody else has touched the
+       file, so there is nothing to refuse — catch the baseline up and carry on. */
+    if (ourStamps.has(liveStamp)) {
+      advanceBaseline(liveStamp);
+    } else {
+      state("unsaved");
+      toast("Somebody else changed the cover while this was open — reload before editing");
+      return false;
+    }
   }
   const stamp = new Date().toISOString();
   cdata.savedAt = stamp;
+  ourStamps.add(stamp);
   coverSaveWrote = true;                       // past this line a rollback would be a lie
   await postLive(COVER_SAVE, JSON.stringify(cdata));
-  /* Give the flow a moment to land before asking whether it did. */
-  await new Promise(r => setTimeout(r, 900));
-  try {
-    const r2 = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
-                                         body: "{}", cache: "no-store" });
-    if (r2.ok) {
-      const back = await r2.json();
-      if (back && back.savedAt === stamp) { coverSavedAtOnLoad = stamp; return true; }
-      state("unsaved");
-      toast("Couldn't confirm the save — check the board before relying on it");
-      return false;
-    }
-  } catch(e){}
-  /* Could not verify either way. Move our baseline on regardless: the write probably landed, and
-     leaving the baseline behind would make the NEXT save look like somebody else's conflict. */
-  coverSavedAtOnLoad = stamp;
-  return true;
+  /* Ask until it is there, rather than once and too early. */
+  for (const wait of VERIFY_WAITS) {
+    await new Promise(r => setTimeout(r, wait));
+    try {
+      const r2 = await fetch(COVER_READ, { method: "POST", headers: { "Content-Type": "application/json" },
+                                           body: "{}", cache: "no-store" });
+      if (r2.ok) {
+        const back = await r2.json();
+        if (back && back.savedAt === stamp) { advanceBaseline(stamp); return true; }
+      }
+    } catch(e){ /* a blip mid-poll is not an answer — keep asking */ }
+  }
+  /* Ten seconds and still not visible. The write has very probably landed and simply cannot be
+     proved, so the change STAYS on screen (coverSaveWrote is true, so nothing is put back) and we
+     say we could not confirm it rather than claiming success. The baseline moves regardless: point
+     3 above — leaving it behind is what turned one slow save into a session of false conflicts. */
+  advanceBaseline(stamp);
+  state("unsaved");
+  toast("Couldn't confirm the save — check the board before relying on it");
+  return false;
 }
 /* ── A REFUSED SAVE MUST NOT LEAVE THE CHANGE ON SCREEN — 12 Aug ────────────────────────────────
    applyEdit, applySwap and applyFinSwap all move people and write the log BEFORE saveCover runs.
@@ -912,10 +982,43 @@ const state = t => { const s = $("#saveState"); s.className = t; s.textContent =
 
 function weeksAvail(){ return Object.keys((data || {}).weeks || {}).sort(); }
 
+/* ── ONE BLIP MUST NOT EMPTY THE BOARD — 17 Aug ─────────────────────────────────────────────────
+   `data = await r.json()` took whatever came back and called it a rota. On 17 Aug the flow
+   answered `{code, message}` instead — a throttle, not an outage, because the very next request
+   returned 200 with 56 weeks. The page stored the error object, found no `weeks` in it, left
+   curWeek undefined, and threw `RangeError: Invalid time value` out of addDays inside renderRota.
+   load() is called without a catch, so that rejection went nowhere: blank grid, no message, and
+   nothing in the corner to say the page had died halfway through drawing itself.
+
+   A read that FAILED is not an empty rota — the same lesson loadC learned on 11 Aug, in the same
+   file, for the same reason. Two changes: try again, because these flows fail in blips and the
+   retry has answered every time; and check the SHAPE before trusting it, because "it parsed as
+   JSON" was never the question. If it still never arrives, say so where somebody is looking. */
+async function readRota(){
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise(r => setTimeout(r, 800 * attempt));
+    try {
+      const r = await fetch(READ, { method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: "{}", cache: "no-store" });
+      if (!r.ok) continue;
+      const j = await r.json();
+      /* The one thing that makes it a rota. An error payload has neither. */
+      if (j && typeof j === "object" && j.weeks && Object.keys(j.weeks).length) return j;
+      last = j;
+    } catch(e){ /* a blip is not an answer — ask again */ }
+  }
+  console.warn("resident rota read did not return a rota", last);
+  return null;
+}
+
 async function load(){
   if (!READ){ $("#weekGrid").innerHTML = "<p style='padding:1rem'>No data key in the link — open this page from the shared Teams link.</p>"; return; }
-  const r = await fetch(READ, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
-  data = await r.json();
+  data = await readRota();
+  if (!data){
+    $("#weekGrid").innerHTML = "<p style='padding:1rem'>Couldn't read the rota just now — that's usually a blip. Reload the page to try again.</p>";
+    return;
+  }
   const wks = weeksAvail();
   const thisMon = mondayOf(new Date().toISOString().slice(0,10));
   curWeek = wks.includes(thisMon) ? thisMon : (wks.find(w => w >= thisMon) || wks[wks.length - 1]);
@@ -2272,16 +2375,20 @@ function wireGrid(root){
   paintArmed();
   /* Badge drag: a consultant carries their badge onto another pod and the two exchange pods.
      This is the ONE edit open to any consultant without unlocking — everything else is rota-master. */
+  /* Locked means locked AT THE GESTURE, not three steps later (17 Aug). Cancelling the dragstart
+     stops the badge ever leaving its cell, so there is no drag to interpret as a promise, and
+     offerEdit puts the unlock in front of the person who just asked for it. See offerEdit. */
+  const gate = e => { if (EDIT_MODE) return false; e.preventDefault(); offerEdit(); return true; };
   root.querySelectorAll(".cell[draggable='true']").forEach(c => {
-    c.ondragstart = e => { e.dataTransfer.setData("text/pod", c.dataset.d + "|" + c.dataset.k); e.dataTransfer.effectAllowed = "move"; };
+    c.ondragstart = e => { if (gate(e)) return; e.dataTransfer.setData("text/pod", c.dataset.d + "|" + c.dataset.k); e.dataTransfer.effectAllowed = "move"; };
   });
   /* COD pill drag: hand referrals to whoever covers the pod you drop it on (same day). */
   root.querySelectorAll(".codpill").forEach(pill => {
-    pill.ondragstart = e => { e.dataTransfer.setData("text/cod", pill.dataset.d); e.dataTransfer.effectAllowed = "move"; };
+    pill.ondragstart = e => { if (gate(e)) return; e.dataTransfer.setData("text/cod", pill.dataset.d); e.dataTransfer.effectAllowed = "move"; };
   });
   /* Finish pill drag: swap who stays late without moving anybody between pods. */
   root.querySelectorAll(".finpill").forEach(pill => {
-    pill.ondragstart = e => { e.dataTransfer.setData("text/fin", pill.dataset.d + "|" + pill.dataset.k); e.dataTransfer.effectAllowed = "move"; };
+    pill.ondragstart = e => { if (gate(e)) return; e.dataTransfer.setData("text/fin", pill.dataset.d + "|" + pill.dataset.k); e.dataTransfer.effectAllowed = "move"; };
   });
   /* Resident profile cards on hover — text only, and only what the store actually holds. */
   root.querySelectorAll(".rpill[data-rid]").forEach(pl => {
@@ -2313,9 +2420,16 @@ function wireGrid(root){
         const [pd, pk] = pod.split("|");
         if (pd !== td.dataset.date) { toast("Swap within the same day"); return; }
         if (pk === td.dataset.pod) return;
-        const rec = ((CR() || {}).days || {})[pd]; if (!rec) return;
+        const rec = ((CR() || {}).days || {})[pd];
+        if (!rec) { toast("Nothing is allocated on that day yet"); return; }
         if (!rec.cur[td.dataset.pod]) { toast("Drop on a pod with someone to swap with"); return; }
-        ensureWho(() => applySwap(pd, pk, td.dataset.pod));
+        /* requireEdit, NOT ensureWho (17 Aug). This one line was the odd one out: the COD drop and
+           the finish-time drop both asked whether the page was unlocked, and the pod drop — the
+           commonest gesture on the board — skipped straight to asking for a name. Three drags, two
+           different rules, which is exactly the "rule enforced in one code path and not another"
+           this file has been bitten by before. requireEdit calls ensureWho on the way through, so
+           nothing is lost. */
+        requireEdit(() => ensureWho(() => applySwap(pd, pk, td.dataset.pod)));
         return;
       }
       const d = e.dataTransfer.getData("text/cod");
@@ -2576,9 +2690,49 @@ function ensureWho(cb){
 
 const rowLabel = k => k.length === 1 ? "Pod " + k : k === "oncall" ? "on call" : k === "cod" ? "COD" : "Fairfield";
 
+/* ── NO EDIT ENDS IN SILENCE — 17 Aug ───────────────────────────────────────────────────────────
+   All three appliers opened with `const cons = CR(); if (!cons) return;` — a silent return sitting
+   IN FRONT of the line that would have explained itself. So whenever the cover store had not
+   loaded, a dragged badge simply went back where it came from and the page said nothing, which
+   from the other side of the screen is indistinguishable from being ignored. Ali, 17 Aug: "when
+   not in edit mode it allows you to drag but nothing sticks."
+   canSave() is false when cdata is null, so it already covers both cases; asking it FIRST costs
+   nothing and always speaks. The two cases are told apart because the fixes are different — one
+   is reload the page, the other is a missing key that needs somebody's help. */
+/* ── THE BOARD REPAINTS WHEN YOU LET GO, NOT WHEN SHAREPOINT AGREES — 17 Aug ────────────────────
+   Ali, 17 Aug: "theres a massive delay after dragging before the swap actually appears 1-2
+   seconds." Correct, and measured: every applier moved the people, then WAITED for the whole save
+   round trip before calling renderAll(). The preflight read alone is ~0.9s and the post another
+   ~0.6s, so the badge sat in its old pod for a second and a half after you let go of it.
+
+   That is its own kind of "nothing sticks": the eye reads a stalled board as a rejected gesture,
+   and the natural response is to do it again — which, for a swap, undoes it. The delay and the
+   false failure were feeding the same mistake from different ends.
+
+   Repainting up front makes it worse before it makes it better, too: the polling verify now waits
+   up to ten seconds, so waiting for confirmation was never going to be an option.
+
+   So the change goes on screen the moment it is made, with "Saving…" in the corner saying it is
+   not yet safe, and saveOrPutBack redraws to put it back if the save is refused. That ordering is
+   already the page's contract — the 12 Aug note above says a refused save must not leave the
+   change on screen, and putting it back is exactly what that path does.
+
+   renderGrids() rather than renderAll(): the grids are what somebody is looking at, and Fairness,
+   the log and Setup can wait for the save they are describing. renderAll() still runs afterwards,
+   so nothing goes unrefreshed — this just stops the board being the slowest thing on the page. */
+function showChangeNow(){
+  try { renderGrids(); } catch(e){ /* never let a paint failure lose the save that follows */ }
+}
+
+function editBlocked(){
+  if (!cdata) { toast("The cover hasn't loaded yet — nothing was changed. Reload the page."); return true; }
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return true; }
+  return false;
+}
+
 async function applyEdit(d, k, ini, note){
-  const cons = CR(); if (!cons) return;
-  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
+  if (editBlocked()) return;
+  const cons = CR();
   const shot = dayShot(cons, d);               // before the first mutation, including creating the day
   const blank = () => ({ A:"",B:"",C:"",D:"",E:"",oncall:"",cod:"",fgh:"",wkend:false,fin:{} });
   const rec = cons.days[d] || (cons.days[d] = { auto: blank(), cur: blank() });
@@ -2619,6 +2773,7 @@ async function applyEdit(d, k, ini, note){
   }
   cdata.savedBy = who;
   state("saving");
+  showChangeNow();
   if (!await saveOrPutBack(cons, shot)) return;
   state("saved");
   toast("Saved — " + (ini || "cleared") + (ini === (rec.auto[k] || "") ? "" : " (flagged: differs from the rota sheet)"));
@@ -2628,11 +2783,12 @@ async function applyEdit(d, k, ini, note){
 /* A pod-to-pod swap: the two consultants exchange pods for that day. Finish time and COD are
    held against the person, not the pod, so both badges travel with them automatically. */
 async function applySwap(d, k1, k2){
-  const cons = CR(); if (!cons) return;
-  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
-  const rec = (cons.days || {})[d]; if (!rec) return;
+  if (editBlocked()) return;
+  const cons = CR();
+  const rec = (cons.days || {})[d];
+  if (!rec) { toast("Nothing is allocated on that day yet"); return; }
   const a = rec.cur[k1] || "", b = rec.cur[k2] || "";
-  if (!a || !b || a === b) return;
+  if (!a || !b || a === b) { if (a !== b) toast("Both pods need somebody on them to swap"); return; }
   const shot = dayShot(cons, d);
   rec.cur[k1] = b; rec.cur[k2] = a;
   const who = localStorage.getItem("consEditor") || "?";
@@ -2645,6 +2801,7 @@ async function applySwap(d, k1, k2){
        { act: "move", subj: b, from: podk(k2), to: podk(k1) });
   cdata.savedBy = who;
   state("saving");
+  showChangeNow();
   if (!await saveOrPutBack(cons, shot)) return;
   state("saved"); toast(a + " ↔ " + b);
   renderAll();
@@ -2653,14 +2810,15 @@ async function applySwap(d, k1, k2){
 /* Swapping who stays late is agreed between two people, so the badge moves without the people
    moving. Finish times are held against the person, not the pod — the two swap values. */
 async function applyFinSwap(d, k1, k2){
-  const cons = CR(); if (!cons) return;
-  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
-  const rec = (cons.days || {})[d]; if (!rec) return;
+  if (editBlocked()) return;
+  const cons = CR();
+  const rec = (cons.days || {})[d];
+  if (!rec) { toast("Nothing is allocated on that day yet"); return; }
   const a = rec.cur[k1] || "", b = rec.cur[k2] || "";
-  if (!a || !b || a === b) return;
+  if (!a || !b || a === b) { if (a !== b) toast("Both pods need somebody on them to swap"); return; }
   rec.cur.fin = rec.cur.fin || {};
   const fa = rec.cur.fin[a], fb = rec.cur.fin[b];
-  if ((fa || "") === (fb || "")) return;
+  if ((fa || "") === (fb || "")) { toast("Those two finish at the same time — nothing to swap"); return; }
   const shot = dayShot(cons, d);
   if (fb == null) delete rec.cur.fin[a]; else rec.cur.fin[a] = fb;
   if (fa == null) delete rec.cur.fin[b]; else rec.cur.fin[b] = fa;
@@ -2669,6 +2827,7 @@ async function applyFinSwap(d, k1, k2){
        "manual", d, " (consultant page)");
   cdata.savedBy = who;
   state("saving");
+  showChangeNow();
   if (!await saveOrPutBack(cons, shot)) return;
   state("saved"); toast("Finish times swapped");
   renderAll();
@@ -2796,7 +2955,47 @@ function editCell(d, k, cellEl){
    make the name feel like a login, which it isn't. */
 function requireEdit(cb){
   if (EDIT_MODE) return cb();
-  toast("Press Edit to change who covers what");
+  offerEdit();
+}
+/* ── A DRAG OUTSIDE EDIT MODE IS A QUESTION, NOT A MISTAKE — 17 Aug ─────────────────────────────
+   Ali, 17 Aug: "when not in edit mode its a bit confusing as allows you to drag but nothing
+   sticks. maybe put a warning if attempts to, say, go into edit mode."
+
+   The badge was draggable whether or not the page was unlocked, so the gesture always LOOKED
+   available and then quietly did nothing — and a three-second toast at the bottom of a tall grid
+   is not an answer when your eyes are on the pod you just dropped onto. Somebody who picks up a
+   badge has already said what they want; the only thing missing is the unlock, so ask for it
+   there and then instead of sending them to find a button.
+
+   Deliberately a dialog rather than a bigger toast: this one has something to DO, and hard rule 2
+   forbids printing the explanation permanently on the screen. On demand is exactly the shape
+   that's allowed. */
+let edPromptOpen = false;
+function offerEdit(){
+  /* A refused drag can fire twice on a trackpad. One dialog. */
+  if (edPromptOpen || EDIT_MODE) return;
+  edPromptOpen = true;
+  /* editOverlay, not whoOverlay — see the note beside the shared CSS. */
+  const ov = document.createElement("div"); ov.id = "editOverlay";
+  const box = document.createElement("div"); box.className = "box"; box.style.maxWidth = "360px";
+  const t = document.createElement("b"); t.textContent = "Turn on editing?";
+  const sub = document.createElement("div");
+  sub.style.cssText = "font-size:.82rem;color:var(--muted);margin:.3rem 0 .9rem;line-height:1.45";
+  sub.textContent = "The cover is locked, so that move wasn't saved. Editing asks for your name and logs the change under it.";
+  const close = () => { edPromptOpen = false; ov.remove(); };
+  const ok = document.createElement("button");
+  ok.className = "btn"; ok.style.width = "100%"; ok.textContent = "Turn on editing";
+  ok.onclick = () => { close(); enterEdit(); };
+  const no = document.createElement("button");
+  no.className = "btn sec"; no.style.cssText = "width:100%;margin-top:.5rem"; no.textContent = "Not now";
+  no.onclick = close;
+  box.append(t, sub, ok, no);
+  ov.onclick = e => { if (e.target === ov) close(); };
+  document.addEventListener("keydown", function esc(e){
+    if (e.key === "Escape"){ document.removeEventListener("keydown", esc); close(); }
+  });
+  ov.append(box); document.body.append(ov);
+  ok.focus();
 }
 /* No password (Ali, 6 Aug). Swapping people between days and moving badges is ordinary
    consultant work — the only thing needed is a name to log it under, so the change has an
