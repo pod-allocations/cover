@@ -149,6 +149,13 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
    It clears itself: `prev` is rewritten by the next sync, so the marks show what THAT run did. */
 td.moved{box-shadow:inset 0 0 0 2px var(--accent)}
 td.moved .cell{position:relative}
+/* The year is MEANT to drop to a second line — renderRota says so in as many words — but nothing
+   ever made it a block, so on desktop and tablet it ran straight on and the title read
+   "17 Aug – 23 Aug2026". It wrapped on the phone only because the column is narrow enough to force
+   it, which is why this survived: the one width somebody checks on a phone was the one width where
+   the bug was invisible. Stated intent, now stated in CSS. (17 Aug) */
+#weekTitle small{display:block;font-weight:500;font-size:.62rem;letter-spacing:.06em;
+  color:var(--muted);margin-top:.05rem}
 .heldpill{display:inline-block;margin-top:.2rem;font-size:.55rem;letter-spacing:.05em;
   text-transform:uppercase;font-weight:700;border:1px solid var(--hair);color:var(--muted);
   border-radius:5px;padding:.02rem .28rem}
@@ -2983,11 +2990,15 @@ function offerEdit(){
   sub.style.cssText = "font-size:.82rem;color:var(--muted);margin:.3rem 0 .9rem;line-height:1.45";
   sub.textContent = "The cover is locked, so that move wasn't saved. Editing asks for your name and logs the change under it.";
   const close = () => { edPromptOpen = false; ov.remove(); };
+  /* 44px minimum, because this dialog exists FOR the touch case. Measured at 390px on the live
+     page the buttons came out 32 and 34 high — my own new control breaking hard rule 14's touch
+     floor on the very form factor it was written for. A phone is where drag does not exist and
+     tapping is the only way in, so this is the last place to put a small button. */
   const ok = document.createElement("button");
-  ok.className = "btn"; ok.style.width = "100%"; ok.textContent = "Turn on editing";
+  ok.className = "btn"; ok.style.cssText = "width:100%;min-height:44px"; ok.textContent = "Turn on editing";
   ok.onclick = () => { close(); enterEdit(); };
   const no = document.createElement("button");
-  no.className = "btn sec"; no.style.cssText = "width:100%;margin-top:.5rem"; no.textContent = "Not now";
+  no.className = "btn sec"; no.style.cssText = "width:100%;margin-top:.5rem;min-height:44px"; no.textContent = "Not now";
   no.onclick = close;
   box.append(t, sub, ok, no);
   ov.onclick = e => { if (e.target === ov) close(); };
@@ -3054,6 +3065,15 @@ function keyDialog(){
     row("<span class='finpill'>18:00</span>", "Stays until this time. Drag it to swap who stays late."),
     row("<span style='color:var(--muted);font-size:.75rem'>\u2022 differs</span>",
         "Changed by hand, so it no longer matches the rota sheet"),
+    /* HELD AND THE OUTLINE WERE HOVER-ONLY \u2014 17 Aug. Both carry a `title`, and a title is a
+       desktop affordance: hard rule 14 says anything that only reveals on hover does not exist on
+       three of the four form factors. So a consultant on a phone saw an amber word on a day and a
+       gold outline round a name with no way in the world to find out what either meant. The Key is
+       where on-demand help belongs (hard rule 2), and neither was in it. */
+    row("<span class='heldpill' style='margin:0'>held</span>",
+        "This day is held to the version that was circulated, so the nightly sync leaves it alone"),
+    row("<span class='cell' style='min-width:0;box-shadow:inset 0 0 0 2px var(--accent)'>NJC</span>",
+        "Changed by the last sync \u2014 on a computer, hover to see who was there before"),
     /* The tap gesture belongs here and nowhere else. It has no on-screen label by design (rule 2),
        so if it is not in the Key it is not discoverable at all \u2014 and on a phone it is the ONLY way
        to swap anybody, because drag and drop does not exist on touch. */
@@ -3066,7 +3086,10 @@ function keyDialog(){
     row("<b style='font-size:.8rem'>On call</b>", "Overnight, and the 24-hour person at weekends"),
     row("<b style='font-size:.8rem'>Fairfield</b>", "Covering FGH that day"),
     head("Residents"),
-    row("<span class='rpill'>Name</span>", "A resident in that pod. Hover for their profile. Use the people button to show or hide them."));
+    /* "Hover for their profile" was the only instruction here, and on a phone or tablet there is
+       no hover — so the Key was telling three quarters of the form factors to do something that
+       does not exist (hard rule 14). Say where it works rather than pretending it works anywhere. */
+    row("<span class='rpill'>Name</span>", "A resident in that pod. On a computer, hover for their profile. Use the people button to show or hide them."));
   const btn = document.createElement("button");
   btn.className = "btn"; btn.style.cssText = "width:100%;margin-top:1rem"; btn.textContent = "Close";
   btn.onclick = () => ov.remove();
