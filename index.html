@@ -204,6 +204,16 @@ td.moved .cell{position:relative}
     padding:1.2rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));animation:sheetup .18s ease}
 }
 @keyframes sheetup{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
+/* AN ANIMATION THAT DOES NOT RUN MUST NOT LEAVE THE SHEET WHERE IT STARTED — 17 Aug.
+   The slide begins at translateY(14px), so anywhere the animation is throttled, paused or turned
+   off, the sheet sits fourteen pixels below the bottom edge for as long as it is open — with the
+   Cancel button hanging off the screen. Found by measuring the live page in a throttled frame,
+   where the animation reported playState "running" and never advanced past its first keyframe.
+   Somebody who has asked their phone for less motion is the likeliest real case, and also the
+   least likely to report a screen that is quietly 14px out of place. */
+@media (prefers-reduced-motion: reduce){
+  #sheetBg .sheet{animation:none}
+}
 /* The year is MEANT to drop to a second line — renderRota says so in as many words — but nothing
    ever made it a block, so on desktop and tablet it ran straight on and the title read
    "17 Aug – 23 Aug2026". It wrapped on the phone only because the column is narrow enough to force
