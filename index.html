@@ -149,6 +149,61 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
    It clears itself: `prev` is rewritten by the next sync, so the marks show what THAT run did. */
 td.moved{box-shadow:inset 0 0 0 2px var(--accent)}
 td.moved .cell{position:relative}
+/* ── THE PERSON SHEET — 17 Aug ──────────────────────────────────────────────────────────────────
+   Lifted from the resident board's personSheet so the two boards behave the same way in the hand,
+   and deliberately a copy of its shape rather than a fresh take on it (Ali, 8 Aug: "just identical
+   to residents (visually and functionally)").
+   Why it exists: on a phone drag and drop does not exist, so tapping is the ONLY way to change
+   anything — and the thing you have to hit was a 22px name in a table. Two gestures, the second of
+   them onto a target a few millimetres wide. The sheet reaches every pod in one tap and cannot
+   miss. 44px is the floor Apple and Google both call reliable; the pod tiles are 54 because this
+   is the control somebody uses at 5am. */
+#sheetBg{position:fixed;inset:0;background:rgba(20,21,29,.42);-webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:320}
+#sheetBg .sheet{background:var(--card);border-radius:20px;padding:1.4rem 1.5rem;max-width:410px;
+  width:90%;box-shadow:0 24px 60px rgba(20,21,29,.25)}
+.sheet .stitle{font-weight:700;font-size:1rem;margin-bottom:.2rem;letter-spacing:-.01em}
+.sheet .sbody{font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:1rem}
+.sheet .slabel{font-size:.66rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;
+  margin:.9rem 0 .4rem}
+.sheet .spods{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem}
+.sheet .sfins{display:grid;grid-template-columns:repeat(2,1fr);gap:.35rem}
+/* Scoped `.sheet` for the same reason the resident board scopes `.dlg`: button.btn.sec sets a
+   background with specificity (0,2,1), so an unscoped .podtile.podA loses to it and every tile
+   comes out white — which is the one thing this row must not be, because the colour is how a pod
+   is recognised everywhere else on the board. */
+.sheet .podtile{min-height:54px;padding:.2rem;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:.05rem;border:1px solid transparent;border-radius:10px;font-weight:700;
+  font-size:1.02rem;cursor:pointer;line-height:1.1}
+.sheet .podtile .who{font-size:.58rem;font-weight:600;opacity:.85;letter-spacing:.01em}
+.sheet .podtile.podA{background:var(--podA);color:var(--podAb)}
+.sheet .podtile.podB{background:var(--podB);color:var(--podBb)}
+.sheet .podtile.podC{background:var(--podC);color:var(--podCb)}
+.sheet .podtile.podD{background:var(--podD);color:var(--podDb)}
+.sheet .podtile.podE{background:var(--podE);color:var(--podEb)}
+/* The pod they are already on is shown, not offered — outline and a tick, so it reads as "you are
+   here" rather than as a button that has stopped working. */
+.sheet .podtile.here{background:transparent;border-style:dashed;font-weight:600;cursor:default}
+.sheet .podtile.podA.here{border-color:var(--podAb)} .sheet .podtile.podB.here{border-color:var(--podBb)}
+.sheet .podtile.podC.here{border-color:var(--podCb)} .sheet .podtile.podD.here{border-color:var(--podDb)}
+.sheet .podtile.podE.here{border-color:var(--podEb)}
+.sheet .podtile.empty{background:var(--hair);color:var(--muted);font-weight:600}
+.sheet .fintile{min-height:54px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:.1rem;border:1px solid var(--line);border-radius:10px;background:var(--card);
+  cursor:pointer;font-size:1rem;font-weight:700;color:var(--ink)}
+.sheet .fintile .who{font-size:.62rem;font-weight:500;color:var(--muted)}
+.sheet .sbtn{display:block;width:100%;margin-top:.45rem;min-height:48px;padding:.7rem;
+  font-size:.88rem;justify-content:center}
+.sheet .sbtn.plain{border-color:transparent;background:transparent;color:var(--muted)}
+/* On a phone the sheet comes up from the bottom edge, where the thumb already is, instead of
+   floating in the middle of the screen. Same markup, same code — only where it sits changes.
+   820px matches the resident board exactly, so a tablet gets the sheet on both boards or neither. */
+@media (max-width:820px){
+  #sheetBg{align-items:flex-end}
+  #sheetBg .sheet{width:100%;max-width:none;border-radius:20px 20px 0 0;
+    padding:1.2rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));animation:sheetup .18s ease}
+}
+@keyframes sheetup{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
 /* The year is MEANT to drop to a second line — renderRota says so in as many words — but nothing
    ever made it a block, so on desktop and tablet it ran straight on and the title read
    "17 Aug – 23 Aug2026". It wrapped on the phone only because the column is narrow enough to force
@@ -2446,6 +2501,8 @@ function wireGrid(root){
       const target = rec.cur[td.dataset.pod];
       if (!target) { toast("No consultant on that pod to take COD"); return; }
       if (target === rec.cur.cod) return;
+      /* Referrals only. Pod E stays where it is — see the note beside editBlocked: pairing them is
+         the allocator's output, not a rule the page enforces on somebody who has decided otherwise. */
       requireEdit(() => applyEdit(d, "cod", target, "COD handed to " + target + " (Pod " + td.dataset.pod + ")"));
     };
   });
@@ -2731,6 +2788,22 @@ function showChangeNow(){
   try { renderGrids(); } catch(e){ /* never let a paint failure lose the save that follows */ }
 }
 
+/* ── COD AND POD E ARE PAIRED BY THE ALLOCATOR, NOT WELDED TOGETHER — 17 Aug ────────────────────
+   The sync always writes them onto the same person (`auto["E"] = cod` on a weekday, `= ld` at a
+   weekend), and the Key says "Pod E — with the consultant of the day". It would be easy to read
+   that as an invariant the page must enforce, and an earlier cut of this file did exactly that:
+   every manual path re-pointed COD at whoever held Pod E.
+
+   That was wrong, and Ali said so plainly (17 Aug): a manual action MAY separate them, and a
+   manual action may put them back. The pairing is what the allocator produces, not a rule the
+   ward has to live inside — somebody can take the referrals while somebody else keeps Pod E, and
+   the page's job is to record that, not to argue with it.
+
+   So nothing here forces them together. The COD pill hands referrals over on its own, exactly as
+   the Key describes, and a pod swap carries COD with the PERSON because that is where it is held.
+   Recorded because the wrong version was written first and the reasoning for it was superficially
+   good; the reason it is wrong is that it takes a decision away from the person making it. */
+
 function editBlocked(){
   if (!cdata) { toast("The cover hasn't loaded yet — nothing was changed. Reload the page."); return true; }
   if (!canSave()) { toast("Cover store not connected — nothing was saved"); return true; }
@@ -2885,6 +2958,129 @@ function paintArmed(){
             : ".finpill[data-d='" + armed.d + "'][data-k='" + armed.k + "']";
   const el = document.querySelector(sel); if (el) el.classList.add("armed");
 }
+/* ── THE PERSON SHEET ───────────────────────────────────────────────────────────────────────────
+   One tap on a name, and every move that name can make is a thumb-sized target. See the CSS above
+   for why it exists at all.
+
+   NOTHING HERE IS NEW BEHAVIOUR. Every control runs a function the drag path already ran —
+   applySwap, applyFinSwap, applyEdit — so the sheet is a second door into the same room and can
+   never drift away from what the board does. That was the rule the resident board followed and
+   it is the reason its sheet has never had to be re-argued.
+
+   WHAT COVER NEEDS THAT THE RESIDENT BOARD DOES NOT. A resident pod holds many people, so its
+   tiles are bare letters. A Cover pod holds exactly ONE consultant, so the tile can say who —
+   and it must, because tapping "D" is not "move me to D", it is "swap me with Natalie", and you
+   should know that before you touch it rather than after.
+
+   EVERY EXCHANGE NAMES BOTH SIDES, and a target that would do nothing is not offered (Ali,
+   17 Aug: "doesnt say who its exchanging with - things are always done as a swap"). The finish
+   row therefore lists only the people whose time actually differs: applyFinSwap returns without
+   doing anything when the two times match, so offering them would be a button that lies. */
+function closeSheet(){ const s = $("#sheetBg"); if (s) s.remove(); }
+function podSheet(d, k){
+  const rec = ((CR() || {}).days || {})[d]; if (!rec) return;
+  const me = rec.cur[k] || ""; if (!me) return;
+  const bg = document.createElement("div"); bg.id = "sheetBg";
+  const box = document.createElement("div"); box.className = "sheet";
+  const esc = e => { if (e.key === "Escape") shut(); };
+  const shut = () => { closeSheet(); window.removeEventListener("keydown", esc); };
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt; return e; };
+
+  const finOf = i => (rec.cur.fin || {})[i] || "17:00";
+  box.append(el("div", "stitle", nameOf(me)),
+             el("div", "sbody", [rowLabel(k), "leaves " + finOf(me), fmtLong(d)].join(" · ")));
+
+  /* ---- swap pods -------------------------------------------------------------------------- */
+  if ("ABCDE".includes(k)) {
+    box.append(el("div", "slabel", "Swap pods with"));
+    const row = el("div", "spods");
+    for (const [p] of PODROWS) {
+      const who = rec.cur[p] || "";
+      const here = p === k;
+      const t = el("button", "podtile pod" + p + (here ? " here" : who ? "" : " empty"));
+      t.append(el("span", null, p), el("span", "who", here ? "you ✓" : who || "—"));
+      t.title = here ? "You are on " + rowLabel(p)
+              : who ? "Swap with " + nameOf(who) + " on " + rowLabel(p)
+              : "Nobody is on " + rowLabel(p);
+      if (here || !who) t.disabled = true;
+      else t.onclick = () => { shut(); ensureWho(() => applySwap(d, k, p)); };
+      row.append(t);
+    }
+    box.append(row);
+  }
+
+  /* ---- swap finish time ------------------------------------------------------------------- */
+  const others = PODROWS.map(([p]) => p).filter(p => p !== k && rec.cur[p] && finOf(rec.cur[p]) !== finOf(me));
+  if ("ABCDE".includes(k) && others.length) {
+    box.append(el("div", "slabel", "Swap finish time with"));
+    const row = el("div", "sfins");
+    for (const p of others) {
+      const who = rec.cur[p];
+      const t = el("button", "fintile");
+      t.append(el("span", null, finOf(who)), el("span", "who", nameOf(who)));
+      t.title = "You would leave at " + finOf(who) + " and " + nameOf(who) + " at " + finOf(me);
+      t.onclick = () => { shut(); ensureWho(() => applyFinSwap(d, k, p)); };
+      row.append(t);
+    }
+    box.append(row);
+  }
+
+  /* ---- referrals ---------------------------------------------------------------------------
+     The one thing here that is NOT a swap: COD is handed over, and whoever had it keeps their pod.
+     The button says who it is coming from, because "Take COD" on its own tells you nothing about
+     who stops taking referrals — which is the half of the fact that matters to the other person. */
+  const codIni = rec.cur.cod || "";
+  if ("ABCDE".includes(k) && codIni && codIni !== me) {
+    const b = el("button", "btn sec sbtn", "Take COD from " + nameOf(codIni));
+    b.onclick = () => { shut(); ensureWho(() => applyEdit(d, "cod", me,
+      "COD handed to " + me + " (" + rowLabel(k) + ")")); };
+    box.append(b);
+  }
+
+  /* ---- replace ------------------------------------------------------------------------------
+     The only way to bring in somebody who is not on that day at all, so it stays even though it
+     is the least-reached-for thing here. */
+  const rep = el("button", "btn sec sbtn", "Somebody else covers " + rowLabel(k));
+  rep.onclick = () => { shut(); replaceDialog(d, k); };
+  box.append(rep, (() => { const c = el("button", "btn sec sbtn plain", "Cancel"); c.onclick = shut; return c; })());
+
+  bg.append(box);
+  bg.onclick = e => { if (e.target === bg) shut(); };
+  window.addEventListener("keydown", esc);
+  document.body.append(bg);
+}
+/* The dropdown, as a dialog rather than an in-cell <select>: on a phone a select replacing a 22px
+   cell is unusable, and the sheet has already taken over that job. Desktop still gets the in-cell
+   select from editCell, which is quicker when you are already pointing at the thing. */
+function replaceDialog(d, k){
+  const m = $("#modal"); m.innerHTML = "";
+  m.append(__el("h3", {}, "Who covers " + rowLabel(k) + "?"));
+  const cur = (((CR() || {}).days || {})[d] || {}).cur || {};
+  const sel = consSelect("cellsel", cur[k] || "", "— nobody —");
+  sel.style.width = "100%";
+  m.append(sel);
+  const btns = __el("div", { class: "modalbtns" });
+  btns.append(__el("button", { class: "btn sec", onclick: closeModal }, "Cancel"),
+    __el("button", { class: "btn", onclick: () => { const v = sel.value; closeModal();
+      if (v !== (cur[k] || "")) ensureWho(() => applyEdit(d, k, v)); } }, "Save"));
+  m.append(btns);
+  $("#modalBg").style.display = "flex";
+}
+/* "Monday 24 Aug" — the sheet says the day in full because it is the one place with no column
+   heading above it to say which day you are looking at. */
+function fmtLong(iso){
+  try { return new Date(iso + "T12:00:00").toLocaleDateString("en-GB",
+    { weekday: "long", day: "numeric", month: "short" }); }
+  catch(e){ return iso; }
+}
+/* A phone or a tablet — anywhere the primary pointer cannot hover, which is exactly where drag
+   and drop does not exist. Matched at the moment of the tap rather than at load, so a tablet with
+   a trackpad attached mid-session behaves as whatever it currently is. */
+const coarsePointer = () => {
+  try { return window.matchMedia("(pointer: coarse)").matches; } catch(e){ return false; }
+};
+
 /* Everything a tap can do to a pod cell, in the order the questions actually arise. */
 function tapCell(d, k, cellEl){
   requireEdit(() => {
@@ -2921,7 +3117,16 @@ function tapCell(d, k, cellEl){
     }
     /* Nothing picked up yet. An occupied pod arms; anything else has nothing to pick up, so it
        goes straight to the dropdown — an empty pod, the on-call column, Fairfield. */
+    /* ...unless the pointer is coarse, in which case the SHEET opens instead of arming (17 Aug).
+       Arming asks for a second tap onto another 22px name, and on a phone that second tap is the
+       whole problem — drag does not exist there, so this was the only route in and it ran through
+       the smallest target on the screen. Desktop is untouched: tap still arms, and drag still
+       drags, because with a mouse the second tap is easy and the pick-up is quicker. */
+    if (isPod && cur && coarsePointer()) { podSheet(d, k); return; }
     if (isPod && cur) { armed = { kind: "pod", d, k }; paintArmed(); return; }
+    /* An empty pod or a column on a phone: the in-cell <select> is unusable at that size, so the
+       same dialog the sheet uses does the job. */
+    if (coarsePointer()) { replaceDialog(d, k); return; }
     editCell(d, k, cellEl);
   });
 }
