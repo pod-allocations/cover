@@ -78,16 +78,33 @@ setTimeout(() => {
   const tEl = w.document.getElementById("hovercard");
   ok("tapping a chip speaks at the badge", tEl && tEl.style.display === "block" && /was Pod C/.test(tEl.textContent), tEl && tEl.textContent);
   ok("…and does not open the cell edit", !w.document.querySelector("select.cellsel"));
-  // drawer: simulate unlocked team, phone flow
-  w.eval(`document.body.classList.add("teamopen");`);
-  w.document.getElementById("btnTeamM").dispatchEvent(new w.Event("click",{bubbles:true}));
-  ok("shield button opens the drawer once inside", w.document.body.classList.contains("navopen"));
+  // drawer: the burger, its backdrop, and the rail/team levels (26.08.28 second pass)
+  w.document.getElementById("hamburger").dispatchEvent(new w.Event("click",{bubbles:true}));
+  ok("burger opens the drawer", w.document.body.classList.contains("navopen"));
   w.document.getElementById("navbackdrop").dispatchEvent(new w.Event("click",{bubbles:true}));
   ok("backdrop tap closes it", !w.document.body.classList.contains("navopen"));
-  w.document.getElementById("btnTeamM").dispatchEvent(new w.Event("click",{bubbles:true}));
+  w.eval(`document.body.classList.add("teamopen");`);
+  w.document.getElementById("hamburger").dispatchEvent(new w.Event("click",{bubbles:true}));
+  w.document.getElementById("tpBack").dispatchEvent(new w.Event("click",{bubbles:true}));
+  ok("Menu steps back to the rail, not out of the section", w.document.body.classList.contains("railback") && w.document.body.classList.contains("navopen") && w.document.body.classList.contains("teamopen"));
   const fairBtn = w.document.querySelector("#teamPanel button[data-tab='fair']");
   if (fairBtn) fairBtn.dispatchEvent(new w.Event("click",{bubbles:true}));
   ok("picking a page closes the drawer", fairBtn && !w.document.body.classList.contains("navopen"));
+  // the whole card is the target on a phone; desktop keeps precise clicking (26.08.28)
+  w.eval(`Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });`);
+  const bTd = w.document.querySelector("td.col-B");
+  let cellClicked = false;
+  w.document.querySelector("td.col-B .cell").addEventListener("click", () => { cellClicked = true; });
+  bTd.dispatchEvent(new w.Event("click", {bubbles:true}));
+  ok("phone: tapping the card reaches the cell", cellClicked);
+  w.eval(`Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true });`);
+  cellClicked = false;
+  bTd.dispatchEvent(new w.Event("click", {bubbles:true}));
+  ok("desktop: blank card space stays inert", !cellClicked);
+  // structural: the badge tap halo and the scrollable overlay box are in the stylesheet (26.08.28)
+  const src = fs.readFileSync(path.join(BASE, "index.html"), "utf8");
+  ok("badges carry an invisible tap halo", src.indexOf('.chgpill::after,.ofspill::after{content:"";position:absolute;inset:-9px}') >= 0);
+  ok("overlay boxes scroll within the screen", src.indexOf("max-height:86dvh;overflow-y:auto") >= 0);
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
