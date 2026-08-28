@@ -144,11 +144,30 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
    So the NAME gets the fixed width instead, wide enough for the longest initials anyone has (CMAB),
    and the pills fall into a straight second column a fixed distance from it. Aligned, and still
    next to the person they describe. */
-.cell{cursor:pointer;border-radius:8px;padding:.15rem .4rem;display:inline-block;min-width:3.5rem;text-align:left;font-weight:700;font-size:.9rem;letter-spacing:-.01em}
+.cell{position:relative;cursor:pointer;border-radius:8px;padding:.15rem .4rem;display:inline-block;min-width:3.5rem;text-align:left;font-weight:700;font-size:.9rem;letter-spacing:-.01em}
 .cell:hover{background:var(--accent-bg)}
 .cell.empty{color:#c9cbd1;font-weight:400}
-.cell.diff{outline:1.5px dashed var(--amber);color:var(--amber)}
-/* PICKED UP. Solid where "differs" is dashed, so the two never read as the same state, and filled
+/* ── THE CHANGE BADGES — 28 Aug. Corner-anchored on the initials, and on the LEFT (Ali: "bottom
+   left corner"), because the right side of every name is the pill column's — COD and the finish
+   time queue there, and a badge in their lane would collide on exactly the busy cells that need
+   both. Left side is the history, right side is the shift.
+   `.chgpill` (bottom-left, grey) — this person moved here or was added recently. Fed by the log
+                        (48h, so it ages out on its own) or by the last sync's `prev` snapshot
+                        (cleared by the next sync). Amber-filled when the change landed within 24h
+                        of the shift — same fact, louder timing: the shape stays, the colour talks.
+   `.ofspill` (top-left, amber)  — the board no longer matches the rota sheet (`cur` differs from
+                        `auto`). Persistent until the sheet agrees. Replaces the dashed amber
+                        outline and the amber initials, which put two colour systems on one name.
+   The badge itself is the resident board's move mark — same 15px circle, same fills, same swap
+   glyph — so a person who has learned one board has learned the other. Hover carries the detail;
+   tapping does the same (hard rule 14: hover does not exist on a phone). */
+.chgpill,.ofspill{position:absolute;width:15px;height:15px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  background:#eef1f4;border:1px solid #d9dde2;color:#5f5e5a;box-shadow:0 1px 2px rgba(20,30,45,.14)}
+.chgpill{left:-7px;bottom:-6px}
+.chgpill.short,.ofspill{background:var(--amber-bg);border-color:#fac775;color:#854f0b}
+.ofspill{left:-7px;top:-6px}
+.chgpill svg,.ofspill svg{width:9px;height:9px}
+/* PICKED UP. Solid so it never reads as one of the change chips, and filled
    rather than outlined so it is obvious on a phone at arm's length. Only ever one on screen. */
 .cell.armed,.codpill.armed,.finpill.armed{outline:2px solid var(--accent);outline-offset:1px;
   background:var(--accent-bg);color:var(--accent)}
@@ -159,13 +178,13 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
 .finpill:active{cursor:grabbing}
 /* Outline, muted, and smaller than a pod chip: a held day is a state of the rota, not a warning
    and not a person, so it must not compete with either. */
-/* MOVED BY THE LAST SYNC. An inset ring rather than a border: the cells sit edge to edge in a
-   grid, so a real border shifts everything beside it by a pixel and the whole table twitches when
-   a day changes. Inset shadow occupies no space. Amber because it is information, not a fault —
-   the rota moved and the board followed, which is the system working. Hover gives the old name.
-   It clears itself: `prev` is rewritten by the next sync, so the marks show what THAT run did. */
-td.moved{box-shadow:inset 0 0 0 2px var(--accent)}
-td.moved .cell{position:relative}
+/* MOVED BY THE LAST SYNC — the inset accent ring retired 28 Aug. The fact it carried ("the rota
+   moved and the board followed") now rides the same `.chgpill` chip a hand-made move gets, because
+   to the person working the day they are the same fact: somebody different is here. The chip's
+   hover still says who was there before, and the mark still clears itself — `prev` is rewritten by
+   the next sync, and log-fed chips age out at 48h. The ring was the resident board's grey-ring
+   phase; that board moved to a corner glyph on 22 Aug for the same reason this page moves to a
+   chip: a ring per changed cell on a reworked week shouts louder than the names. */
 /* ── THE PERSON SHEET — 17 Aug ──────────────────────────────────────────────────────────────────
    Lifted from the resident board's personSheet so the two boards behave the same way in the hand,
    and deliberately a copy of its shape rather than a fresh take on it (Ali, 8 Aug: "just identical
@@ -554,7 +573,19 @@ button.btn,.hbtn{white-space:nowrap}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
   /* The name is the first thing to give up room — the icons must not wrap. */
   #btnWho{font-size:.64rem;padding:.4rem .5rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#teamPanel{position:fixed;left:0;top:0;bottom:0;height:auto;z-index:60;box-shadow:0 0 40px rgba(23,24,28,.18)}
+  /* THE PANEL IS A DRAWER ON A PHONE, NOT A FIXTURE — 28 Aug. It used to show for as long as any
+     team tab was open, fixed over the left of a 390px screen with no backdrop and no close: the
+     only way out was the Menu button, which exits the whole section, so Fairness could never
+     actually be READ on a phone (Ali: "cant get this back out of the way"). Now `navopen` says
+     whether the drawer is out, exactly as the resident board's hamburger drawer works: picking a
+     page closes it, tapping the backdrop closes it, and the shield button reopens it. `teamopen`
+     still says only which KIND of page is showing — the two used to be one flag, which was the
+     whole bug. */
+  #teamPanel{position:fixed;left:0;top:0;bottom:0;height:auto;z-index:120;box-shadow:0 0 40px rgba(23,24,28,.18)}
+  body.teamopen #teamPanel{display:none}
+  body.teamopen.navopen #teamPanel{display:block}
+  #navbackdrop{display:none;position:fixed;inset:0;background:rgba(20,21,29,.4);z-index:110}
+  body.navopen #navbackdrop{display:block}
   .tpback{display:flex}
 
   /* THE PHONE LAYOUT. Seven days by seven columns is 49 cells and will not go on a phone however
@@ -652,6 +683,7 @@ button.btn,.hbtn{white-space:nowrap}
   <div class="aside-spacer"></div>
   <button class="smallb" id="btnTeam"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.6v5c0 4.3-3 8.1-7.5 9.4-4.5-1.3-7.5-5.1-7.5-9.4v-5z"/></svg></span>Rota team</button>
 </aside>
+<div id="navbackdrop"></div>
 <nav id="teamPanel">
   <button id="tpBack" class="tpback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Menu</button>
   <div class="tpttl">Rota team</div>
@@ -2260,11 +2292,65 @@ function cellHTML(rec, key, d){
     const t = fin.slice(0,2) === "17" ? "" : fin.slice(0,2) === "18" ? "18" : fin;
     if (t) pills += "<span class='finpill' draggable='true' data-d='" + d + "' data-k='" + key + "' title='finishes " + fin + " — drag onto another pod on this day to swap finish times'>" + esc(t) + "</span>";
   }
+  /* The badges ride the initials themselves — corner-anchored inside the cell span, so they
+     travel with the name, and the pill column to the right stays COD's and the finish time's.
+     Hard rule 6 holds throughout: the badges say what changed and where somebody was, never why. */
+  let badges = "";
+  const chg = chgFor(d, key, cur);
+  if (chg) badges += "<span class='chgpill" + (chg.short ? " short" : "") + "' title='" + esc(chg.title) + "'>" + (chg.kind === "new" ? SVG_PLUS : SVG_SWAP) + "</span>";
+  if (diff) badges += "<span class='ofspill' title='" +
+    esc(cur ? (auto ? "Differs from the rota sheet — sheet has " + nameOf(auto) : "Not on the rota sheet — added by hand")
+            : "Rota sheet has " + nameOf(auto) + " — taken off the board") + "'>" + SVG_PEN + "</span>";
   return "<div class='cellwrap'>" +
-    "<span class='cell" + (diff ? " diff" : "") + (cur ? "" : " empty") + "' data-d='" + d + "' data-k='" + key + "'" +
+    "<span class='cell" + (cur ? "" : " empty") + "' data-d='" + d + "' data-k='" + key + "'" +
     (cur && podCell ? " draggable='true'" : "") + " title='" +
-    esc(nameOf(cur) || "nobody assigned") + (fin ? " · finishes " + fin : "") + (diff ? " · MANUAL — sheet says " + esc(auto || "nobody") : "") +
-    (cur && podCell ? " · drag onto another pod to swap" : "") + "'>" + (esc(cur) || "—") + "</span>" + pills + "</div>";
+    esc(nameOf(cur) || "nobody assigned") + (fin ? " · finishes " + fin : "") +
+    (cur && podCell ? " · drag onto another pod to swap" : "") + "'>" + (esc(cur) || "—") + badges + "</span>" + pills + "</div>";
+}
+
+/* The chips' glyphs. The swap arrows are byte-for-byte the resident board's move-mark glyph
+   (26.08.22), so a person who has learned one board has learned the other. */
+const SVG_SWAP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 4 7l3 3"/><path d="M4 7h11a5 5 0 0 1 5 5"/><path d="M17 20l3-3-3-3"/><path d="M20 17H9a5 5 0 0 1-5-5"/></svg>';
+const SVG_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
+const SVG_PEN  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4"/><path d="M13.5 6.5l4 4"/></svg>';
+
+/* WHAT CHANGED HERE, AND RECENTLY — one answer built from two sources, the same split the marks
+   used to wear as two different outfits (the dashed ring for the sync, nothing at all for a hand
+   move made after you looked):
+   1. The log, for hand-made changes. Only entries carrying structured fields (`d.to` names the
+      slot) are trusted — pattern-matching message text is how the old Log tab quietly hid
+      entries. 48 hours, so the mark ages out by itself, exactly like the resident board's.
+   2. `prev`, for what the last nightly sync moved. No time filter — the next sync rewrites it,
+      which is its own expiry, and it was already the ring's rule.
+   A hand move outranks the sync when both say something: the log is newest-first, and a person
+   acting after the sync is the later fact.
+   `short` is the same fact with the clock running out: the change landed inside 24 hours of the
+   shift starting (08:00 board day). That is the one every trainee asked for — "the trainees need
+   to know theres been a short notice swap" (Ali, 26.08.20). */
+function chgFor(d, key, cur){
+  const H48 = 48 * 3600e3;
+  const now = Date.now();
+  const dayStart = Date.parse(d + "T08:00:00");
+  const mk = (kind, from, when, who) => {
+    const t = Date.parse(when);
+    const short = isFinite(t) && isFinite(dayStart) && t >= dayStart - 24 * 3600e3 && t <= dayStart + 24 * 3600e3;
+    const when2 = isFinite(t) ? new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+      + " " + new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "";
+    const fromTxt = kind === "new" ? "Added" + (short ? " at short notice" : " in the last 48h")
+      : (short ? "Moved here at short notice" : "Moved here in the last 48h") + (from ? " — was " + (from.length === 1 ? "Pod " + from : from) : "");
+    return { kind, short, title: fromTxt + (when2 ? " · " + when2 : "") + (who ? " · by " + who : "") };
+  };
+  if (!cur) return null;
+  for (const e of (cdata && cdata.log) || []) {
+    if (e.on !== d || !e.d || e.d.to !== key || e.d.subj !== cur) continue;
+    const t = Date.parse(e.t);
+    if (!isFinite(t) || now - t > H48) continue;
+    return mk(e.d.bench ? "new" : "move", e.d.from || "", e.t, String(e.who || "").replace(/\s*\(.*\)$/, ""));
+  }
+  const prev = ((CR() || {}).prev || {})[d];
+  if (prev && (prev[key] || "") !== cur)
+    return mk(prev[key] ? "move" : "new", prev[key] ? nameOf(prev[key]) : "", (CR() || {}).prevAt || "", "the sync");
+  return null;
 }
 
 /* One week as a table. Pods run across the top and days down the side — the same shape as the
@@ -2299,15 +2385,6 @@ function weekTableHTML(mondayISO){
        not changed since you last looked, but moved by the run that just happened.
        Marked per CELL rather than per day, because "Wednesday changed" is nearly useless and
        "Pod C changed on Wednesday" is what somebody needs. */
-    const _prev = (CR() || {}).prev || {};
-    const movedSlots = (() => {
-      const p = _prev[d], c = (cons[d] || {}).cur;
-      if (!p || !c) return {};
-      const o = {};
-      for (const k of ["A", "B", "C", "D", "E", "oncall", "fgh"])
-        if ((p[k] || "") !== (c[k] || "")) o[k] = p[k] || "nobody";
-      return o;
-    })();
     const needs = " class='dayrow day-" + d + (cons[d] && cons[d].alert ? " needs" : "") + "'";
     /* A DAY BEING HELD. `pinned` used to be invisible everywhere — the allocator skipped the day
        and the board gave no sign, so the one place you would look to understand why a day never
@@ -2316,15 +2393,12 @@ function weekTableHTML(mondayISO){
     const held = cons[d] && cons[d].pinned
       ? "<span class='heldpill' title='held to the version that was circulated'>held</span>" : "";
     h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span>" + held + "</td>";
-    /* `moved` is the outline; the title says what it was, because an outline that only says
-       "this changed" sends you hunting through the change log for the half of the fact you need. */
-    const mv = k => movedSlots[k] !== undefined
-      ? " moved' title='was " + esc(nameOf(movedSlots[k]) || movedSlots[k]) + " before the last sync"
-      : "";
+    /* What the last sync moved is now told by the cell's own change chip (chgFor reads `prev`),
+       so the td carries no mark of its own — one fact, one place. */
     for (const [p] of PODROWS)
-      h += "<td class='col-" + p + mv(p) + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
-    h += "<td class='col-oncall" + mv("oncall") + "' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
-    h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + mv("fgh") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
+      h += "<td class='col-" + p + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
+    h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
+    h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
   return "<div class='daystrip-slot'></div>" + h + "</table>";
 }
@@ -2374,6 +2448,13 @@ function renderRota(){
     document.body.dataset.week =
       isNow ? "now" : (curWeek > mondayOf(_iso) ? "ahead" : "past");
   }
+  /* The week arrows grey at the edge of the data rather than silently doing nothing — the
+     resident board's rule (26.08.20): "a control that vanishes is a bug to the person looking
+     for it", and one that presses without answering is worse. Same list shiftWeek consults, so
+     the greying and the refusal cannot disagree. Look ahead's arrows have done this all along. */
+  { const _wks = weeksAvail(), _i = _wks.indexOf(curWeek);
+    $("#btnPrev").disabled = _i <= 0;
+    $("#btnNext").disabled = _i < 0 || _i >= _wks.length - 1; }
   /* THE READ FAILED. Said here, in place of the grid, because an empty grid is indistinguishable
      from a quiet week and the whole fault was that nothing on screen admitted it. Not on Attention:
      that is behind the shield, and somebody who cannot load the cover cannot be assumed to have
@@ -2458,6 +2539,10 @@ function wireGrid(root){
   root.querySelectorAll(".cell[data-d]").forEach(c => c.onclick = () => tapCell(c.dataset.d, c.dataset.k, c));
   root.querySelectorAll(".codpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("cod", p.dataset.d, ""); });
   root.querySelectorAll(".finpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("fin", p.dataset.d, p.dataset.k); });
+  /* The change chips speak when tapped — the same words the hover title carries, because a title
+     is a desktop affordance and the chips must mean something on a phone (hard rule 14). Tapping
+     a chip must never fall through to the cell underneath and start an edit. */
+  root.querySelectorAll(".chgpill, .ofspill").forEach(p => p.onclick = e => { e.stopPropagation(); toast(p.title); });
   /* The grid is rebuilt from a string on every render, so the class is gone even though the state
      is not. Re-applied here rather than cleared, or a save would silently put down what you had
      just picked up. */
@@ -2848,9 +2933,15 @@ async function applyEdit(d, k, ini, note){
   if (ini === cur) return;
   rec.cur[k] = ini;
   const flag = ini === (rec.auto[k] || "") ? "" : " (differs from rota sheet)";
-  const isPod = "ABCDE".includes(k);
-  if (note || !isPod) {
-    /* A COD handover or an on-call/Fairfield change: nobody moved pod, so no From and no To. */
+  /* On call and Fairfield write the same structured rows a pod does — 28 Aug. They were left as
+     sentences ("nobody moved pod"), which was true and also why a hand-changed on-call never
+     carried a change chip: chgFor trusts only entries that name their slot in fields, the same
+     rule that stopped the Log tab pattern-matching prose. A COD handover keeps its sentence —
+     the pill moving IS its mark, and inventing a From for it would say more than is known. In
+     the log's From/To chips the slot prints as its raw key; the sentence beside it carries the
+     readable name. */
+  const isSlot = "ABCDE".includes(k) || k === "oncall" || k === "fgh";
+  if (note || !isSlot) {
     clog((note || ("Consultant swap " + d + " " + rowLabel(k) + ": " + (cur || "—") + " → " + (ini || "—"))) + flag,
          "manual", d, " (consultant page)");
   } else {
@@ -3295,17 +3386,17 @@ function keyDialog(){
     head("On the name"),
     row("<span class='codpill'>COD</span>", "Consultant of the day — takes referrals. Drag it to hand it over."),
     row("<span class='finpill'>18:00</span>", "Stays until this time. Drag it to swap who stays late."),
-    row("<span style='color:var(--muted);font-size:.75rem'>\u2022 differs</span>",
-        "Changed by hand, so it no longer matches the rota sheet"),
-    /* HELD AND THE OUTLINE WERE HOVER-ONLY \u2014 17 Aug. Both carry a `title`, and a title is a
-       desktop affordance: hard rule 14 says anything that only reveals on hover does not exist on
-       three of the four form factors. So a consultant on a phone saw an amber word on a day and a
-       gold outline round a name with no way in the world to find out what either meant. The Key is
-       where on-demand help belongs (hard rule 2), and neither was in it. */
+    /* THE CHANGE CHIPS \u2014 28 Aug. They replace the dashed amber outline and the sync's inset
+       ring, and every one of them speaks when TAPPED as well as hovered, so the Key can promise
+       the same gesture on every form factor (hard rule 14). */
+    row("<span class='chgpill' style='position:static'>" + SVG_SWAP + "</span>",
+        "On the corner of a name: moved here or added in the last two days. Tap it to see where they were and when."),
+    row("<span class='chgpill short' style='position:static'>" + SVG_SWAP + "</span>",
+        "The same, at short notice \u2014 the change landed within a day of the shift"),
+    row("<span class='ofspill' style='position:static'>" + SVG_PEN + "</span>",
+        "No longer matches the rota sheet \u2014 changed by hand. Tap it to see what the sheet has."),
     row("<span class='heldpill' style='margin:0'>held</span>",
         "This day is held to the version that was circulated, so the nightly sync leaves it alone"),
-    row("<span class='cell' style='min-width:0;box-shadow:inset 0 0 0 2px var(--accent)'>NJC</span>",
-        "Changed by the last sync \u2014 on a computer, hover to see who was there before"),
     /* The tap gesture belongs here and nowhere else. It has no on-screen label by design (rule 2),
        so if it is not in the Key it is not discoverable at all \u2014 and on a phone it is the ONLY way
        to swap anybody, because drag and drop does not exist on touch. */
@@ -3543,6 +3634,8 @@ function showTab(t){
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === t));
   for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (t === k) ? "" : "none";
   document.body.classList.toggle("teamopen", TEAM_TABS.includes(t));
+  /* Leaving the team pages always puts the phone drawer away, whatever closed them. */
+  if (!TEAM_TABS.includes(t)) document.body.classList.remove("navopen");
   const bt = $("#btnTeam"); if (bt) bt.classList.toggle("active", TEAM_TABS.includes(t));
   /* Drawn on the way in rather than on every render — see renderGrids. Has to come AFTER the
      display flip above, since renderGrids asks the section whether it's visible.
@@ -3672,17 +3765,25 @@ function ensureTeam(cb){
   if (!data) $("#lockMsg").textContent =
     "Can't check the password — the rota didn't load. Try again when you're back on the network.";
 }
-document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+/* Picking a page CLOSES the drawer — the resident board's rule, and the other half of the phone
+   fix: the panel exists to choose with, not to stand over what was chosen. Costs nothing on
+   desktop, where navopen does not drive anything. */
+document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(b => b.onclick = () => { showTab(b.dataset.tab); document.body.classList.remove("navopen"); });
 /* The shield now lands on Look ahead rather than Fairness. What's coming up is the question the
    rota team opens this page to answer; fairness is what they check afterwards. renderRota first,
    because unlocking has just changed what the Pods grid is allowed to show and it must not be
    left holding dashes behind the tab you switched away from; showTab draws Look ahead itself. */
 $("#btnTeam").onclick = () => ensureTeam(() => { renderRota(); showTab("ahead"); });
-/* The phone's shield. Deliberately the SAME handler rather than a second one that happens to do
-   the same thing — the whole reason this button exists is that the rail's was unreachable, and two
-   copies of "what the shield does" is how they come to differ. */
-$("#btnTeamM").onclick = () => ensureTeam(() => { renderRota(); showTab("ahead"); });
-$("#tpBack").onclick = () => showTab("rota");
+/* The phone's shield. Deliberately the SAME unlock path rather than a second one that happens to
+   do the same thing — two copies of "what the shield does" is how they come to differ. Once
+   inside, the same button becomes the drawer toggle: on a phone it is the only control still on
+   screen when a team page is open, so it has to be the way back to the menu. */
+$("#btnTeamM").onclick = () => {
+  if (document.body.classList.contains("teamopen")) { document.body.classList.toggle("navopen"); return; }
+  ensureTeam(() => { renderRota(); showTab("ahead"); document.body.classList.add("navopen"); });
+};
+$("#navbackdrop").onclick = () => document.body.classList.remove("navopen");
+$("#tpBack").onclick = () => { document.body.classList.remove("navopen"); showTab("rota"); };
 /* Read-only until Edit is pressed. Set here rather than in the markup so a page that fails to
    boot is not left looking editable. */
 document.body.classList.remove("editing");
