@@ -3439,6 +3439,21 @@ function keyDialog(){
   const ov = document.createElement("div"); ov.id = "whoOverlay";
   const box = document.createElement("div"); box.className = "box";
   box.style.maxWidth = "440px";
+  /* A WAY OUT THAT NEVER SCROLLS AWAY — 28 Aug (Ali: "cant lose the key pane"). On a phone the
+     Key fills 86% of the screen, the Close button sits at the BOTTOM of a long scroll, and the
+     backdrop is a sliver — so the dialog read as stuck, the same complaint as the drawer this
+     morning. The ✕ is sticky to the box's top corner, visible from the first pixel to the last,
+     and Escape closes too. The bottom Close stays for whoever has already read to the end. */
+  const x = document.createElement("button");
+  x.setAttribute("aria-label", "Close");
+  x.textContent = "✕";
+  x.style.cssText = "position:sticky;top:-1.2rem;float:right;margin:-1.05rem -1.15rem 0 .5rem;z-index:5;" +
+    "background:var(--card);border:0;font:inherit;font-size:1rem;color:var(--muted);cursor:pointer;" +
+    "padding:.55rem .7rem;border-radius:0 16px 0 12px";
+  x.onclick = () => ov.remove();
+  box.append(x);
+  const escClose = e => { if (e.key === "Escape") { ov.remove(); document.removeEventListener("keydown", escClose); } };
+  document.addEventListener("keydown", escClose);
   const row = (chip, text) => {
     const r = document.createElement("div");
     r.style.cssText = "display:flex;align-items:center;gap:.75rem;margin:.45rem 0;font-size:.85rem";
