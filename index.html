@@ -2540,9 +2540,13 @@ function wireGrid(root){
   root.querySelectorAll(".codpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("cod", p.dataset.d, ""); });
   root.querySelectorAll(".finpill").forEach(p => p.onclick = e => { e.stopPropagation(); tapPill("fin", p.dataset.d, p.dataset.k); });
   /* The change chips speak when tapped — the same words the hover title carries, because a title
-     is a desktop affordance and the chips must mean something on a phone (hard rule 14). Tapping
-     a chip must never fall through to the cell underneath and start an edit. */
-  root.querySelectorAll(".chgpill, .ofspill").forEach(p => p.onclick = e => { e.stopPropagation(); toast(p.title); });
+     is a desktop affordance and the chips must mean something on a phone (hard rule 14). The words
+     appear IN A BUBBLE AT THE BADGE, not in the bottom toast — the eye is on the badge that was
+     just tapped, and a message at the foot of the screen is where nobody is looking (Ali,
+     26.08.28: "people wont see it at bottom of screen"). The bubble is the hovercard the resident
+     pills already use, so it is one positioning rule for everything that pops up by a name.
+     Tapping a chip must never fall through to the cell underneath and start an edit. */
+  root.querySelectorAll(".chgpill, .ofspill").forEach(p => p.onclick = e => { e.stopPropagation(); chipTip(p); });
   /* The grid is rebuilt from a string on every render, so the class is gone even though the state
      is not. Re-applied here rather than cleared, or a save would silently put down what you had
      just picked up. */
@@ -3052,6 +3056,21 @@ function showCard(elp, id){
   c.style.left = Math.max(8, Math.min(r.left, (window.innerWidth || 1000) - 280)) + "px";
   c.style.top = (r.bottom + 8) + "px";
   c.style.display = "block";
+}
+/* A tapped change badge answers AT THE BADGE — the same hovercard, the same positioning maths,
+   because the person's eye is on the thing they just tapped and a toast at the foot of the screen
+   is where nobody is looking (Ali, 26.08.28). It clears itself after a few seconds, on the next
+   tap anywhere, or on scroll — the same ways the resident hovercard goes away. */
+function chipTip(el){
+  const c = $("#hovercard");
+  c.textContent = el.title;
+  const r = el.getBoundingClientRect();
+  c.style.left = Math.max(8, Math.min(r.left - 8, (window.innerWidth || 1000) - 280)) + "px";
+  c.style.top = (r.bottom + 8) + "px";
+  c.style.display = "block";
+  clearTimeout(c._tipHide);
+  c._tipHide = setTimeout(hideCard, 5000);
+  setTimeout(() => document.addEventListener("pointerdown", hideCard, { once: true }), 0);
 }
 function hideCard(){ $("#hovercard").style.display = "none"; }
 
