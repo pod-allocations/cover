@@ -111,6 +111,13 @@ setTimeout(() => {
   const src = fs.readFileSync(path.join(BASE, "index.html"), "utf8");
   ok("badges carry an invisible tap halo", src.indexOf('.chgpill::after,.ofspill::after{content:"";position:absolute;inset:-9px}') >= 0);
   ok("overlay boxes scroll within the screen", src.indexOf("max-height:86dvh;overflow-y:auto") >= 0);
+  // the Key can always be closed — the pinned X (26.08.28)
+  w.eval("keyDialog();");
+  const kov = w.document.getElementById("whoOverlay");
+  const kx = kov && kov.querySelector("button[aria-label='Close']");
+  ok("the Key opens with a pinned close", !!kx);
+  if (kx) kx.click();
+  ok("…and the X closes it", !w.document.getElementById("whoOverlay"));
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
