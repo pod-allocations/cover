@@ -109,6 +109,12 @@ body.teamlocked #teamPanel{display:none}
 #btnDone{display:none}
 body.editing #btnEdit{display:none}
 body.editing #btnDone{display:inline-flex}
+/* THE EDIT BUTTON IS THE RESIDENT BOARD'S — 28 Aug (Ali: "edit button different"). Accent fill,
+   the soft accent ring, and the little lock in front, copied from that board's rules — the
+   accent resolves bronze here and blue there, which is the ROLE speaking, but the shape of the
+   button is the product speaking and the product is one. */
+body:not(.editing) #btnEdit{background:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--accent-bg)}
+body:not(.editing) #btnEdit::before{content:"";display:inline-block;width:11px;height:11px;margin-right:.4rem;vertical-align:-1px;background:currentColor;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 10V8a6 6 0 1112 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2 0h8V8a4 4 0 10-8 0v2z'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 10V8a6 6 0 1112 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2 0h8V8a4 4 0 10-8 0v2z'/></svg>") center/contain no-repeat}
 body:not(.editing) #btnWho,body:not(.editing) #saveState{display:none}
 body.editing #topbar{box-shadow:inset 0 -2px 0 var(--accent)}
 #saveState{font-size:.72rem;font-weight:600;padding:.25rem .65rem;border-radius:999px}
@@ -573,10 +579,17 @@ button.btn,.hbtn{white-space:nowrap}
 /* The phone-only shield is the exact complement of the rail: it exists where the rail does not,
    and nowhere else, so there is never a moment with two ways to the same panel on one screen. */
 .phoneonly{display:none}
-#hamburger{position:relative}
+/* THE BURGER HID BEHIND THE WRONG CLASS — 28 Aug, an hour after it shipped. It wore
+   `hbtn hicon phoneonly`, and `.hbtn.hicon` (two classes) sets display:inline-flex with more
+   specificity than `.phoneonly`'s single-class display:none — so the burger stood on the DESKTOP
+   top bar too (Ali: "FFS the burger menu etc is wildly different"). Now it wears the resident
+   board's dedicated `.hamburger` class, copied verbatim: hidden by its own rule, shown only
+   inside the phone media block, and nothing else's specificity can argue with it. */
+.hamburger{display:none;background:none;border:0;cursor:pointer;color:var(--ink);padding:.25rem;margin-right:.1rem;border-radius:8px;position:relative}
+.hamburger:hover{background:var(--hair)}
 #hamburger .tpbadge{position:absolute;top:-3px;right:-3px;margin:0;min-width:.95rem;font-size:.55rem;
   line-height:1.05rem;padding:0 .2rem}
-@media(max-width:760px){aside{display:none}.phoneonly{display:inline-flex}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
+@media(max-width:760px){aside{display:none}.phoneonly{display:inline-flex}.hamburger{display:inline-flex;align-items:center}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
   #topbar h1{font-size:1rem}
   .hbtn{font-size:.7rem;padding:.45rem .6rem}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
@@ -691,8 +704,16 @@ button.btn,.hbtn{white-space:nowrap}
 <aside>
   <div class="logo">CCU</div>
   <button data-tab="rota" class="active"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>Pods</button>
+  <!-- FAIRNESS IS PUBLIC — 28 Aug (Ali: "put the fairness tab in the side menu visible to all").
+       Fairness only works as fairness if the people it is about can see it; behind the shield it
+       was an assurance nobody could check. Out of TEAM_TABS, so opening it does not open the
+       rota-team panel — the shield still guards everything the team acts on. -->
+  <button data-tab="fair"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg></span>Fairness</button>
   <div class="aside-spacer"></div>
   <button class="smallb" id="btnTeam"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.6v5c0 4.3-3 8.1-7.5 9.4-4.5-1.3-7.5-5.1-7.5-9.4v-5z"/></svg></span>Rota team</button>
+  <!-- The version at the rail's foot, the resident board's .appver pattern (it shows v1.2;
+       this board is a version behind it, deliberately — the numbers move independently). -->
+  <div id="appVer" style="padding:.5rem .2rem .2rem;font-size:.62rem;color:var(--muted);text-align:center;letter-spacing:.04em" title="Which build this is">v1.1</div>
 </aside>
 <div id="navbackdrop"></div>
 <nav id="teamPanel">
@@ -700,7 +721,6 @@ button.btn,.hbtn{white-space:nowrap}
   <div class="tpttl">Rota team</div>
   <button data-tab="attn" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a6 6 0 00-6 6c0 4-2 5-2 5h16s-2-1-2-5a6 6 0 00-6-6z"/><path d="M10.5 20.5a2 2 0 003 0"/></svg>Attention<span id="attnBadge" class="tpbadge"></span></button>
   <button data-tab="ahead" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M11 14l2.5 2.5L11 19"/></svg>Look ahead</button>
-  <button data-tab="fair" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg>Fairness</button>
   <button data-tab="log" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Log</button>
   <button data-tab="staff" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.5 14.4c2.6-.5 5 1.3 5 4.6"/></svg>Staff</button>
   <button data-tab="feedback" class="tpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>Feedback<span class="tpc" id="tabFbCount"></span></button>
@@ -713,7 +733,7 @@ button.btn,.hbtn{white-space:nowrap}
        the shield button that used to sit on the right: same drawer, same badge (a count nobody
        can see is no count), and the same corner the resident board keeps its burger in, because a
        person moving between the two boards should not have to re-find the menu. -->
-  <button id="hamburger" class="hbtn ghost hicon phoneonly" title="Menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="attnBadgeM" class="tpbadge"></span></button>
+  <button id="hamburger" class="hamburger" title="Menu" aria-label="Menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="attnBadgeM" class="tpbadge"></span></button>
   <!-- Ali, 11 Aug. The two boards are one product to the people using them, so they share a name
        and differ on the second line: Pod Allocator / RESIDENT ROTA and Pod Allocator / CONSULTANT
        ROTA. Note for anyone reading CLAUDE.md's THREE NAMES rule: this is the header a USER sees,
@@ -725,11 +745,13 @@ button.btn,.hbtn{white-space:nowrap}
   <button class="hbtn ghost" id="btnWho" title="Changes are logged under this name — click to change who's editing"></button>
   <span id="saveState"></span>
   <button class="hbtn ghost hicon haslabel" id="btnJuniors" title="Show the residents in each pod" aria-label="Show residents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.5 14.4c2.6-.5 5 1.3 5 4.6"/></svg><span class="blabel">Residents</span></button>
-  <button class="hbtn ghost hicon" id="btnKey" title="What the colours and pills mean" aria-label="Key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17.5 12v3.2"/><path d="M20.5 12v2.2"/></svg></button>
   <!-- Open to everyone, no unlock. Same icon, same position in the row and same pulse as the
        resident board's, because a consultant who has used one board should not have to find it
-       again on the other. -->
+       again on the other. FEEDBACK COMES BEFORE THE KEY — 28 Aug: the resident board's order,
+       and the whole reason these buttons exist in both places is that the two rows read as one
+       (Ali: "edit button different feedback icon different order etc"). -->
   <button class="hbtn ghost hicon" id="btnFeedback" title="Feedback" aria-label="Feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5a2.5 2.5 0 01-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5z"/></svg></button>
+  <button class="hbtn ghost hicon" id="btnKey" title="What the colours and pills mean" aria-label="Key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17.5 12v3.2"/><path d="M20.5 12v2.2"/></svg></button>
   <!-- THE PHONE'S DOOR TO THE ROTA-TEAM PAGES. The rail that holds the only other shield is
        display:none below 761px, so on a phone Attention, Look ahead, Fairness, the change log,
        Staff and Setup had no entrance at all — the panel they live in is already styled to slide
@@ -2815,10 +2837,15 @@ async function redraftDrafts(){
 }
 
 function renderFair(){
-  /* One page for the whole picture (Ali, 31 Jul): career A&B-vs-C&D balance, then what the app's
-     own window has each person doing — pod days, on call, COD, Fairfield — in the resident
+  /* One page for the whole picture (Ali, 31 Jul): career A&B-vs-C&D balance in the resident
      fairness table's visual language. Career counts include the pre-app running totals; the
-     window counts cover only the weeks the app holds. Hover any figure for the counts. */
+     window counts cover only the weeks the app holds. Hover any figure for the counts.
+     THE ON-CALL / COD / FAIRFIELD COLUMNS CAME OFF ON 28 AUG, the day Fairness went public in
+     the rail (Ali: "fairness doesnt need to sho nubers of COD, on call, fairfield, thats a rota
+     issue") — those are counts of what the four-monthly rota assigned, not of anything this
+     board decides, and a public fairness page should carry only the fairness this board owns.
+     The tallies are still computed: `rows` keeps people who ONLY appear on call or on Fairfield,
+     so a consultant with no pod days yet does not vanish from the list. */
   const cons = CR() || {};
   const fair = cons.fair || {}, win = cons.window || {}, days = cons.days || {};
   const tal = {};
@@ -2848,8 +2875,7 @@ function renderFair(){
     "<th title='Career days on Pods A and B, including pre-app history'>" + dot("var(--podAb)") + dot("var(--podBb)") + "A&amp;B</th>" +
     "<th title='Career days on Pods C and D (neuro), including pre-app history'>" + dot("var(--podCb)") + dot("var(--podDb)") + "C&amp;D</th>" +
     "<th title='Share of career pod days on the neuro side'>% neuro</th>" +
-    "<th title='Different pods per week, averaged over the weeks the app holds — 1.0 means the same pod all week'>Pods/wk</th>" +
-    "<th>On call</th><th>COD</th><th>Fairfield</th></tr>";
+    "<th title='Different pods per week, averaged over the weeks the app holds — 1.0 means the same pod all week'>Pods/wk</th></tr>";
   for (const r of rows){
     const abT = r.tot ? r.ab / r.tot : 0, cdT = r.tot ? r.cd / r.tot : 0;
     out += "<tr><td style='font-weight:600'>" + esc(nameOf(r.i)) + "<span class='inipill'>" + esc(r.i) + "</span></td>" +
@@ -2857,7 +2883,6 @@ function renderFair(){
       "<td title='" + r.cd + " career days on C&D' style='background:rgba(201,138,43," + (r.cd ? (0.05 + cdT * 0.2).toFixed(3) : "0") + ")'>" + (r.cd || "") + "</td>" +
       "<td" + (r.pc != null && (r.pc < 40 || r.pc > 60) ? " class='warnpc'" : "") + ">" + (r.pc != null ? r.pc + "%" : "") + "</td>" +
       "<td title='" + r.wks + " week" + (r.wks === 1 ? "" : "s") + " with pod work'" + (r.ppw > 2 ? " class='warnpc'" : "") + ">" + (r.wks ? r.ppw.toFixed(1) : "") + "</td>" +
-      "<td>" + (r.t.oc || "") + "</td><td>" + (r.t.cod || "") + "</td><td>" + (r.t.fgh || "") + "</td>" +
       "</tr>";
   }
   $("#fairBox").innerHTML = out + "</table>";
@@ -3283,15 +3308,15 @@ function tapCell(d, k, cellEl){
       ensureWho(() => applySwap(d, a.k, k));
       return;
     }
-    /* Nothing picked up yet. An occupied pod arms; anything else has nothing to pick up, so it
-       goes straight to the dropdown — an empty pod, the on-call column, Fairfield. */
-    /* ...unless the pointer is coarse, in which case the SHEET opens instead of arming (17 Aug).
-       Arming asks for a second tap onto another 22px name, and on a phone that second tap is the
-       whole problem — drag does not exist there, so this was the only route in and it ran through
-       the smallest target on the screen. Desktop is untouched: tap still arms, and drag still
-       drags, because with a mouse the second tap is easy and the pick-up is quicker. */
-    if (isPod && cur && coarsePointer()) { podSheet(d, k); return; }
-    if (isPod && cur) { armed = { kind: "pod", d, k }; paintArmed(); return; }
+    /* Nothing picked up yet. ONE CLICK OPENS THE SHEET, ON EVERY POINTER — 28 Aug. The 17 Aug
+       version gave the sheet to coarse pointers only and kept arm-then-tap for the mouse: first
+       click gold, second click the dropdown. Ali, using it: "annoying when editing have to click
+       twice to change somebidy. first goe gold second brings up options" — the pick-up that felt
+       quicker in theory was a hurdle in practice, and a gesture that differs by device is a
+       gesture nobody can teach. So an occupied pod opens the sheet everywhere, first click.
+       Nothing is lost: drag still swaps on desktop, the pills still arm, and the armed-pod
+       branches above stay for the pills' sake. */
+    if (isPod && cur) { podSheet(d, k); return; }
     /* An empty pod or a column on a phone: the in-cell <select> is unusable at that size, so the
        same dialog the sheet uses does the job. */
     if (coarsePointer()) { replaceDialog(d, k); return; }
@@ -3678,11 +3703,13 @@ function renderFeedback(){
   box.append(feedbackCards(fb, 300));
 }
 
-const TEAM_TABS = ["attn", "ahead", "fair", "log", "staff", "setup", "feedback"];
+/* `fair` left this list on 28 Aug when Fairness went public in the rail — a tab in TEAM_TABS
+   opens the rota-team panel around itself, and a public page must not hold that door open. */
+const TEAM_TABS = ["attn", "ahead", "log", "staff", "setup", "feedback"];
 function showTab(t){
   document.body.classList.remove("teamlocked");   // any deliberate move off the lock clears it
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === t));
-  for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (t === k) ? "" : "none";
+  for (const k of ["rota", "lock", "fair"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (t === k) ? "" : "none";
   document.body.classList.toggle("teamopen", TEAM_TABS.includes(t));
   /* Leaving the team pages always puts the phone drawer away, whatever closed them. */
   if (!TEAM_TABS.includes(t)) document.body.classList.remove("navopen");
@@ -3693,6 +3720,7 @@ function showTab(t){
      that is answered from the allocation, which the sync changes under it. Rendered once at load,
      it would show whoever was unnamed when the tab was first opened. */
   if (t === "ahead") renderAhead();
+  if (t === "fair") renderFair();
   if (t === "setup") renderSetup();
   if (t === "staff") renderStaff();
   if (t === "attn") renderAttn();
@@ -3716,7 +3744,7 @@ function showLockScreen(then){
   LOCK_THEN = then;
   document.body.classList.add("teamlocked");
   document.body.classList.remove("teamopen");
-  for (const k of ["rota", "lock"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (k === "lock") ? "" : "none";
+  for (const k of ["rota", "lock", "fair"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (k === "lock") ? "" : "none";
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.remove("active"));
   const bt = $("#btnTeam"); if (bt) bt.classList.add("active");
   /* "once on this device" was wrong: the unlock is kept in sessionStorage, so it lasts until the
