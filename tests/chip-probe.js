@@ -87,9 +87,15 @@ setTimeout(() => {
   w.document.getElementById("hamburger").dispatchEvent(new w.Event("click",{bubbles:true}));
   w.document.getElementById("tpBack").dispatchEvent(new w.Event("click",{bubbles:true}));
   ok("Menu steps back to the rail, not out of the section", w.document.body.classList.contains("railback") && w.document.body.classList.contains("navopen") && w.document.body.classList.contains("teamopen"));
-  const fairBtn = w.document.querySelector("#teamPanel button[data-tab='fair']");
+  const fairBtn = w.document.querySelector("#teamPanel button[data-tab='log']");
   if (fairBtn) fairBtn.dispatchEvent(new w.Event("click",{bubbles:true}));
   ok("picking a page closes the drawer", fairBtn && !w.document.body.classList.contains("navopen"));
+  // Fairness is public in the rail and does not open the rota-team panel (26.08.28)
+  const railFair = w.document.querySelector("aside button[data-tab='fair']");
+  if (railFair) railFair.dispatchEvent(new w.Event("click",{bubbles:true}));
+  ok("fairness sits in the rail for everyone", !!railFair);
+  ok("…and opening it does not open the team panel", railFair && !w.document.body.classList.contains("teamopen"));
+  ok("…nor the counts that are the rota's business", (w.document.querySelector("#fairBox")||{innerHTML:""}).innerHTML.indexOf("Fairfield") < 0);
   // the whole card is the target on a phone; desktop keeps precise clicking (26.08.28)
   w.eval(`Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });`);
   const bTd = w.document.querySelector("td.col-B");
@@ -110,4 +116,3 @@ setTimeout(() => {
   bad.forEach(b => console.log(" - " + b));
   process.exit(fail ? 1 : 0);
 }, 900);
-
