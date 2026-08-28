@@ -73,10 +73,10 @@ setTimeout(() => {
   // A: untouched → no chips at all
   ok("an unchanged cell stays clean", q("td.col-A .chgpill, td.col-A .ofspill").length === 0);
   ok("no dashed diff class remains", q(".cell.diff").length === 0);
-  // tap speaks
+  // tap speaks — in a bubble at the badge, not the bottom toast (26.08.28)
   bChip.dispatchEvent(new w.Event("click", {bubbles:true}));
-  const tEl = w.document.getElementById("toast");
-  ok("tapping a chip speaks its meaning", tEl && /was Pod C/.test(tEl.textContent), tEl && tEl.textContent);
+  const tEl = w.document.getElementById("hovercard");
+  ok("tapping a chip speaks at the badge", tEl && tEl.style.display === "block" && /was Pod C/.test(tEl.textContent), tEl && tEl.textContent);
   ok("…and does not open the cell edit", !w.document.querySelector("select.cellsel"));
   // drawer: simulate unlocked team, phone flow
   w.eval(`document.body.classList.add("teamopen");`);
