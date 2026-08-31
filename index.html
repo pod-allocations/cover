@@ -370,6 +370,12 @@ table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-siz
 .attnrow .txt{flex:1;min-width:0}
 .attnrow .txt b{font-size:.87rem;font-weight:600;display:block}
 .attnrow .sub{font-size:.76rem;color:var(--muted);margin-top:.12rem;line-height:1.4}
+/* The days inside one sync run. The date is a fixed column so a run reads as a list rather than
+   a paragraph, and the whole block is quieter than the row's own line — it is detail, offered to
+   anybody who wants it, not the headline. */
+.attnrow .attnlines{margin-top:.45rem;font-size:.76rem;line-height:1.5}
+.attnrow .attnlines div{display:flex;gap:.6rem;padding:.12rem 0}
+.attnrow .attnlines span{color:var(--muted);flex:0 0 4.6rem}
 .attnrow .btn{flex:none;font-size:.76rem;padding:.3rem .7rem}
 /* A row somebody has dealt with. It stays for three days rather than vanishing, because the
    question after a change is usually "did anyone deal with that?" and a row that disappears
@@ -1894,39 +1900,81 @@ function attnItems(){
      now shows another, and until today nothing anywhere said so — the allocator only print()ed it
      into a run log nobody opens.
 
-     So the two actions are both about what happens NEXT, not about whether to allow it:
-       Tell the team   it stands; mark it as said, and it leaves this list.
-       Put it back     restore what was circulated, because the ward has already worked to it.
-     There is no plain dismiss. Ticking away "the rota moved under people" without either telling
-     them or undoing it is the one outcome that helps nobody. */
-  /* ONE ROW PER CHANGE, NOT PER DAY. The first version keyed the row on the date alone and marked
-     it dealt with under "pub:<date>". Since telling the team deliberately does NOT delete
-     rec.pubChanged — the change log keeps the permanent record and the store keeps the transient
-     one — a SECOND change to the same day on a later night appended a second entry that the row
-     never showed: the date was already ticked, so the whole day was skipped and nobody was told
-     the second time. Proved on the live store on 11 Aug: two entries, nought rows.
+     It offered two actions for most of August — Tell the team, and Put it back, on the argument
+     that ticking away "the rota moved under people" without either telling them or undoing it
+     helps nobody. In use that was one choice too many for a thing that has already happened:
+     Ali, 28 Aug, "all i need is an aknwoldege button". So the row now says what moved and is
+     acknowledged, and putting a day back is a decision made on the day rather than a reflex in a
+     notification. Nothing about the change itself was ever in question — the swap is already
+     done, and rightly. */
+  /* ONE ROW PER SYNC RUN — 28 Aug. It was one row per POD, which is how the allocator writes them,
+     and the page simply passed that through: a single 11:03 run that moved Fiona Wallace off Pods
+     A and B on 6 Sept produced two identical-looking rows with two sets of buttons (Ali: "Why
+     duplicate... all i need is an aknwoldege button").
 
-     The allocator already writes one entry per pod with its own `at` stamp and says so in a
-     comment ("kept as a list so two changes on one day are two things to say, not one overwriting
-     the other"). The page now honours that. `at` makes the id unique per run, so putting one pod
-     back leaves the other still asking. */
-  for (const d of Object.keys(cons.days || {}).sort()) {
-    const ch = (cons.days[d] || {}).pubChanged;
-    if (!Array.isArray(ch) || !ch.length) continue;
-    ch.forEach((x, n) => raw.push({
-      kind: "pub", id: "pub:" + d + ":" + (x.pod || n) + ":" + (x.at || n), date: d, pod: x.pod,
-      title: shortDate(d) + " changed after it was circulated",
-      detail: rowLabel(x.pod) + ": " + (nameOf(x.from) || "nobody") + " → " + (nameOf(x.to) || "nobody") +
-              " — the rota was updated after this day went out, and the board has followed it.",
-      /* No plain dismiss, and Sorted wears the name of the thing it actually means here: the
-         change stands, and a named person has taken responsibility for saying so. */
-      sortLabel: "Tell the team", alt: "Put it back"
-    }));
+     Grouping by day would have hidden that particular pair, but not the general case — a run that
+     touches four days would still leave four rows to tick for one event. So the RUN is the unit,
+     keyed on the `at` stamp the allocator already puts on every entry. One thing happened; it is
+     acknowledged once. Duplicates stop being something to tidy up and start being impossible.
+
+     Two nestings inside a run: by day, then by the swap itself, so the same person moving off two
+     pods reads "Fiona Wallace → Tim Holzmann, Pods A and B" rather than twice over. */
+  {
+    const runs = {};
+    for (const d of Object.keys(cons.days || {}).sort()) {
+      const ch = (cons.days[d] || {}).pubChanged;
+      if (!Array.isArray(ch) || !ch.length) continue;
+      ch.forEach((x, n) => {
+        const at = String(x.at || "");
+        const r = runs[at] = runs[at] || { at, days: {}, legacy: [] };
+        /* The id this row used to carry, kept so an acknowledgement made under the old scheme is
+           still honoured — otherwise everything anybody had already ticked would come back on the
+           day this shipped. */
+        r.legacy.push("pub:" + d + ":" + (x.pod || n) + ":" + (x.at || n));
+        const day = r.days[d] = r.days[d] || {};
+        const k = (x.from || "") + " " + (x.to || "");
+        (day[k] = day[k] || { from: x.from, to: x.to, pods: [] }).pods.push(x.pod);
+      });
+    }
+    /* "Pods A and B", not "Pod A, Pod B" — the letters are the only part that differs. Anything
+       that is not a pod (on call, Fairfield) keeps its own words. */
+    const podPhrase = pods => {
+      const lab = pods.map(rowLabel);
+      if (lab.length === 1) return lab[0];
+      const join = a => a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+      return pods.every(p => "ABCDE".includes(p)) ? "Pods " + join(pods.slice()) : join(lab);
+    };
+    for (const at of Object.keys(runs).sort()) {
+      const r = runs[at];
+      const days = Object.keys(r.days).sort();
+      const when = /^\d{4}-\d{2}-\d{2}/.test(at) ? shortDate(at.slice(0, 10)) : "";
+      const clock = /T(\d{2}:\d{2})/.test(at) ? at.match(/T(\d{2}:\d{2})/)[1] : "";
+      raw.push({
+        kind: "pub", id: "pubrun:" + (at || days.join(",")), date: days[0], legacy: r.legacy,
+        title: "Cover changed after publishing" + (when ? " · " + when : "") + (clock ? " " + clock : ""),
+        detail: days.length + " day" + (days.length === 1 ? "" : "s") + " on the board have moved since they went out",
+        lines: days.map(d => ({
+          day: shortDate(d),
+          text: Object.keys(r.days[d]).map(k => {
+            const g = r.days[d][k];
+            return (nameOf(g.from) || "nobody") + " → " + (nameOf(g.to) || "nobody") + ", " + podPhrase(g.pods);
+          }).join(" · ")
+        })),
+        /* One button. "Tell the team" never sent anything — it recorded that a named person said
+           they had — so Acknowledge is the same mechanism under an honest name. "Put it back" has
+           gone with it (Ali, 28 Aug); pinning a day is a decision to make on the day, not a
+           reflex in a notification, and `unpinDay` still releases anything already held. */
+        sortLabel: "Acknowledge"
+      });
+    }
   }
   /* ── A DAY BEING HELD TO THE CIRCULATED VERSION ───────────────────────────────────────────────
-     `pinned` is set by Put it back and honoured by the allocator, which skips the day entirely —
-     including the alert path. Until now nothing on the page ever showed that a day was pinned and
-     nothing could ever clear it, so a day put back in August was frozen for good and invisible.
+     `pinned` is honoured by the allocator, which skips the day entirely — including the alert
+     path. Nothing on the page SETS it any more: Put it back went with the Attention rewrite on
+     28 Aug, so this row now only ever describes days pinned before that, or by the allocator
+     itself. Releasing them still works, which is the half that matters — until 12 Aug nothing on
+     the page showed a pinned day and nothing could clear it, so a day put back in August was
+     frozen for good and invisible.
      That fails project rule 1 twice over: a functional state you can set from the front end and
      cannot see or clear from it.
 
@@ -1998,7 +2046,15 @@ function attnItems(){
      with no way out at all. */
   const now = Date.now();
   return raw.map(it => {
-    const s = sortedOf(cons, it.id);
+    /* A run row falls back to the ids its changes used to carry: if every one of them was already
+       acknowledged under the old per-pod scheme, the run has been dealt with and must not come
+       back just because the page now counts it differently. The newest of those stamps is the one
+       that decides, since it is the last time somebody looked. */
+    let s = sortedOf(cons, it.id);
+    if (!s && it.legacy && it.legacy.length) {
+      const all = it.legacy.map(id => sortedOf(cons, id));
+      if (all.every(Boolean)) s = all.sort((a, b) => String(b.t).localeCompare(String(a.t)))[0];
+    }
     if (!s) return it;
     const ageDays = (now - Date.parse(s.t)) / 86400000;
     if (!(ageDays >= 0)) return it;                    // unparseable stamp: treat as not sorted
@@ -2036,7 +2092,14 @@ function renderAttn(){
     "<div class='attnrow" + (it.done ? " done" : "") + "' data-id='" + esc(it.id) + "'>" +
       "<span class='dot'></span>" +
       "<div class='txt'><b>" + esc(it.title) + "</b>" +
-        (it.detail ? "<div class='sub'>" + esc(it.detail) + "</div>" : "") + "</div>" +
+        (it.detail ? "<div class='sub'>" + esc(it.detail) + "</div>" : "") +
+        /* The days inside a run, one per line: the date holds a fixed column so the eye runs down
+           it, and the change sits beside it. Only rows that carry `lines` grow — every other kind
+           of row is untouched. */
+        ((it.lines || []).length
+          ? "<div class='attnlines'>" + it.lines.map(l =>
+              "<div><span>" + esc(l.day) + "</span>" + esc(l.text) + "</div>").join("") + "</div>"
+          : "") + "</div>" +
       (it.done
         ? "<span class='who'>" + esc(it.doneBy && it.doneBy !== "?" ? "Sorted by " + it.doneBy : "Sorted") + "</span>"
         : (it.act ? "<button class='btn sec attndo'>" + esc(it.act) + "</button>" : "") +
@@ -2061,13 +2124,13 @@ function renderAttn(){
       else showTab("staff");
     };
     if (altBtn) altBtn.onclick = () => {
-      if (it.kind === "pub") putItBack(it.date, it.pod, it.id);
-      else if (it.kind === "pinned") unpinDay(it.date);
+      if (it.kind === "pinned") unpinDay(it.date);
       else leaveEmpty(it.date);
     };
-    /* "Tell the team" sends nothing — there is no list of who was told, and inventing one would be
-       a worse lie than saying nothing. What it records is that a named person took responsibility
-       for saying it. Same mechanism as every other Sorted, different word on the button. */
+    /* Acknowledge sends nothing — there is no list of who was told, and inventing one would be a
+       worse lie than saying nothing. What it records is that a named person saw it. Same mechanism
+       as every other Sorted, and since 28 Aug an honest word on the button: it used to say "Tell
+       the team", which promised a message this page has never had any way to send. */
     if (sortBtn) sortBtn.onclick = () => markSorted(id);
   });
   paintAttnBadge();
@@ -2121,7 +2184,15 @@ async function leaveEmpty(date){
 
    `pinned` is what stops tonight's run undoing this. Without it the sync would re-apply the same
    swap tomorrow morning and the item would reappear, which is how a board teaches people to
-   ignore it. */
+   ignore it.
+
+   NOTHING CALLS THIS SINCE 28 AUG. The Attention row that used to is now one Acknowledge button,
+   so this is the last implementation of "hold a day to the version people were given" and it is
+   currently unreachable. Kept rather than deleted, deliberately (house rule: no deleting without
+   asking, and the capability is a reasonable one to want back) — but kept somewhere honest about
+   it. If it comes back it belongs on the DAY, next to the held pill that already shows the state,
+   rather than on a notification. If it is ever truly not wanted, `unpinDay` and the `pinned` row
+   in rawAttention go with it. */
 async function putItBack(date, pod, id){
   const cons = CR(); if (!cons || !cons.days[date]) return;
   if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
