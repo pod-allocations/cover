@@ -28,9 +28,10 @@ setTimeout(() => {
     const full = () => ({A:"TH",B:"TH",C:"KB",D:"KB",E:"FW",oncall:"KB",cod:"TH",fgh:"",fin:{}});
     // one 11:03 run: same swap on two pods of 6 Sept, and on call of 9 Sept
     cdata.days["2026-09-06"] = { auto:full(), cur:full(), pubChanged:[
-      { pod:"A", from:"FW", to:"TH", at:"${AT}" }, { pod:"B", from:"FW", to:"TH", at:"${AT}" } ] };
+      { pod:"A", from:"FW", to:"TH", at:"2026-08-27T15:24:16.147656+00:00" },
+      { pod:"B", from:"FW", to:"TH", at:"2026-08-27T15:24:16.147668+00:00" } ] };
     cdata.days["2026-09-09"] = { auto:full(), cur:full(), pubChanged:[
-      { pod:"oncall", from:"FW", to:"KB", at:"${AT}" } ] };
+      { pod:"oncall", from:"FW", to:"KB", at:"2026-08-27T15:24:16.147701+00:00" } ] };
     curWeek = mondayOf(new Date().toISOString().slice(0,10));
   `);
   const items = w.eval("attnItems().filter(i => i.kind === 'pub')");
@@ -53,13 +54,13 @@ setTimeout(() => {
      "len=" + after.length + " done=" + (after[0]||{}).done);
   // legacy: acknowledged under the OLD per-pod ids, before this change shipped
   w.eval(`cdata.sorted = {};
-    for (const id of ["pub:2026-09-06:A:${AT}","pub:2026-09-06:B:${AT}","pub:2026-09-09:oncall:${AT}"])
+    for (const id of ["pub:2026-09-06:A:2026-08-27T15:24:16.147656+00:00","pub:2026-09-06:B:2026-08-27T15:24:16.147668+00:00","pub:2026-09-09:oncall:2026-08-27T15:24:16.147701+00:00"])
       cdata.sorted[id] = { t: new Date().toISOString(), who: "AJC" };`);
   const legacy = w.eval("attnItems().filter(i => i.kind === 'pub')");
   ok("old acknowledgements still count", legacy.length === 1 && legacy[0].done === true,
      "done=" + (legacy[0]||{}).done);
   // ...but a run only half-ticked under the old scheme must still ask
-  w.eval(`cdata.sorted = {}; cdata.sorted["pub:2026-09-06:A:${AT}"] = { t:new Date().toISOString(), who:"AJC" };`);
+  w.eval(`cdata.sorted = {}; cdata.sorted["pub:2026-09-06:A:2026-08-27T15:24:16.147656+00:00"] = { t:new Date().toISOString(), who:"AJC" };`);
   const half = w.eval("attnItems().filter(i => i.kind === 'pub')");
   ok("…a half-ticked run still asks", half.length === 1 && !half[0].done, "done=" + (half[0]||{}).done);
   w.eval("cdata.sorted = {}; showTab('attn');");
@@ -70,6 +71,19 @@ setTimeout(() => {
   ok("…and the day lines are drawn", rows[0] && rows[0].querySelectorAll(".attnlines div").length === 2);
   const pubUnsettled = w.eval("attnItems().filter(i => i.kind === 'pub' && !i.done).length");
   ok("the run counts once toward the badge", pubUnsettled === 1, "count=" + pubUnsettled);
+  /* THE CASE THAT DEFEATED THE FIRST ATTEMPT, and the one it must not over-correct into.
+     Above: three entries microseconds apart are one run. Here: a genuinely separate sync an hour
+     later must stay its own row, or acknowledging today would silence tomorrow. */
+  w.eval(`cdata.sorted = {};
+    const day2 = { A:"TH",B:"TH",C:"KB",D:"KB",E:"FW",oncall:"KB",cod:"TH",fgh:"",fin:{} };
+    cdata.days["2026-09-11"] = { auto:day2, cur:JSON.parse(JSON.stringify(day2)), pubChanged:[
+      { pod:"C", from:"TH", to:"KB", at:"2026-08-27T16:40:02.000000+00:00" } ] };`);
+  const two = w.eval("attnItems().filter(i => i.kind === 'pub')");
+  ok("a separate sync an hour later is its own row", two.length === 2, "rows=" + two.length);
+  ok("…and the burst is still one of them",
+     two.some(r => (r.lines||[]).length === 2), JSON.stringify(two.map(r => (r.lines||[]).length)));
+  ok("one day reads 'has', not 'have'",
+     two.some(r => /^1 day has moved/.test(r.detail)), JSON.stringify(two.map(r => r.detail)));
   ok("no thrown errors", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
