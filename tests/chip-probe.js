@@ -135,6 +135,17 @@ setTimeout(() => {
   const widthRule = sheet && [...sheet.cssRules].find(r => /table\.rota th:first-child/.test(r.cssText || ""));
   ok("the day-column width rule actually parsed", !!widthRule, widthRule && widthRule.cssText);
   ok("…and it is the 96px the date needs", widthRule && /96px/.test(widthRule.cssText), widthRule && widthRule.cssText);
+  /* The log's TO column has to hold a full name, not just a pod letter — see the note at
+     #logBox th:nth-child(4). Checked through the CSSOM rather than by searching the source, for
+     the same reason the day-column rule above is: a rule that sits inside a broken comment is
+     still present in the text and does nothing at all. */
+  const allRules = [...w.document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch(e){ return []; } });
+  const toRule = allRules.find(r2 => r2.selectorText === "#logBox th:nth-child(4)");
+  const toWrap = allRules.find(r2 => r2.selectorText === "#logBox td:nth-child(4) > span");
+  ok("the log's To column is wide enough for a name", toRule && /10\.6rem/.test(toRule.cssText), toRule && toRule.cssText);
+  ok("…and a longer one wraps rather than overhanging",
+     toWrap && /normal/.test(toWrap.style.whiteSpace) && toWrap.style.getPropertyPriority("white-space") === "important",
+     toWrap && toWrap.cssText);
   // Balanced comment markers in the page's own <style> — the fault above in its general form:
   // one stray closing marker silently disables every rule that follows it.
   const styleTxt = [...w.document.querySelectorAll("style")].map(s2 => s2.textContent).join("");
@@ -145,6 +156,30 @@ setTimeout(() => {
   ok("published weeks input goes down to 1", /id='setPub' min='1'/.test(src));
   ok("…lowering asks instead of refusing", src.indexOf("takes back") >= 0 && !/can't go below that/.test(src));
   ok("…and the high-water mark follows it down", /cons\.pubHighWater = v;/.test(src));
+  /* ONE DECISION, ONE ROW — 31 Aug (Ali: "mess", photographing four log rows sharing one
+     timestamp). A number input fires `change` on every press of its spinner, so stepping
+     5 → 4 → 3 → 2 confirmed three times and logged four rows, one of them for a value that was
+     only passed through. Nothing may be written while the number is still moving. Asserted
+     behaviourally — fire the events the spinner fires and count what reached the log — because
+     the old code's fault was in when it acted, which no amount of reading the source shows. */
+  /* confirm() MUST be stubbed to yes, or this proves nothing. jsdom leaves it unimplemented, so
+     the first version of this test passed against deliberately broken code: every step tripped
+     the "takes back days people can see" confirm, got a falsy answer, and returned before it
+     could log. A test whose subject never runs is worse than no test. */
+  w.confirm = () => true;
+  /* And an editor must be on file, or ensureWho() opens the who-are-you picker and the callback
+     that does the logging never runs — the second way this same test passed against broken code.
+     Both stubs exist to make the subject actually execute; verified by putting the old immediate
+     commit back and watching this fail. */
+  w.eval("localStorage.setItem('consEditor','Probe');");
+  w.eval("cdata.log = []; cdata.pubWeeks = 5; cdata.pubHighWater = 5; renderSetup();");
+  const pubInput = w.document.querySelector("#setPub");
+  ["4", "3", "2"].forEach(v2 => { pubInput.value = v2; pubInput.dispatchEvent(new w.Event("change")); });
+  ok("stepping the spinner writes nothing while the number is still moving",
+     w.eval("(cdata.log || []).length") === 0, w.eval("(cdata.log || []).length") + " rows logged");
+  ok("…and the commit is debounced rather than fired per keypress", /PUB_PAUSE_MS/.test(src));
+  ok("…and landing back on the old number decides nothing",
+     /if \(v === PUB_WEEKS\) return;/.test(src));
   // the window is week-aligned, so it steps a whole week at Monday 00:00 and never mid-week
   ok("window is week-aligned to Monday", src.indexOf("addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1)") >= 0);
   /* WEEKS VISIBLE MEANS WHAT IT SAYS — 28 Aug (Ali: "its not that i want to set, its number that
