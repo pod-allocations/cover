@@ -167,14 +167,31 @@ setTimeout(() => {
     for (let i = -1; i <= 5; i++) data.weeks[addDays(m, i * 7)] = { days: [] };
     curWeek = addDays(m, 7);
     data.staffPw = "x";`);
-  w.eval("try { sessionStorage.removeItem('consTeamUnlocked'); } catch(e){}");
+  w.eval("TEAM_OK = false;");
   ok("a consultant cannot step past the last visible week", w.eval("canStepWeek(1)") === false);
   ok("…but can step back", w.eval("canStepWeek(-1)") === true);
-  w.eval("try { sessionStorage.setItem('consTeamUnlocked','1'); } catch(e){}");
-  ok("the rota team can step past it", w.eval("canStepWeek(1)") === true);
+  /* THE STOP IS THE SAME FOR EVERYONE — 31 Aug (Ali: "just stop anyone looking ahead more than 2
+     weeks in main view... rota team has the look ahead view for that exact reason"). This used to
+     assert the opposite, that the rota team could step past; the exemption made Pods behave
+     differently depending on who was looking, and the person it fooled was the one who owns the
+     page. Look ahead is where the rota team goes further, and it has its own arrows. */
+  w.eval("TEAM_OK = true;");
+  ok("and NEITHER can the rota team, on Pods", w.eval("canStepWeek(1)") === false);
+  ok("…the rota team can still step back", w.eval("canStepWeek(-1)") === true);
+  /* Look ahead must NOT have been caught by that change: it runs on its own bounds and on
+     cellHTML's teamUnlocked test, which is untouched. Unlocked, a day past the edge draws a real
+     name, not a dash — the thing that would silently empty the page if the two were confused. */
+  ok("Look ahead still draws real names past the edge when unlocked",
+     /class='cellwrap'/.test(w.eval("TEAM_OK = true; cellHTML({cur:{A:'XX'},auto:{A:'XX'}}, 'A', addDays(pubUntil(), 7))"))
+     && !/cell empty/.test(w.eval("cellHTML({cur:{A:'XX'},auto:{A:'XX'}}, 'A', addDays(pubUntil(), 7))")));
+  /* AND THE UNLOCK DIES WITH THE DOCUMENT — 31 Aug (Ali: "the unlock should expire on reload").
+     A flag left in sessionStorage survived every reload for the life of the tab. Asserting the
+     source, not just the variable, because the fault was that a stale reader stayed behind. */
+  ok("the unlock is not kept in browser storage", !/consTeamUnlocked/.test(src), "consTeamUnlocked still in source");
+  ok("…and a fresh document starts locked", w.eval("TEAM_OK = false; data.staffPw = 'x'; teamUnlocked()") === false);
   /* The dash beyond the edge must explain itself with the SETTING, not the hardcoded "four" it
      carried until 28 Aug. Checked by rendering a week past the window and reading the cell. */
-  w.eval(`try { sessionStorage.removeItem('consTeamUnlocked'); } catch(e){}
+  w.eval(`TEAM_OK = false;
     curWeek = addDays(mondayOf(new Date().toISOString().slice(0,10)), 28); renderRota();`);
   const dash = w.document.querySelector("#weekGrid .cell.empty[title]");
   ok("the dash names the real number of weeks", dash && /Cover is shown 2 weeks ahead/.test(dash.title),
