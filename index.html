@@ -1970,7 +1970,8 @@ function attnItems(){
       raw.push({
         kind: "pub", id: "pubrun:" + (at || days.join(",")), date: days[0], legacy: r.legacy,
         title: "Cover changed after publishing" + (when ? " · " + when : "") + (clock ? " " + clock : ""),
-        detail: days.length + (days.length === 1 ? " day has" : " days have") + " moved since they went out",
+        detail: days.length === 1 ? "1 day has moved since it went out"
+                                  : days.length + " days have moved since they went out",
         lines: days.map(d => ({
           day: shortDate(d),
           text: Object.keys(r.days[d]).map(k => {
