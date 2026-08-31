@@ -1920,21 +1920,39 @@ function attnItems(){
      Two nestings inside a run: by day, then by the swap itself, so the same person moving off two
      pods reads "Fiona Wallace → Tim Holzmann, Pods A and B" rather than twice over. */
   {
-    const runs = {};
+    /* A RUN IS A CLUSTER IN TIME, NOT AN EXACT STAMP. Grouping on `at` as a string looked right
+       and was wrong on the first real data it met: the allocator stamps each entry as it writes
+       it, so the two 6 Sept pods carried 2026-08-27T15:24:16.147656 and ...147668 — twelve
+       microseconds apart, one run, two rows again.
+
+       So entries are sorted and chained: each one joins the run before it if it landed within
+       RUN_GAP of it. That is what "the same run" means to a person — a burst of writes — and it
+       holds however long a slow run takes, because the gap is measured entry-to-entry rather than
+       against the run's start. Two deliberate syncs minutes apart still separate. */
+    const RUN_GAP = 5 * 60 * 1000;
+    const flat = [];
     for (const d of Object.keys(cons.days || {}).sort()) {
       const ch = (cons.days[d] || {}).pubChanged;
       if (!Array.isArray(ch) || !ch.length) continue;
-      ch.forEach((x, n) => {
-        const at = String(x.at || "");
-        const r = runs[at] = runs[at] || { at, days: {}, legacy: [] };
-        /* The id this row used to carry, kept so an acknowledgement made under the old scheme is
-           still honoured — otherwise everything anybody had already ticked would come back on the
-           day this shipped. */
-        r.legacy.push("pub:" + d + ":" + (x.pod || n) + ":" + (x.at || n));
-        const day = r.days[d] = r.days[d] || {};
-        const k = (x.from || "") + " " + (x.to || "");
-        (day[k] = day[k] || { from: x.from, to: x.to, pods: [] }).pods.push(x.pod);
-      });
+      ch.forEach((x, n) => flat.push({ d, x, n, t: Date.parse(x.at) }));
+    }
+    flat.sort((a, b) => (isFinite(a.t) ? a.t : 0) - (isFinite(b.t) ? b.t : 0));
+    const runs = {};
+    let key = null, lastT = null;
+    for (const e of flat) {
+      /* An entry with no readable stamp cannot be clustered against anything, so it stands alone
+         rather than being swept into whichever run happens to be open. */
+      if (!isFinite(e.t)) { key = "unstamped:" + e.d + ":" + e.n; lastT = null; }
+      else if (key === null || lastT === null || e.t - lastT > RUN_GAP) { key = String(e.x.at); lastT = e.t; }
+      else lastT = e.t;
+      const r = runs[key] = runs[key] || { at: e.x.at, days: {}, legacy: [] };
+      /* The id this row used to carry, kept so an acknowledgement made under the old scheme is
+         still honoured — otherwise everything anybody had already ticked would come back on the
+         day this shipped. */
+      r.legacy.push("pub:" + e.d + ":" + (e.x.pod || e.n) + ":" + (e.x.at || e.n));
+      const day = r.days[e.d] = r.days[e.d] || {};
+      const k = (e.x.from || "") + " " + (e.x.to || "");
+      (day[k] = day[k] || { from: e.x.from, to: e.x.to, pods: [] }).pods.push(e.x.pod);
     }
     /* "Pods A and B", not "Pod A, Pod B" — the letters are the only part that differs. Anything
        that is not a pod (on call, Fairfield) keeps its own words. */
@@ -1952,7 +1970,7 @@ function attnItems(){
       raw.push({
         kind: "pub", id: "pubrun:" + (at || days.join(",")), date: days[0], legacy: r.legacy,
         title: "Cover changed after publishing" + (when ? " · " + when : "") + (clock ? " " + clock : ""),
-        detail: days.length + " day" + (days.length === 1 ? "" : "s") + " on the board have moved since they went out",
+        detail: days.length + (days.length === 1 ? " day has" : " days have") + " moved since they went out",
         lines: days.map(d => ({
           day: shortDate(d),
           text: Object.keys(r.days[d]).map(k => {
