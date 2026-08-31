@@ -244,7 +244,11 @@ const SEED = `(function(){
      (function(){ w.eval("cdata.source = { sheetUntil: '2026-11-08' }; renderSetup();");
        const t = w.eval("document.getElementById('setupBox').textContent");
        w.eval("cdata.source = { name: 'Consultant Rota Aug.xlsx', sheetUntil: '2026-11-08' }; renderSetup();");
-       return /copy kept in the repo/.test(t) && /never succeeded/.test(t); })());
+       /* Phrasing updated 28 Aug with the Setup rewrite: the warning moved out of the SOURCE
+          card and onto the status line at the top, so it now reads "Never fetched — ... the copy
+          kept in the repo". Same guarantee, said earlier and louder; the assertion checks the
+          guarantee (it admits it, and names what it fell back to) rather than the old wording. */
+       return /never fetched/i.test(t) && /copy kept in the repo/.test(t); })());
 
   /* Backwards compatibility: a store still using the old consRota wrapper must still draw. */
   w.eval("cdata = { v:1, consRota:{ days:{}, map:{ AB:'Anas Baiou' }, fair:{}, window:{}, source:{} }, rotaPin:'abc' };" +
