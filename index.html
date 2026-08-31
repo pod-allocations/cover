@@ -538,7 +538,19 @@ table.fair{border-collapse:collapse;width:100%}
    at opposite ends of a gap and BY floated in an ocean of nothing.
    The widths therefore go on the header cells, which is the only place the layout looks. */
 #logBox th:nth-child(1){width:5.6rem}
-#logBox th:nth-child(3),#logBox th:nth-child(4){width:4.6rem}
+#logBox th:nth-child(3){width:4.6rem}
+/* TO IS NOT ALWAYS A POD LETTER — 31 Aug (Ali: "mess"). core.js reconstructs older prose entries
+   into structured rows, and "Renamed JRG: X → Jonathan Goodall" comes back as a move whose TO is a
+   full human name. The column was sized for the letter A, the pill core.js draws carries an INLINE
+   white-space:nowrap, and under table-layout:fixed an over-wide cell does not push its neighbour
+   along — it prints on top of it. So "Jonathan Greenbaum" was written straight across the BY
+   column. 10.6rem fits the longest name on the rota with room to spare; the wrap underneath is the
+   part that matters, because it means the next long name folds onto a second line instead of
+   overhanging again. `!important` because the nowrap is inline, and `break-word` rather than
+   `anywhere` because `anywhere` changes the intrinsic width too and wrapped even names that fit.
+   Measured on the live page at four widths before choosing, not guessed. */
+#logBox th:nth-child(4){width:10.6rem}
+#logBox td:nth-child(4) > span{white-space:normal !important;overflow-wrap:break-word;display:inline-block;max-width:100%;vertical-align:middle}
 #logBox th:nth-child(5){width:9.2rem}
 /* From and To are one fact — a person moved — so the two chips meet in the middle with the arrow
    between them, instead of being centred in their own columns and reading as two unrelated pills.
@@ -1655,9 +1667,28 @@ function renderSetup(){
     };
   };
   const pubEl = $("#setPub");
+  /* WAIT UNTIL THE NUMBER HAS STOPPED MOVING — 31 Aug (Ali: "mess", with a photograph of four
+     log rows and one timestamp). A number input fires `change` on EVERY press of its spinner, so
+     stepping 5 → 4 → 3 → 2 was three separate decisions as far as this handler was concerned: it
+     asked for confirmation three times and wrote four rows into the change log, one of them for a
+     number that was only ever passed through. The log is supposed to record what somebody
+     decided, not the keystrokes on the way there.
+     So the commit is debounced, and it is skipped entirely if the number has landed back where it
+     started — stepping up and down again decided nothing and should say nothing. PAUSE_MS is long
+     enough to click the spinner at a normal pace without committing between presses; `change`
+     also fires on blur and on Enter, so tabbing away still commits, just a beat later. `busy`
+     matters because confirm() blocks: without it a timer that fell due while the dialog was open
+     would re-enter this and ask the same question twice. */
+  const PUB_PAUSE_MS = 700;
+  let pubTimer = null, pubBusy = false;
   if (pubEl) pubEl.onchange = () => {
+    clearTimeout(pubTimer);
+    pubTimer = setTimeout(() => { pubTimer = null; if (!pubBusy) { pubBusy = true; try { commitPub(); } finally { pubBusy = false; } } }, PUB_PAUSE_MS);
+  };
+  function commitPub(){
     const v = parseInt(pubEl.value, 10);
     if (isNaN(v) || v < 1 || v > 26) { pubEl.value = PUB_WEEKS; return; }
+    if (v === PUB_WEEKS) return;      // stepped away and back: nothing was decided, so say nothing
     const cons = CR();
     /* Going under the high-water mark un-publishes days somebody may already have planned around,
        so it is made a decision rather than a slip: say which days go, and take an explicit yes.
@@ -1678,7 +1709,7 @@ function renderSetup(){
     }
     cons.pubHighWater = Math.max(PUB_MIN, v);   // raising: the promise, once made, is kept
     setSetting("pubWeeks", v, "Published weeks set to " + v);
-  };
+  }
   num($("#setCap"), "cap", 0, 0.5, "Balance correction");
   num($("#setHard"), "hard", 0, 0.5, "Weekend override");
   const sy = $("#btnSync"); if (sy) sy.onclick = syncNow;
