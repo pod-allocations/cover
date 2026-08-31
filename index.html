@@ -394,6 +394,28 @@ table.plain td{padding:.45rem .5rem;border-bottom:1px solid var(--hair);font-siz
 .srcname b{font-size:.9rem;font-weight:600;display:block}
 .srcname span{display:block;font-size:.75rem;color:var(--muted);line-height:1.45;margin-top:.15rem}
 .srcsplit{height:1px;background:var(--hair);margin:1rem 0}
+/* ── SETUP AS A GROUPED LIST — 28 Aug ────────────────────────────────────────────────────────
+   Ali: "Looks an Fing mess btw, think apple minimalism". It was four cards of unequal density,
+   every heading in shouting capitals, and read-only facts dressed exactly like the two numbers
+   you can actually change — so the page gave no clue which was which.
+
+   Now: one quiet status line, then rows. Name on the left, value on the right, a hairline
+   between, the way a settings list has worked since about 2007. A row you can change carries a
+   control and a row you cannot is grey, which does the explaining that hard rule 2 forbids
+   doing in words. */
+.setstrip{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);padding:.1rem .2rem .85rem}
+.setstrip .sdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:0 0 auto}
+.setstrip .sdot.warn{background:var(--amber)}
+.setgrp{font-size:.72rem;color:var(--muted);margin:1.15rem 0 .45rem .2rem}
+.setcard{background:var(--card);border:.5px solid var(--line);border-radius:14px;overflow:hidden}
+.setrow{display:flex;align-items:center;gap:.8rem;padding:.7rem .95rem;border-bottom:.5px solid var(--hair);font-size:.85rem;min-height:2.85rem}
+.setrow:last-child{border-bottom:0}
+.setrow .k{color:var(--ink);flex:0 0 auto}
+.setrow .v{margin-left:auto;color:var(--muted);display:flex;align-items:center;gap:.5rem;text-align:right;min-width:0}
+.setrow .v b{color:var(--ink);font-weight:600}
+.setrow input[type=number]{width:3.7rem;text-align:center}
+.setrow .nmin{flex:1;min-width:0;margin-left:auto;max-width:22rem}
+.setrow .btn{flex:none;font-size:.76rem;padding:.28rem .7rem}
 .balrow{display:flex;gap:1.3rem;flex-wrap:wrap}
 .balrow label{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
 .balrow input{width:4.6rem}
@@ -1499,31 +1521,39 @@ function renderSetup(){
     d.setDate(d.getDate() + 6);
     return d.toISOString().slice(0, 10);
   })();
-  h += "<div class='card'>" +
-    "<div class='stafftop'><span class='sectlab'>SOURCE</span>" +
-      (fetched ? "<span class='cnt'>in step</span>" : "<span class='cnt warn'>never fetched</span>") +
-      "<button class='btn sec' id='btnSync' style='margin-left:auto;font-size:.78rem;padding:.3rem .7rem'>Sync now</button></div>" +
-    "<div class='srcname'>" +
-      (fetched ? esc(src.name)
-               : "<b>the copy kept in the repo</b><span>the fetch from SharePoint has " +
-                 "never succeeded, so this is what everything below was worked out from</span>") +
-    "</div>" +
-    "<div class='srcgrid'>" +
-      "<div><span>workbook edited</span><b>" + when(src.modified) + "</b></div>" +
-      "<div><span>last fetched</span><b>" + when(src.fetched) + "</b></div>" +
-      "<div><span>last worked out</span><b>" + when(cdata && cdata.savedAt) +
-        ((cdata && cdata.savedBy) ? " · " + esc(cdata.savedBy) : "") + "</b></div>" +
-      "<div><span>reads to</span><b>" + esc(src.sheetUntil || "—") + "</b></div>" +
-    "</div>" +
-    "<div class='srcsplit'></div>" +
-    "<div class='srcname'><b>Resident rota</b>" +
-      "<span>read only — it is what puts the residents under each pod, and this page cannot " +
-      "write to it</span></div>" +
-    "<div class='srcgrid'>" +
-      "<div><span>last saved</span><b>" + when(rres.savedAt) +
-        (rres.savedBy ? " · " + esc(rres.savedBy) : "") + "</b></div>" +
-      "<div><span>reaches to</span><b>" + (resReach ? esc(fmt(resReach)) : "—") + "</b></div>" +
-    "</div></div>";
+  /* One row, one fact. `srow` is the whole layout of this page: a name, a value, and whatever
+     control the value needs. Anything explanatory rides in the title where it is there for the
+     asking rather than sitting on screen (hard rule 2). */
+  const srow = (k, v, title) => "<div class='setrow'" + (title ? " title='" + esc(title) + "'" : "") +
+    "><span class='k'>" + esc(k) + "</span><span class='v'>" + v + "</span></div>";
+  const val = t => "<b>" + esc(t || "—") + "</b>";
+
+  /* THE STATUS LINE. Whether the sheet is in step is the only thing on this page you might want
+     at a glance, so it goes above everything and reads as one sentence. Everything that was in
+     the old SOURCE card is still here, one fact per row, underneath. */
+  h += "<div class='setstrip'><span class='sdot" + (fetched ? "" : " warn") + "'></span>" +
+    (fetched ? "In step · fetched " + esc(when(src.fetched))
+             : "Never fetched — everything below was worked out from the copy kept in the repo") +
+    "<button class='btn sec' id='btnSync' style='margin-left:auto;font-size:.78rem;padding:.28rem .7rem'>Sync now</button></div>";
+
+  h += "<div class='setgrp'>Source</div><div class='setcard'>" +
+    srow("Consultant rota", val(fetched ? src.name : "the copy kept in the repo"),
+         fetched ? "The workbook the allocation is worked out from"
+                 : "The fetch from SharePoint has never succeeded") +
+    srow("Workbook edited", val(when(src.modified))) +
+    srow("Last worked out", val(when(cdata && cdata.savedAt) +
+         ((cdata && cdata.savedBy) ? " · " + cdata.savedBy : ""))) +
+    /* "2027-04-04" was printed raw, the one ISO date on a page where every other date is written
+       the way a person writes one. It carries a year because it is normally months out. */
+    srow("Rota reads to", val((function(){
+      const d = new Date(String(src.sheetUntil || "") + "T12:00:00");
+      return isNaN(d) ? (src.sheetUntil || "—")
+        : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    })())) +
+    srow("Resident rota", val(resReach ? fmt(resReach) + " · read only" : "read only"),
+         "It is what puts the residents under each pod, and this page cannot write to it" +
+         (rres.savedAt ? " — last saved " + when(rres.savedAt) : "")) +
+  "</div>";
 
   /* PUBLISHED WEEKS. Raising it is safe. LOWERING it takes back weeks people have already been
      shown — which is the one thing this page exists to prevent, so until 28 Aug the control simply
@@ -1533,24 +1563,35 @@ function renderSetup(){
      they are on in 2 weeks time." That is a rota-team judgement about how far ahead a promise is
      worth making, and rule 1 says the front end has to be able to make it. The high-water mark is
      still kept; it decides whether to ask rather than standing as a wall. */
-  h += "<div class='card'><div class='stafftop'><span class='sectlab'>PUBLISHED</span>" +
-    "<input type='number' id='setPub' min='1' max='26' value='" + PUB_WEEKS + "' " +
-      "style='width:4.2rem;margin-left:.4rem'>" +
-    "<span style='font-size:.85rem'>weeks</span>" +
-    "<span style='margin-left:auto;font-size:.78rem;color:var(--muted)'>to " + fmt(pubUntil()) + "</span>" +
-    "</div></div>";
+  /* IT IS NOT "PUBLISHED", IT IS HOW FAR AHEAD A CONSULTANT CAN SEE — 28 Aug (Ali: "its not that
+     i want to set, its number that can be seen ahead by consultants"). One number wore three
+     names: PUBLISHED here, "live" on the Look ahead bands, and a high-water mark in the store,
+     none of which say the thing it does. It is now labelled as the thing it does.
+
+     The count INCLUDES this week, which is the only reading that survives contact with a
+     Wednesday: 2 is this week and next. Rather than argue the point in words, the row states the
+     date it reaches — a date is unambiguous on any day of the week, and it moves as you change
+     the number. */
+  h += "<div class='setgrp'>What consultants can see</div><div class='setcard'>" +
+    srow("Weeks visible",
+      "<input type='number' id='setPub' min='1' max='26' value='" + PUB_WEEKS + "'>" +
+      "<span>to " + esc(fmt(pubUntil())) + "</span>",
+      "Counting this one. The board and the week arrows both stop here for anybody who is not " +
+      "the rota team.") +
+  "</div>";
 
   /* THE TWO BALANCE NUMBERS. They were constants in the Python, which meant changing how hard the
      allocator chases an even neuro split needed a code edit and a deploy — squarely against rule 1.
      They live in the store now and the sync reads them. */
   const cap = (CR().cap == null ? 0.05 : CR().cap), hard = (CR().hard == null ? 0.06 : CR().hard);
-  h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>NEURO BALANCE</div>" +
-    "<div class='balrow'>" +
-      "<label><input type='number' id='setCap' step='0.01' min='0' max='0.5' value='" + cap + "'>" +
-        "<span>correct beyond</span></label>" +
-      "<label><input type='number' id='setHard' step='0.01' min='0' max='0.5' value='" + hard + "'>" +
-        "<span>override a weekend beyond</span></label>" +
-    "</div></div>";
+  h += "<div class='setgrp'>Neuro balance</div><div class='setcard'>" +
+    srow("Correct beyond",
+      "<input type='number' id='setCap' step='0.01' min='0' max='0.5' value='" + cap + "'>",
+      "How far off an even A&B / C&D split the allocator will tolerate before it corrects") +
+    srow("Override a weekend beyond",
+      "<input type='number' id='setHard' step='0.01' min='0' max='0.5' value='" + hard + "'>",
+      "How far off before it will break the weekend pairing to fix it") +
+  "</div>";
 
   /* WHO CAN ALLOW A RESET. Full addresses only here, behind the shield — the lock screen shows them
      masked, because anybody with the link reaches the lock screen and there is no reason to publish
@@ -1586,10 +1627,10 @@ function renderSetup(){
       (_wouldChange.length === 1 ? "" : "s") + " back</button></div>";
   }
 
-  h += "<div class='card'><div class='sectlab' style='margin-bottom:.7rem'>WHO CAN ALLOW A PASSWORD RESET</div>" +
-    admins.map((a, n) => "<div class='nmrow'><input class='nmin admin' data-n='" + n + "' value='" + esc(a) + "'>" +
+  h += "<div class='setgrp'>Who can allow a password reset</div><div class='setcard'>" +
+    admins.map((a, n) => "<div class='setrow'><input class='nmin admin' data-n='" + n + "' value='" + esc(a) + "'>" +
       "<button class='btn sec adminrm' data-n='" + n + "'>Remove</button></div>").join("") +
-    "<div class='nmrow'><input class='nmin' id='adminNew' placeholder='Add an address' autocomplete='off'>" +
+    "<div class='setrow'><input class='nmin' id='adminNew' placeholder='Add an address' autocomplete='off'>" +
     "<button class='btn sec' id='adminAdd'>Add</button></div></div>";
 
 
@@ -2447,7 +2488,12 @@ function teamUnlocked(){
   return !!(data && !data.staffPw);
 }
 function cellHTML(rec, key, d){
-  if (d > pubUntil() && !teamUnlocked()) return "<div class='cellwrap'><span class='cell empty' title='Consultant cover is published four weeks ahead'>—</span></div>";
+  /* The dash said "published four weeks ahead" in fixed text while the number beside it was a
+     setting — so after 28 Aug, when the window could be changed, the page was telling people
+     something that was simply not true. It reads the setting now. */
+  if (d > pubUntil() && !teamUnlocked()) return "<div class='cellwrap'><span class='cell empty' title='" +
+    esc("Cover is shown " + PUB_WEEKS + " week" + (PUB_WEEKS === 1 ? "" : "s") + " ahead — to " + fmt(pubUntil())) +
+    "'>—</span></div>";
   /* `rec.cur` and `rec.auto` are read defensively, and it is not paranoia (found 11 Aug). The
      guard used to be `rec && rec.cur[key]`, which checks the RECORD exists and then trusts that it
      has a `cur` — so one day in the store missing either half threw, and because every cell is
@@ -2634,9 +2680,8 @@ function renderRota(){
      resident board's rule (26.08.20): "a control that vanishes is a bug to the person looking
      for it", and one that presses without answering is worse. Same list shiftWeek consults, so
      the greying and the refusal cannot disagree. Look ahead's arrows have done this all along. */
-  { const _wks = weeksAvail(), _i = _wks.indexOf(curWeek);
-    $("#btnPrev").disabled = _i <= 0;
-    $("#btnNext").disabled = _i < 0 || _i >= _wks.length - 1; }
+  $("#btnPrev").disabled = !canStepWeek(-1);
+  $("#btnNext").disabled = !canStepWeek(1);
   /* THE READ FAILED. Said here, in place of the grid, because an empty grid is indistinguishable
      from a quiet week and the whole fault was that nothing on screen admitted it. Not on Attention:
      that is behind the shield, and somebody who cannot load the cover cannot be assumed to have
@@ -3662,7 +3707,22 @@ if (!trialOn()) $("#btnFeedback").style.display = "none";
 /* Clicking the backdrop closes it, like every other dialog on both boards. */
 $("#modalBg").onclick = e => { if (e.target === $("#modalBg")) closeModal(); };
 
+/* ONE PREDICATE FOR THE ARROWS AND THE STEP — 28 Aug. "Consultants see 2 weeks" was only half
+   true: the cells past the edge drew dashes, but the arrows still walked you into week seven to
+   look at a gridful of them, which is not what anybody means by seeing two weeks ahead. The stop
+   is the same edge the cells use, so the two cannot disagree, and the rota team is exempt because
+   Look ahead is exactly their job. Lifted from the resident board, which settled this on 26.08.20:
+   a control that presses without answering is worse than one that is visibly out of moves. */
+function canStepWeek(n){
+  const wks = weeksAvail();
+  const i = wks.indexOf(curWeek);
+  const target = wks[i + n];
+  if (!target) return false;
+  if (n > 0 && !teamUnlocked() && target > pubUntil()) return false;
+  return true;
+}
 function shiftWeek(n){
+  if (!canStepWeek(n)) return;
   const wks = weeksAvail();
   const i = wks.indexOf(curWeek);
   const target = wks[i + n];
