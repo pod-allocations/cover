@@ -83,7 +83,7 @@ setTimeout(() => {
   ok("…and the burst is still one of them",
      two.some(r => (r.lines||[]).length === 2), JSON.stringify(two.map(r => (r.lines||[]).length)));
   ok("one day reads 'has', not 'have'",
-     two.some(r => /^1 day has moved/.test(r.detail)), JSON.stringify(two.map(r => r.detail)));
+     two.some(r => r.detail === "1 day has moved since it went out"), JSON.stringify(two.map(r => r.detail)));
   ok("no thrown errors", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
