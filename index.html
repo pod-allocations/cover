@@ -134,8 +134,25 @@ table.rota{border-collapse:collapse;width:100%;table-layout:fixed}
 table.rota th{background:var(--card);color:var(--muted);font-size:.6rem;overflow-wrap:anywhere;text-transform:uppercase;letter-spacing:.08em;padding:.6rem .6rem;text-align:left;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);font-weight:700}
 table.rota td{border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);padding:.5rem .45rem;vertical-align:top;overflow-wrap:anywhere}
 table.rota td:last-child{border-right:0}
-td.rowh{width:52px;font-weight:700;font-size:.85rem}
-td.rowh .sub{display:block;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* THE DAY COLUMN IS THE RESIDENT BOARD'S — 28 Aug (Ali: "the styling for the day column on
+   consultant allocations is wide and doesnt match resident rota. Sort it so it matches, reuse
+   the code"). Two separate faults behind one complaint.
+
+   THE TYPE WAS INVERTED. This board led with a big day name over a small grey date; the resident
+   board leads with a small grey MON over a large date. Same two facts, opposite emphasis, so the
+   eye lands somewhere different on each board. `.dn` and `.d` below are that board's rules
+   copied verbatim rather than approximated — an approximation is how the two drifted in the
+   first place.
+
+   THE WIDTH NEVER APPLIED. `table-layout:fixed` takes its column widths from the FIRST ROW, and
+   the first row here is the header, whose leading cell had no width at all — so the 52px sat on
+   a body cell where fixed layout never looked, and the column took an equal share of the table
+   instead: 173px, measured on the live board. The width now sits on the header cell too, which
+   is the one that decides. */
+table.rota th:first-child{width:86px}
+td.rowh{width:86px;min-width:86px;vertical-align:top}
+td.rowh .dn{font-size:.62rem;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+td.rowh .d{font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
 td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem}
 /* THE PILLS HAVE TO LINE UP DOWN THE COLUMN (Ali, 8 Aug: "its annoyinh to my eyes the 18 and COD
    pills dont quite align"). They didn't, because the pill simply followed the initials and the
@@ -2430,7 +2447,10 @@ function weekTableHTML(mondayISO){
        each of its five cells. */
     const held = cons[d] && cons[d].pinned
       ? "<span class='heldpill' title='held to the version that was circulated'>held</span>" : "";
-    h += "<tr" + needs + "><td class='rowh'>" + DAYS[i] + "<span class='sub'>" + fmt(d) + "</span>" + held + "</td>";
+    /* Day name over date, the resident board's order and its class names (.dn / .d) — see the
+       CSS. The `held` pill follows both, so it sits under the date rather than beside it. */
+    h += "<tr" + needs + "><td class='rowh'><div class='dn'>" + DAYS[i].toUpperCase() + "</div>" +
+         "<div class='d'>" + fmt(d) + "</div>" + held + "</td>";
     /* What the last sync moved is now told by the cell's own change chip (chgFor reads `prev`),
        so the td carries no mark of its own — one fact, one place. */
     for (const [p] of PODROWS)
