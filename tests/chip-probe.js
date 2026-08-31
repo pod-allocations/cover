@@ -147,6 +147,40 @@ setTimeout(() => {
   ok("…and the high-water mark follows it down", /cons\.pubHighWater = v;/.test(src));
   // the window is week-aligned, so it steps a whole week at Monday 00:00 and never mid-week
   ok("window is week-aligned to Monday", src.indexOf("addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1)") >= 0);
+  /* WEEKS VISIBLE MEANS WHAT IT SAYS — 28 Aug (Ali: "its not that i want to set, its number that
+     can be seen ahead by consultants"). The count includes this week, and the arrows stop at the
+     same edge the cells do, so "2 weeks" cannot mean "2 weeks then a gridful of dashes you can
+     still scroll into". The rota team is exempt: Look ahead is their job. */
+  const mon = w.eval("mondayOf(new Date().toISOString().slice(0,10))");
+  const weeksOf = n2 => { w.eval("cdata.pubWeeks = " + n2 + "; cdata.pubHighWater = " + n2 + ";");
+    return w.eval("pubUntil()"); };
+  const addD = (iso, k) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + k); return d.toISOString().slice(0,10); };
+  ok("2 weeks reaches the Sunday of next week", weeksOf(2) === addD(mon, 13), weeksOf(2) + " vs " + addD(mon, 13));
+  ok("4 weeks reaches three Sundays later", weeksOf(4) === addD(mon, 27), weeksOf(4) + " vs " + addD(mon, 27));
+  ok("1 week is this week only", weeksOf(1) === addD(mon, 6), weeksOf(1));
+  /* Seed enough weeks either side that the arrows have somewhere to go, then check the stop.
+     weeksAvail() reads the RESIDENT store (data.weeks), not the cover days — the board shows
+     consultant cover for the weeks the resident rota knows about. */
+  w.eval(`cdata.pubWeeks = 2; cdata.pubHighWater = 2;
+    const m = mondayOf(new Date().toISOString().slice(0,10));
+    data.weeks = {};
+    for (let i = -1; i <= 5; i++) data.weeks[addDays(m, i * 7)] = { days: [] };
+    curWeek = addDays(m, 7);
+    data.staffPw = "x";`);
+  w.eval("try { sessionStorage.removeItem('consTeamUnlocked'); } catch(e){}");
+  ok("a consultant cannot step past the last visible week", w.eval("canStepWeek(1)") === false);
+  ok("…but can step back", w.eval("canStepWeek(-1)") === true);
+  w.eval("try { sessionStorage.setItem('consTeamUnlocked','1'); } catch(e){}");
+  ok("the rota team can step past it", w.eval("canStepWeek(1)") === true);
+  /* The dash beyond the edge must explain itself with the SETTING, not the hardcoded "four" it
+     carried until 28 Aug. Checked by rendering a week past the window and reading the cell. */
+  w.eval(`try { sessionStorage.removeItem('consTeamUnlocked'); } catch(e){}
+    curWeek = addDays(mondayOf(new Date().toISOString().slice(0,10)), 28); renderRota();`);
+  const dash = w.document.querySelector("#weekGrid .cell.empty[title]");
+  ok("the dash names the real number of weeks", dash && /Cover is shown 2 weeks ahead/.test(dash.title),
+     dash && dash.title);
+  ok("…and no longer claims four", !(dash && /four weeks/.test(dash.title)));
+  ok("Setup calls it what it is", /Weeks visible/.test(src) && src.indexOf("sectlab'>PUBLISHED") < 0);
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
