@@ -1519,11 +1519,16 @@ function renderSetup(){
       "<div><span>reaches to</span><b>" + (resReach ? esc(fmt(resReach)) : "—") + "</b></div>" +
     "</div></div>";
 
-  /* PUBLISHED WEEKS. Raising it is safe. LOWERING it would un-publish weeks people have already
-     been shown, which is the one thing this whole page exists to prevent — so the control refuses
-     to go below the high-water mark rather than trusting nobody will try it. */
+  /* PUBLISHED WEEKS. Raising it is safe. LOWERING it takes back weeks people have already been
+     shown — which is the one thing this page exists to prevent, so until 28 Aug the control simply
+     refused. It now asks instead, and names the days that disappear: Chris, 28 Aug, "There are a
+     reasonable number of swaps in the 4 week period which I have never changed on the allocations
+     as it is just one step too many for me... I can't imagine anyone is that bothered which pod
+     they are on in 2 weeks time." That is a rota-team judgement about how far ahead a promise is
+     worth making, and rule 1 says the front end has to be able to make it. The high-water mark is
+     still kept; it decides whether to ask rather than standing as a wall. */
   h += "<div class='card'><div class='stafftop'><span class='sectlab'>PUBLISHED</span>" +
-    "<input type='number' id='setPub' min='" + PUB_MIN + "' max='26' value='" + PUB_WEEKS + "' " +
+    "<input type='number' id='setPub' min='1' max='26' value='" + PUB_WEEKS + "' " +
       "style='width:4.2rem;margin-left:.4rem'>" +
     "<span style='font-size:.85rem'>weeks</span>" +
     "<span style='margin-left:auto;font-size:.78rem;color:var(--muted)'>to " + fmt(pubUntil()) + "</span>" +
@@ -1605,14 +1610,26 @@ function renderSetup(){
   const pubEl = $("#setPub");
   if (pubEl) pubEl.onchange = () => {
     const v = parseInt(pubEl.value, 10);
-    if (isNaN(v) || v > 26) { pubEl.value = PUB_WEEKS; return; }
+    if (isNaN(v) || v < 1 || v > 26) { pubEl.value = PUB_WEEKS; return; }
+    const cons = CR();
+    /* Going under the high-water mark un-publishes days somebody may already have planned around,
+       so it is made a decision rather than a slip: say which days go, and take an explicit yes.
+       Once taken, the mark comes DOWN with the setting — leaving it high would mean the next
+       lowering was measured against a promise this board had already stopped keeping. */
     if (v < PUB_MIN) {
-      pubEl.value = PUB_WEEKS;
-      toast(PUB_MIN + " weeks have already been shown — it can't go below that");
+      const mon = mondayOf(new Date().toISOString().slice(0, 10));
+      const from = addDays(mon, v * 7), to = addDays(mon, PUB_MIN * 7 - 1);
+      if (!confirm("Showing " + v + " week" + (v === 1 ? "" : "s") + " takes back " + fmt(from) +
+                   " to " + fmt(to) + " — days consultants can see right now. Go ahead?")) {
+        pubEl.value = PUB_WEEKS;
+        return;
+      }
+      cons.pubHighWater = v;
+      setSetting("pubWeeks", v,
+                 "Published weeks set to " + v + " — " + fmt(from) + " to " + fmt(to) + " taken back");
       return;
     }
-    const cons = CR();
-    cons.pubHighWater = Math.max(PUB_MIN, v);   // the promise, once made, is kept
+    cons.pubHighWater = Math.max(PUB_MIN, v);   // raising: the promise, once made, is kept
     setSetting("pubWeeks", v, "Published weeks set to " + v);
   };
   num($("#setCap"), "cap", 0, 0.5, "Balance correction");
