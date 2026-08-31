@@ -131,8 +131,18 @@ button.btn:hover{filter:brightness(.96)}
 .navarrow:hover{background:var(--hair)}
 .rota-wrap{background:var(--card);border:0.5px solid var(--line);border-radius:18px;overflow-x:auto;max-width:100%}
 table.rota{border-collapse:collapse;width:100%;table-layout:fixed}
-table.rota th{background:var(--card);color:var(--muted);font-size:.6rem;overflow-wrap:anywhere;text-transform:uppercase;letter-spacing:.08em;padding:.6rem .6rem;text-align:left;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);font-weight:700}
-table.rota td{border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);padding:.5rem .45rem;vertical-align:top;overflow-wrap:anywhere}
+/* ROOM TO BREATHE — 28 Aug (Ali: "make row heigh bit bigger so fills screen and bit more padding
+   around things particualrly in the date column"). Measured before changing anything: rows were
+   48px and the table finished 249px short of the bottom of a 736px window, so a week of consultant
+   cover sat in the top half of the screen and looked provisional. The padding does the work rather
+   than a fixed row height — a height would fight the Residents toggle, which drops a stack of
+   chips into every cell and must be free to make rows as tall as it needs. 1rem top and bottom
+   puts the rows near 64px and the week roughly fills the fold, with the extra split evenly above
+   and below the names rather than pooling under them.
+   The header's horizontal padding is brought to the same .75rem so the column labels sit directly
+   over the initials; they were .6rem against the cells' .45rem and had never quite lined up. */
+table.rota th{background:var(--card);color:var(--muted);font-size:.6rem;overflow-wrap:anywhere;text-transform:uppercase;letter-spacing:.08em;padding:.7rem .75rem;text-align:left;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);font-weight:700}
+table.rota td{border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);padding:1rem .75rem;vertical-align:top;overflow-wrap:anywhere}
 table.rota td:last-child{border-right:0}
 /* THE DAY COLUMN IS THE RESIDENT BOARD'S — 28 Aug (Ali: "the styling for the day column on
    consultant allocations is wide and doesnt match resident rota. Sort it so it matches, reuse
@@ -149,8 +159,14 @@ table.rota td:last-child{border-right:0}
    a body cell where fixed layout never looked, and the column took an equal share of the table
    instead: 173px, measured on the live board. The width now sits on the header cell too, which
    is the one that decides. */
-table.rota th:first-child{width:86px}
-td.rowh{width:86px;min-width:86px;vertical-align:top}
+   86px → 96px on 28 Aug for the date column's own breathing room, and the ten pixels are the
+   gutter rather than the text: measured, the longest date this ever renders is "30 Sept" at 64px,
+   which had only 7px of slack inside the old 86px once its 7.2px padding was taken off. At 96px
+   with the cells' .75rem the text box is 72px — the same room the resident board gives it (86px
+   less its .5rem padding = 70px), with the extra spent on the margins Ali asked for. Widen the
+   padding without widening the column and "30 Sept" wraps. */
+table.rota th:first-child{width:96px}
+td.rowh{width:96px;min-width:96px;vertical-align:top}
 td.rowh .dn{font-size:.62rem;font-weight:700;letter-spacing:.08em;color:var(--muted)}
 td.rowh .d{font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
 td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem}
