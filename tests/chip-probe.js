@@ -141,6 +141,12 @@ setTimeout(() => {
   ok("style block has balanced comment markers",
      (styleTxt.split("/*").length - 1) === (styleTxt.split("*/").length - 1),
      "opens " + (styleTxt.split("/*").length - 1) + " closes " + (styleTxt.split("*/").length - 1));
+  // the published window can be LOWERED from the front end, with a confirm rather than a refusal (26.08.28)
+  ok("published weeks input goes down to 1", /id='setPub' min='1'/.test(src));
+  ok("…lowering asks instead of refusing", src.indexOf("takes back") >= 0 && !/can't go below that/.test(src));
+  ok("…and the high-water mark follows it down", /cons\.pubHighWater = v;/.test(src));
+  // the window is week-aligned, so it steps a whole week at Monday 00:00 and never mid-week
+  ok("window is week-aligned to Monday", src.indexOf("addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1)") >= 0);
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
