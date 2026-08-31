@@ -2483,8 +2483,16 @@ Object.defineProperty(window, "PUB_MIN", {
   get(){ const v = (CR() || {}).pubHighWater; return (typeof v === "number" && v >= 1) ? v : PUB_WEEKS; }
 });
 const pubUntil = () => addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1);
+/* THE UNLOCK LIVES IN A VARIABLE, NOT IN sessionStorage (31 Aug 2026, Ali: "the unlock should
+   expire on reload"). sessionStorage survives a reload and dies only with the TAB, and on a phone
+   a tab lives for weeks — so unlocking once to reach Setup left that browser permanently
+   privileged, with no way to see the page as a consultant short of a private window. The lock
+   screen has always told people "you'll be asked again next time you open this page"; a reload is
+   the next time you open it, so this is the code catching up with the words rather than the words
+   being softened to fit. A variable dies with the document, which is exactly that sentence. */
+let TEAM_OK = false;
 function teamUnlocked(){
-  try { if (sessionStorage.getItem("consTeamUnlocked") === "1") return true; } catch(e){}
+  if (TEAM_OK) return true;
   return !!(data && !data.staffPw);
 }
 function cellHTML(rec, key, d){
@@ -3710,15 +3718,26 @@ $("#modalBg").onclick = e => { if (e.target === $("#modalBg")) closeModal(); };
 /* ONE PREDICATE FOR THE ARROWS AND THE STEP — 28 Aug. "Consultants see 2 weeks" was only half
    true: the cells past the edge drew dashes, but the arrows still walked you into week seven to
    look at a gridful of them, which is not what anybody means by seeing two weeks ahead. The stop
-   is the same edge the cells use, so the two cannot disagree, and the rota team is exempt because
-   Look ahead is exactly their job. Lifted from the resident board, which settled this on 26.08.20:
-   a control that presses without answering is worse than one that is visibly out of moves. */
+   is the same edge the cells use, so the two cannot disagree. Lifted from the resident board,
+   which settled this on 26.08.20: a control that presses without answering is worse than one that
+   is visibly out of moves.
+
+   THE ROTA TEAM IS NO LONGER EXEMPT HERE (31 Aug, Ali: "just stop anyone looking ahead more than
+   2 weeks in main view... rota team has the look ahead view for that exact reason"). The exemption
+   was put in on the reasoning that the rota team needs to see further — which is true, and is why
+   Look ahead exists: the same grid, the same arrows, running past the edge, behind the shield.
+   Two ways to do one thing meant Pods quietly behaved differently depending on who was looking,
+   and the person it misled was the person who owns it — the unlock is kept for the life of a tab,
+   so opening Setup once left him scrolling to 27 Sept on a two-week window and reporting it, twice,
+   as a fault. A page whose job is to say what everybody sees should show one answer to everybody.
+   NOTE this deliberately does not touch cellHTML's `teamUnlocked` test: that one is what lets Look
+   ahead draw real names where Pods draws dashes, and removing it would empty Look ahead. */
 function canStepWeek(n){
   const wks = weeksAvail();
   const i = wks.indexOf(curWeek);
   const target = wks[i + n];
   if (!target) return false;
-  if (n > 0 && !teamUnlocked() && target > pubUntil()) return false;
+  if (n > 0 && target > pubUntil()) return false;
   return true;
 }
 function shiftWeek(n){
@@ -3966,10 +3985,11 @@ function showLockScreen(then){
   for (const k of ["rota", "lock", "fair"].concat(TEAM_TABS)) $("#tab-" + k).style.display = (k === "lock") ? "" : "none";
   document.querySelectorAll("aside button[data-tab], #teamPanel button[data-tab]").forEach(x => x.classList.remove("active"));
   const bt = $("#btnTeam"); if (bt) bt.classList.add("active");
-  /* "once on this device" was wrong: the unlock is kept in sessionStorage, so it lasts until the
-     tab is closed and not a minute longer. Saying "device" set an expectation the page then broke
-     every morning, which is a small lie that costs trust on a page whose whole job is to be the
-     thing people believe about tomorrow. */
+  /* "once on this device" was wrong, and the sentence below has been true only since 31 Aug: the
+     unlock now lives in a variable, so it lasts until the page is loaded again and not a moment
+     longer. It previously sat in sessionStorage and survived every reload for the life of the tab
+     — the words said one thing and the code did another, which is a small lie that costs trust on
+     a page whose whole job is to be the thing people believe about tomorrow. See teamUnlocked. */
   $("#lockSub").textContent = "One password covers Look ahead, Fairness and the change log. " +
     "It's the rota team's password from the resident board, and you'll be asked again next time " +
     "you open this page.";
@@ -3979,7 +3999,7 @@ function showLockScreen(then){
 }
 $("#lockBtn").onclick = async () => {
   if (await sha($("#lockPw").value) === (data && data.staffPw)) {
-    try { sessionStorage.setItem("consTeamUnlocked", "1"); } catch(e){}
+    TEAM_OK = true;
     document.body.classList.remove("teamlocked");
     $("#lockPw").value = "";
     const then = LOCK_THEN; LOCK_THEN = null;
@@ -4054,9 +4074,7 @@ $("#lockSend").onclick = async () => {
    That does not make failing open harmless — it makes it untidy in a way that reads as a control
    and is not one. */
 function ensureTeam(cb){
-  let unlocked = false;
-  try { unlocked = sessionStorage.getItem("consTeamUnlocked") === "1"; } catch(e){}
-  if (unlocked) return cb();
+  if (TEAM_OK) return cb();
   if (data && !data.staffPw) return cb();
   showLockScreen(cb);
   if (!data) $("#lockMsg").textContent =
