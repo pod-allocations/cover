@@ -122,7 +122,25 @@ setTimeout(() => {
   const dnEl = w.document.querySelector("td.rowh .dn"), dEl = w.document.querySelector("td.rowh .d");
   ok("day column uses the resident board's dn/d", !!dnEl && !!dEl);
   ok("…day name above, uppercase", dnEl && /^[A-Z]{3}$/.test(dnEl.textContent.trim()), dnEl && dnEl.textContent);
-  ok("…and the width sits where fixed layout reads it", src.indexOf("table.rota th:first-child{width:96px}") >= 0);
+  /* THE RULE HAS TO SURVIVE THE PARSER, NOT JUST EXIST IN THE FILE — 28 Aug. This assertion used
+     to be src.indexOf("table.rota th:first-child{...}"), and it passed green on a build where the
+     rule was dead: a comment above it had been closed early, so six lines of prose sat raw in the
+     stylesheet, Chrome's error-recovery ate the rules that followed, and the column measured 173px
+     on the live site while the test said fine.
+     Asking the CSSOM is the better question, but be clear what it does and does not catch here:
+     checked against that exact broken build, jsdom RECOVERED and still exposed the rule, so these
+     two assertions stayed green. It is the balanced-marker check below that actually fails on this
+     fault. These are kept for rules malformed in ways jsdom does reject. */
+  const sheet = [...w.document.styleSheets].find(sh => { try { return [...sh.cssRules].some(r => /table\.rota th:first-child/.test(r.cssText || "")); } catch(e){ return false; } });
+  const widthRule = sheet && [...sheet.cssRules].find(r => /table\.rota th:first-child/.test(r.cssText || ""));
+  ok("the day-column width rule actually parsed", !!widthRule, widthRule && widthRule.cssText);
+  ok("…and it is the 96px the date needs", widthRule && /96px/.test(widthRule.cssText), widthRule && widthRule.cssText);
+  // Balanced comment markers in the page's own <style> — the fault above in its general form:
+  // one stray closing marker silently disables every rule that follows it.
+  const styleTxt = [...w.document.querySelectorAll("style")].map(s2 => s2.textContent).join("");
+  ok("style block has balanced comment markers",
+     (styleTxt.split("/*").length - 1) === (styleTxt.split("*/").length - 1),
+     "opens " + (styleTxt.split("/*").length - 1) + " closes " + (styleTxt.split("*/").length - 1));
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
