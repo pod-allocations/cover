@@ -122,7 +122,7 @@ setTimeout(() => {
   const dnEl = w.document.querySelector("td.rowh .dn"), dEl = w.document.querySelector("td.rowh .d");
   ok("day column uses the resident board's dn/d", !!dnEl && !!dEl);
   ok("…day name above, uppercase", dnEl && /^[A-Z]{3}$/.test(dnEl.textContent.trim()), dnEl && dnEl.textContent);
-  ok("…and the width sits where fixed layout reads it", src.indexOf("table.rota th:first-child{width:86px}") >= 0);
+  ok("…and the width sits where fixed layout reads it", src.indexOf("table.rota th:first-child{width:96px}") >= 0);
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
