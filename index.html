@@ -1932,7 +1932,7 @@ function attnItems(){
            day this shipped. */
         r.legacy.push("pub:" + d + ":" + (x.pod || n) + ":" + (x.at || n));
         const day = r.days[d] = r.days[d] || {};
-        const k = (x.from || "") + " " + (x.to || "");
+        const k = (x.from || "") + " " + (x.to || "");
         (day[k] = day[k] || { from: x.from, to: x.to, pods: [] }).pods.push(x.pod);
       });
     }
