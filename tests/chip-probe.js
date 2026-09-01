@@ -152,6 +152,35 @@ setTimeout(() => {
   ok("style block has balanced comment markers",
      (styleTxt.split("/*").length - 1) === (styleTxt.split("*/").length - 1),
      "opens " + (styleTxt.split("/*").length - 1) + " closes " + (styleTxt.split("*/").length - 1));
+  /* ONE ROW, TWO BADGES — 31 Aug (Ali: "one row per swap"). A swap is now a single log entry
+     naming both people, so chgFor has to read the individual legs off `swap` rather than the
+     row's own subj/to. If that ever regresses, the consultant named SECOND loses their badge:
+     the move happened, was logged, and left no mark on the board — the quietest possible failure
+     and the reason this is asserted on both cells rather than one. */
+  w.eval(`
+    const T2 = window.__T;
+    cdata.days[T2].cur  = { A:"AB", B:"", C:"JRG", D:"NW", E:"", oncall:"", cod:"", fgh:"" };
+    cdata.days[T2].auto = { A:"AB", B:"", C:"JRG", D:"NW", E:"", oncall:"", cod:"", fgh:"" };
+    cdata.log = [{ t: new Date(Date.now() - 3600e3).toISOString(), who: "AJC (consultant page)",
+      kind: "manual", on: T2, msg: "NW and JRG swap Pod C and Pod D",
+      d: { act: "move", subj: "NW ↔ JRG", from: "D", to: "C",
+           swap: [{ subj: "NW", from: "C", to: "D" }, { subj: "JRG", from: "D", to: "C" }] } }];
+    renderRota();
+  `);
+  ok("a swap badges the person named first in the row", !!w.document.querySelector("td.col-D .chgpill"));
+  /* "Is there a badge?" is NOT enough here, and this was caught by breaking chgFor on purpose:
+     with the legs ignored, the second consultant's cell STILL drew a badge — the `prev` snapshot
+     fallback picked it up and credited it to the sync. The assertion has to be that the badge
+     came from the swap ENTRY, which is what naming the editor and the right pod proves. */
+  ok("…and the one named second, from the log rather than the sync fallback",
+     /by AJC/.test((w.document.querySelector("td.col-C .chgpill") || {}).title || ""),
+     (w.document.querySelector("td.col-C .chgpill") || {}).title);
+  ok("…each saying the pod they actually came from",
+     /was Pod C/.test((w.document.querySelector("td.col-D .chgpill") || {}).title || "") &&
+     /was Pod D/.test((w.document.querySelector("td.col-C .chgpill") || {}).title || ""),
+     (w.document.querySelector("td.col-D .chgpill") || {}).title);
+  ok("…and applySwap writes one row, not one per person",
+     /swap " \+ rowLabel\(k1\) \+ " and " \+ rowLabel\(k2\)/.test(src) && !/clog\(nameOf\(b\)/.test(src));
   // the published window can be LOWERED from the front end, with a confirm rather than a refusal (26.08.28)
   ok("published weeks input goes down to 1", /id='setPub' min='1'/.test(src));
   ok("…lowering asks instead of refusing", src.indexOf("takes back") >= 0 && !/can't go below that/.test(src));
