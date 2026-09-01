@@ -116,6 +116,17 @@ setTimeout(() => {
   const kov = w.document.getElementById("whoOverlay");
   const kx = kov && kov.querySelector("button[aria-label='Close']");
   ok("the Key opens with a pinned close", !!kx);
+  /* THE KEY IS THE ONLY PLACE GESTURES ARE WRITTEN DOWN (rule 2 forbids on-screen explainers), so
+     a Key that is out of date is worse than no Key — it is the single source, teaching the old
+     product. It described "tap a name to pick it up, then tap another name to swap the two" for
+     three days after one tap started opening the person sheet instead, and told phone users to
+     DRAG the COD and finish pills, which touch cannot do (rule 14). Both pinned here. */
+  const keyTxt = kov ? kov.textContent : "";
+  ok("the Key describes the gesture that exists", /one tap on a name opens their card/i.test(keyTxt), keyTxt.slice(0, 80));
+  ok("…and not the pick-up-and-swap that was replaced", !/pick it up, then tap another name/i.test(keyTxt));
+  ok("…and never says only-drag for a pill a phone must tap",
+     !/COD<\/span>[\s\S]{0,40}Drag it to hand it over/.test(src) && /Tap it, then tap the pod taking over/.test(keyTxt),
+     keyTxt.slice(0, 80));
   if (kx) kx.click();
   ok("…and the X closes it", !w.document.getElementById("whoOverlay"));
   // the day column matches the resident board: MON over the date, and a width fixed layout reads (26.08.28)
@@ -210,7 +221,17 @@ setTimeout(() => {
   ok("…and landing back on the old number decides nothing",
      /if \(v === PUB_WEEKS\) return;/.test(src));
   // the window is week-aligned, so it steps a whole week at Monday 00:00 and never mid-week
-  ok("window is week-aligned to Monday", src.indexOf("addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1)") >= 0);
+  ok("window is week-aligned to Monday",
+     new Date(w.eval("pubUntil()") + "T12:00:00").getDay() === 0 &&
+     w.eval("pubUntil()") > w.eval("mondayOf(todayISO())"),
+     w.eval("pubUntil()") + " from " + w.eval("mondayOf(todayISO())"));
+  /* Landing on a Sunday is the whole claim here; the exact count of weeks is checked by weeksOf()
+     just below, which is the right place for it. An earlier version asserted the epoch difference
+     was a whole number of weeks minus a day, and that failed under TZ=Pacific/Auckland — not
+     because the window was wrong but because `addDays` built its date at LOCAL noon and read it
+     back in UTC, so a step across a daylight-saving change landed a day out. Both helpers are
+     pure UTC now and the suite passes in four zones; this note stays because the shape of that
+     mistake — a test and its subject sharing an assumption — is the one to watch for. */
   /* WEEKS VISIBLE MEANS WHAT IT SAYS — 28 Aug (Ali: "its not that i want to set, its number that
      can be seen ahead by consultants"). The count includes this week, and the arrows stop at the
      same edge the cells do, so "2 weeks" cannot mean "2 weeks then a gridful of dashes you can
@@ -218,7 +239,12 @@ setTimeout(() => {
   const mon = w.eval("mondayOf(new Date().toISOString().slice(0,10))");
   const weeksOf = n2 => { w.eval("cdata.pubWeeks = " + n2 + "; cdata.pubHighWater = " + n2 + ";");
     return w.eval("pubUntil()"); };
-  const addD = (iso, k) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + k); return d.toISOString().slice(0,10); };
+  /* UTC throughout, matching the app's addDays after 31 Aug. This helper is the expected VALUE the
+     window is checked against, and it used to carry the same local-noon technique the app did — so
+     under TZ=Pacific/Auckland it agreed with the bug rather than catching it, and then disagreed
+     with the fix. A test that reimplements the thing it is testing only ever proves they were
+     written by the same person on the same day. */
+  const addD = (iso, k) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0,10); };
   ok("2 weeks reaches the Sunday of next week", weeksOf(2) === addD(mon, 13), weeksOf(2) + " vs " + addD(mon, 13));
   ok("4 weeks reaches three Sundays later", weeksOf(4) === addD(mon, 27), weeksOf(4) + " vs " + addD(mon, 27));
   ok("1 week is this week only", weeksOf(1) === addD(mon, 6), weeksOf(1));
@@ -296,6 +322,19 @@ setTimeout(() => {
   ok("warning colour is not the brand colour",
      rootRule && rootRule.style.getPropertyValue("--amber").trim() !== rootRule.style.getPropertyValue("--accent").trim(),
      rootRule && rootRule.cssText);
+  /* "TODAY" MUST BE LOCAL. toISOString() is UTC, so between 00:00 and 01:00 British Summer Time it
+     answers YESTERDAY — the phone opened on the wrong day, and on a Monday in that hour the board
+     opened on last week with the published window a week short. Two assertions, because either
+     alone is weak: the helper must actually return the local date, and no site may go back to
+     asking UTC. Comments are stripped before the source scan so the note explaining this does not
+     satisfy its own test. */
+  const localToday = (() => { const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })();
+  ok("todayISO() is the local date, not the UTC one", w.eval("todayISO()") === localToday, w.eval("todayISO()"));
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok("…and nothing asks UTC for today any more",
+     !/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/.test(code),
+     (code.match(/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/g) || []).length + " left");
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
