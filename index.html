@@ -2606,10 +2606,19 @@ function chgFor(d, key, cur){
   };
   if (!cur) return null;
   for (const e of (cdata && cdata.log) || []) {
-    if (e.on !== d || !e.d || e.d.to !== key || e.d.subj !== cur) continue;
+    if (e.on !== d || !e.d) continue;
+    /* A SWAP IS ONE ROW NAMING TWO PEOPLE — 31 Aug. Matching on the entry's own subj/to would
+       find only whoever is named first, and the other consultant's cell would quietly lose its
+       badge: the move happened, was logged, and left no mark. So a swap row carries the two
+       individual legs in `swap`, and the match runs over those; every other entry is its own
+       single leg. Written this way round rather than as a second loop so there is one definition
+       of "does this entry explain this cell". */
+    const legs = Array.isArray(e.d.swap) && e.d.swap.length ? e.d.swap : [e.d];
+    const leg = legs.find(L => L && L.to === key && L.subj === cur);
+    if (!leg) continue;
     const t = Date.parse(e.t);
     if (!isFinite(t) || now - t > H48) continue;
-    return mk(e.d.bench ? "new" : "move", e.d.from || "", e.t, String(e.who || "").replace(/\s*\(.*\)$/, ""));
+    return mk(leg.bench ? "new" : "move", leg.from || "", e.t, String(e.who || "").replace(/\s*\(.*\)$/, ""));
   }
   const prev = ((CR() || {}).prev || {})[d];
   if (prev && (prev[key] || "") !== cur)
@@ -3278,13 +3287,24 @@ async function applySwap(d, k1, k2){
   const shot = dayShot(cons, d);
   rec.cur[k1] = b; rec.cur[k2] = a;
   const who = localStorage.getItem("consEditor") || "?";
-  /* One row per person, so the swap reads as the two moves it actually is and each consultant
-     appears under their own name with their own pods. */
+  /* ONE ROW PER SWAP — 31 Aug (Ali, asked directly: "one row per swap"). It used to write one row
+     per person, on the reasoning that a swap is two moves and each consultant should appear under
+     their own name. True, but it made the log twice as long as the number of things that had
+     happened, and a swap you then undid filled four lines with two decisions.
+     `subj` carries both initials with the arrows between them, which is what the finish-swap row
+     has always done, so core.js draws "JM ↔ JRG" in the Person column and the two pod chips
+     beside it without needing to know anything new.
+     `swap` is the half that matters and is easy to miss: chgFor decides which CELL gets a change
+     badge by finding a log entry whose `subj` and `to` match that cell. With one row, the person
+     named second would have matched nothing and silently lost their badge — so the individual
+     moves are kept in a list on the entry, and chgFor reads them. Anything that starts trusting
+     the top-level subj/to of a swap row alone will reintroduce that. */
   const podk = k => "ABCDE".includes(k) ? k : "";
-  clog(nameOf(a) + " moves to " + rowLabel(k2) + " on " + fmt(d), "manual", d, " (consultant page)",
-       { act: "move", subj: a, from: podk(k1), to: podk(k2) });
-  clog(nameOf(b) + " moves to " + rowLabel(k1) + " on " + fmt(d), "manual", d, " (consultant page)",
-       { act: "move", subj: b, from: podk(k2), to: podk(k1) });
+  const legs = [{ subj: a, from: podk(k1), to: podk(k2) },
+                { subj: b, from: podk(k2), to: podk(k1) }];
+  clog(nameOf(a) + " and " + nameOf(b) + " swap " + rowLabel(k1) + " and " + rowLabel(k2) +
+       " on " + fmt(d), "manual", d, " (consultant page)",
+       { act: "move", subj: a + " ↔ " + b, from: podk(k1), to: podk(k2), swap: legs });
   cdata.savedBy = who;
   state("saving");
   showChangeNow();
