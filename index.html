@@ -1218,8 +1218,31 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const toast = m => { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 3000); };
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0,10); };
-const mondayOf = iso => { const d = new Date(iso + "T12:00:00"); const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); return d.toISOString().slice(0,10); };
+/* TODAY IS A LOCAL DATE, NOT A UTC ONE — 31 Aug, from the pre-launch audit.
+   `new Date().toISOString().slice(0,10)` is UTC, and eight places used it to answer "what is
+   today": the opening week, the published edge, the day the phone opens on, Look ahead's first
+   week, "This week", the trial cut-off and two Attention scans. Between 00:00 and 01:00 British
+   Summer Time that returns YESTERDAY — so in that hour the phone opened on the wrong day while the
+   day strip, which was already local, ringed a different one; and on a MONDAY in that hour
+   mondayOf(a UTC Sunday) is the previous Monday, so the board opened on last week and the
+   published window came up a whole week short.
+   Named `todayISO` deliberately: core.js's `__todayISO` defers to a page-level `todayISO` if one
+   exists, so defining it here makes the shared code and this page agree by construction rather
+   than by both happening to be written the same way. There is nothing else to keep in step.
+   `addDays` and `mondayOf` are ENTIRELY UTC now, and that is the second half of the same fix.
+   They used to build the date at LOCAL noon and read it back in UTC — which is safe in Britain,
+   where the offset is only ever 0 or +1 and noon shifted by an hour cannot cross midnight, and
+   wrong anywhere the offset is bigger. Caught by running the suite under TZ=Pacific/Auckland
+   while checking this: a 27-day step across the New Zealand daylight-saving change landed on
+   26 Sept instead of 27, and the published edge came out on a Saturday. Nobody at Salford would
+   ever have seen it, which is exactly why it would have survived. Parsing at UTC midnight, doing
+   UTC arithmetic and formatting in UTC has no local offset anywhere in it, so there is nothing
+   left to go wrong; the UK answers are unchanged, verified against the old pair in three zones. */
+const todayISO = () => { const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" +
+         String(d.getDate()).padStart(2, "0"); };
+const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+const mondayOf = iso => { const d = new Date(iso + "T00:00:00Z"); const k = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - k); return d.toISOString().slice(0,10); };
 const fmt = iso => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 /* The cover store IS the allocation now — days, map, fair, window and source sit at its top
    level. They used to be wrapped in a key called consRota because the file held other things
@@ -1306,7 +1329,7 @@ async function load(){
     return;
   }
   const wks = weeksAvail();
-  const thisMon = mondayOf(new Date().toISOString().slice(0,10));
+  const thisMon = mondayOf(todayISO());
   curWeek = wks.includes(thisMon) ? thisMon : (wks.find(w => w >= thisMon) || wks[wks.length - 1]);
   state("saved");
   whoBtn();
@@ -1748,7 +1771,7 @@ function renderSetup(){
        Once taken, the mark comes DOWN with the setting — leaving it high would mean the next
        lowering was measured against a promise this board had already stopped keeping. */
     if (v < PUB_MIN) {
-      const mon = mondayOf(new Date().toISOString().slice(0, 10));
+      const mon = mondayOf(todayISO());
       const from = addDays(mon, v * 7), to = addDays(mon, PUB_MIN * 7 - 1);
       if (!confirm("Showing " + v + " week" + (v === 1 ? "" : "s") + " takes back " + fmt(from) +
                    " to " + fmt(to) + " — days consultants can see right now. Go ahead?")) {
@@ -1976,7 +1999,7 @@ function attnItems(){
      is true and useless, and a row that is not actionable yet is how a list becomes wallpaper.
      `leaveEmpty()` is still the way out for a day nobody can staff: it writes the deliberate note,
      and a day carrying that note is skipped here for good. */
-  const _todayISO = new Date().toISOString().slice(0, 10);
+  const _todayISO = todayISO();
   const _emptyEdge = addDays(_todayISO, 56);
   for (const d of Object.keys(cons.days || {}).sort()) {
     if (d < _todayISO || d > _emptyEdge) continue;
@@ -2582,7 +2605,7 @@ Object.defineProperty(window, "PUB_WEEKS", {
 Object.defineProperty(window, "PUB_MIN", {
   get(){ const v = (CR() || {}).pubHighWater; return (typeof v === "number" && v >= 1) ? v : PUB_WEEKS; }
 });
-const pubUntil = () => addDays(mondayOf(new Date().toISOString().slice(0, 10)), PUB_WEEKS * 7 - 1);
+const pubUntil = () => addDays(mondayOf(todayISO()), PUB_WEEKS * 7 - 1);
 /* THE UNLOCK LIVES IN A VARIABLE, NOT IN sessionStorage (31 Aug 2026, Ali: "the unlock should
    expire on reload"). sessionStorage survives a reload and dies only with the TAB, and on a phone
    a tab lives for weeks — so unlocking once to reach Setup left that browser permanently
@@ -2783,15 +2806,11 @@ function renderRota(){
   $("#weekTitle").append(_yr);
   const _now = $("#btnToday");
   if (_now) {
-    const _today = new Date();
-    const _iso = _today.getFullYear() + "-" +
-      String(_today.getMonth() + 1).padStart(2, "0") + "-" +
-      String(_today.getDate()).padStart(2, "0");
-    const isNow = curWeek === mondayOf(_iso);
+    const isNow = curWeek === mondayOf(todayISO());
     _now.setAttribute("aria-current", isNow ? "true" : "false");
     _now.title = isNow ? "You are on this week" : "Jump back to this week";
     document.body.dataset.week =
-      isNow ? "now" : (curWeek > mondayOf(_iso) ? "ahead" : "past");
+      isNow ? "now" : (curWeek > mondayOf(todayISO()) ? "ahead" : "past");
   }
   /* The week arrows grey at the edge of the data rather than silently doing nothing — the
      resident board's rule (26.08.20): "a control that vanishes is a bug to the person looking
@@ -2853,7 +2872,7 @@ function wireGrid(root){
      snapping back to today every time somebody edited Thursday would be its own small madness. */
   const _wk = dates[0] || "";
   if (_wk && _wk !== mobileDayFor) {
-    const ix = dates.indexOf(new Date().toISOString().slice(0, 10));
+    const ix = dates.indexOf(todayISO());
     mobileDay = ix >= 0 ? ix : 0;
     mobileDayFor = _wk;
   }
@@ -3003,7 +3022,7 @@ function wireGrid(root){
 function aheadWeeks(){
   const days = Object.keys(((CR() || {}).days) || {}).sort();
   if (!days.length) return [];
-  const from = mondayOf(new Date().toISOString().slice(0, 10));
+  const from = mondayOf(todayISO());
   const last = mondayOf(days[days.length - 1]);
   const out = [];
   for (let m = from; m <= last; m = addDays(m, 7)) out.push(m);
@@ -3802,8 +3821,14 @@ function keyDialog(){
     row(swatch("C") + swatch("D"), "Pods C and D — neuro"),
     row(swatch("E"), "Pod E — with the consultant of the day"),
     head("On the name"),
-    row("<span class='codpill'>COD</span>", "Consultant of the day — takes referrals. Drag it to hand it over."),
-    row("<span class='finpill'>18:00</span>", "Stays until this time. Drag it to swap who stays late."),
+    /* TAP FIRST, DRAG SECOND — 31 Aug. Both of these said only "Drag it", and drag does not exist
+       on a phone (hard rule 14, which this file quotes three times). The tap gesture works on
+       every device and was written down nowhere; the drag is the desktop convenience, so it is
+       named second. */
+    row("<span class='codpill'>COD</span>",
+        "Consultant of the day — takes referrals. Tap it, then tap the pod taking over. On a computer you can drag it instead."),
+    row("<span class='finpill'>18:00</span>",
+        "Stays until this time. Tap it, then tap the other pod to swap who stays late. On a computer you can drag it instead."),
     /* THE CHANGE CHIPS \u2014 28 Aug. They replace the dashed amber outline and the sync's inset
        ring, and every one of them speaks when TAPPED as well as hovered, so the Key can promise
        the same gesture on every form factor (hard rule 14). */
@@ -3819,10 +3844,19 @@ function keyDialog(){
        so if it is not in the Key it is not discoverable at all \u2014 and on a phone it is the ONLY way
        to swap anybody, because drag and drop does not exist on touch. */
     head("Changing it"),
-    row("<span class='cell armed' style='min-width:0'>NJC</span>",
-        "Picked up. Press Edit first, tap a name to pick it up, then tap another name on the same day to swap the two."),
+    /* THESE TWO ROWS DESCRIBED A GESTURE THAT NO LONGER EXISTS — 31 Aug, from the pre-launch audit.
+       They said "tap a name to pick it up, then tap another name to swap the two", which was true
+       until 28 Aug, when one tap on an occupied pod started opening the person sheet on every
+       pointer. `.cell.armed` has been unreachable ever since — `armed` is only ever set by
+       tapPill, i.e. for COD and the finish time, so the class now belongs to the PILL and the
+       swatch below shows one. The Key is the only place gestures are written down (rule 2), so a
+       wrong Key is worse than none: it is the single source and it was teaching the old product. */
     row("<span class='cell' style='min-width:0'>NJC</span>",
-        "Tap the picked-up name again to choose somebody different instead of swapping."),
+        "Press Edit first. Then one tap on a name opens their card, and you choose the pod to move them to."),
+    row("<span class='cell empty' style='min-width:0'>—</span>",
+        "An empty pod — tap it to choose who covers it."),
+    row("<span class='codpill armed'>COD</span>",
+        "Picked up, waiting for you to tap where it goes. Tap it again to put it down."),
     head("Columns"),
     row("<b style='font-size:.8rem'>On call</b>", "Overnight, and the 24-hour person at weekends"),
     row("<b style='font-size:.8rem'>Fairfield</b>", "Covering FGH that day"),
@@ -3887,7 +3921,7 @@ $("#btnNext").onclick = () => shiftWeek(1);
 $("#ahPrev").onclick = () => shiftAhead(-1);
 $("#ahNext").onclick = () => shiftAhead(1);
 $("#ahToday").onclick = () => { aheadWeek = aheadWeeks()[0] || null; renderAhead(); };
-$("#btnToday").onclick = () => { const wks = weeksAvail(); const m = mondayOf(new Date().toISOString().slice(0,10)); if (wks.includes(m)){ curWeek = m; renderRota(); } };
+$("#btnToday").onclick = () => { const wks = weeksAvail(); const m = mondayOf(todayISO()); if (wks.includes(m)){ curWeek = m; renderRota(); } };
 $("#btnJuniors").onclick = () => {
   showJun = !showJun;
   /* An icon can't say "Hide" — so it says it by looking pressed, and the tooltip carries the
@@ -3922,7 +3956,7 @@ $("#btnJuniors").onclick = () => {
    same reasoning as the backup's lastBackup stamp, and it matters more here, because the person
    sending feedback has the page open for minutes rather than seconds. */
 /* TRIAL_END is declared at the top with the other configuration — see the note there. */
-function trialOn(){ return new Date().toISOString().slice(0, 10) <= TRIAL_END; }
+function trialOn(){ return todayISO() <= TRIAL_END; }
 
 /* Straight out by email too, so nobody has to remember to look at the page. Best-effort and
    deliberately silent: if the mail flow is down the feedback is still saved and the sender is
