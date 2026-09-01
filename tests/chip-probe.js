@@ -262,6 +262,40 @@ setTimeout(() => {
      dash && dash.title);
   ok("…and no longer claims four", !(dash && /four weeks/.test(dash.title)));
   ok("Setup calls it what it is", /Weeks visible/.test(src) && src.indexOf("sectlab'>PUBLISHED") < 0);
+  /* ── PRE-LAUNCH AUDIT GUARDS, 31 Aug ──────────────────────────────────────────────────────────
+     Four defects found by reading the file the day it went live, each of which would have been
+     invisible until somebody hit it. Pinned here because none of them shows up in a render. */
+  /* Every function the page calls must exist. `uiConfirm` did not, and because the caller was
+     async the ReferenceError became an unhandled rejection: the only undo in the product was a
+     button that did nothing and said nothing. Checked generically — any `await <name>(` where
+     <name> is neither defined in the file nor a known global. */
+  const called = [...src.matchAll(/await\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
+  const known = /^(fetch|sha|Promise|JSON|new)$/;
+  const defined = n => new RegExp("(function\\s+" + n + "\\s*\\(|(const|let|var)\\s+" + n + "\\s*=)")
+    .test(src + " " + fs.readFileSync(path.join(BASE, "core.js"), "utf8"));
+  const undefinedCalls = [...new Set(called)].filter(n => !known.test(n) && !defined(n));
+  ok("every awaited function actually exists", undefinedCalls.length === 0, undefinedCalls.join(", "));
+  /* A direct postLive writes a savedAt of its own. saveCover() decides whether somebody ELSE has
+     been in the file by comparing that stamp against the baseline, so a write that does not bank
+     it makes the next ordinary save refuse as a phantom conflict AND put the change back on
+     screen — for the rest of the session. Feedback needs no unlock, so anyone could trigger it. */
+  const posts = [...src.matchAll(/await postLive\(COVER_SAVE/g)].map(m => m.index);
+  const unbanked = posts.filter(i => {
+    const before = src.slice(Math.max(0, i - 900), i);
+    return !/ourStamps\.add\(/.test(before) && !/TESTMODE/.test(before);   // TESTMODE = the sandbox door
+  });
+  ok("every direct save banks its stamp", unbanked.length === 0,
+     unbanked.length + " of " + posts.length + " posts bank nothing");
+  /* The feedback button is hidden after TRIAL_END. Set to 2026-09-02 it would have vanished on
+     day two of live use, silently. */
+  const trial = (src.match(/TRIAL_END = "([\d-]+)"/) || [])[1];
+  ok("the feedback trial has not already expired", trial && trial > new Date().toISOString().slice(0,10), trial);
+  /* Warning and brand must not be the same colour, or "this is current" and "this needs you"
+     are one tint. core.css ships them identical; Cover overrides amber. */
+  const rootRule = allRules.find(r2 => r2.selectorText === ":root" && /--amber/.test(r2.cssText));
+  ok("warning colour is not the brand colour",
+     rootRule && rootRule.style.getPropertyValue("--amber").trim() !== rootRule.style.getPropertyValue("--accent").trim(),
+     rootRule && rootRule.cssText);
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
