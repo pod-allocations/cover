@@ -14,6 +14,18 @@
 :root{
   /* Everything shared lives in core.css. Only the role accent is this page's. */
   --accent:#b07d1e; --accent-bg:#fdf3df;
+  /* WARNING MUST NOT BE THE BRAND COLOUR — 31 Aug pre-launch audit. core.css set
+     `--amber:#b07d1e; --amber-bg:#fdf3df`, byte-identical to the accent above, so "you are looking
+     at this week", "Edit is on" and "this row is selected" were painted in exactly the same bronze
+     as "this week is a DRAFT", "not saved yet", "this pod needs attention" and "changed at short
+     notice". On a phone, current and caution were one colour. Overridden here rather than in
+     core.css, which the resident board also loads. Burnt orange: clearly a caution hue beside the
+     bronze, and 5.0:1 on its own fill, where the old pair managed 4.4. */
+  --amber:#b45309; --amber-bg:#fff4e5;
+  /* --muted carries almost every small label on the page and core.css sets it to #8a8f98, which is
+     3.25:1 on white — under the 4.5:1 body-text floor, at 9-12px, on a ward. Darkened for Cover
+     only; clears 4.5:1 everywhere it is used. */
+  --muted:#6b7280;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,-apple-system,"Segoe UI",system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;-webkit-font-smoothing:antialiased}
@@ -69,7 +81,9 @@ body.testmode main{padding-bottom:3.4rem}
 .ahchip>span{grid-area:1/1}
 .ahchip>.ghost{visibility:hidden}
 .ahchip.pub{border-color:var(--green);color:var(--green);background:var(--green-bg)}
-.navarrow:disabled{opacity:.3;cursor:default}
+/* .48, not .3. At 30% the arrow's grey came out at 1.5:1 — it did not read as "out of moves", it
+   read as a rendering fault, and this is the control that now stops everybody at two weeks. */
+.navarrow:disabled{opacity:.48;cursor:default}
 /* The rota-team lock, copied rule-for-rule from the resident board (Ali, 6 Aug: "why does the
    rota team password gate look different to residents"). It was a floating modal here and a
    page-of-its-own there — the resident board's note explains why that is the right one: "The
@@ -125,6 +139,19 @@ h2{font-size:.72rem;margin:.1rem 0 .8rem;text-transform:uppercase;letter-spacing
 button.btn{background:var(--ink);color:#fff;border:0;border-radius:12px;padding:.5rem 1rem;font-weight:600;font-size:.84rem;cursor:pointer;font-family:inherit}
 button.btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 button.btn:hover{filter:brightness(.96)}
+/* A DISABLED BUTTON MUST LOOK DISABLED — 31 Aug pre-launch audit. There was no :disabled rule at
+   all, and `button.btn` sets an author colour, which beats the browser's own greying — so
+   "Re-run drafts" with nothing to re-run rendered pixel-identical to the live control. People
+   press those repeatedly and conclude the page is broken. `:active` is here for the same reason
+   from the other end: on a phone there is no hover, so without it a press had no feedback at all
+   and the only cue was Safari's own grey flash. */
+button.btn:disabled,.hbtn:disabled,.segbtn:disabled{opacity:.42;cursor:default;filter:none}
+button.btn:active:not(:disabled),.hbtn:active:not(:disabled){filter:brightness(.9)}
+.navarrow:active:not(:disabled),.tpi:active,.podtile:active{filter:brightness(.94)}
+/* FOCUS. The app had none of its own on buttons — only inputs — so tabbing through landed the
+   browser's blue default ring on a bronze page. Matches the outline grammar already used by
+   .cell.armed and td.dropok. */
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 .weekbar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
 .weekbar b{font-size:.95rem;min-width:215px;text-align:center;font-weight:700;letter-spacing:-.01em}
 .navarrow{background:var(--card);border:1px solid var(--line);border-radius:999px;width:36px;height:36px;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;transition:background .12s}
@@ -494,10 +521,13 @@ table.fair{border-collapse:collapse;width:100%}
    boards were each allowed their own version of a thing — the password gate, the change log —
    they drifted, and somebody then had to be told about the difference. Same values, same names.
    The pulse is the point: feedback is a trial-only ask, so it earns one quiet dot and no more. */
-#btnFeedback{position:relative;border-color:#c7cdf2;color:var(--accent);background:var(--accent-bg)}
+/* These two were #c7cdf2 (periwinkle) and rgba(76,93,214) — the RESIDENT board's blue, copied
+   across with the shapes when this was lifted from it. A bronze chip with a lilac outline, pulsing
+   a blue halo, was the only moving thing in the top bar and the one wrong colour on the page. */
+#btnFeedback{position:relative;border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
 #btnFeedback::after{content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;
   border-radius:50%;background:var(--accent);animation:fbpulse 2.8s ease-out infinite}
-@keyframes fbpulse{0%{box-shadow:0 0 0 0 rgba(76,93,214,.45)}65%{box-shadow:0 0 0 7px rgba(76,93,214,0)}100%{box-shadow:0 0 0 0 rgba(76,93,214,0)}}
+@keyframes fbpulse{0%{box-shadow:0 0 0 0 rgba(176,125,30,.45)}65%{box-shadow:0 0 0 7px rgba(176,125,30,0)}100%{box-shadow:0 0 0 0 rgba(176,125,30,0)}}
 @media (prefers-reduced-motion:reduce){#btnFeedback::after{animation:none}}
 /* The unread count on the rail. `tpc` is the resident board's name for it, kept so the two
    stylesheets can be read side by side. Cover's own amber `tpbadge` stays what it is — that one
@@ -666,6 +696,13 @@ button.btn,.hbtn{white-space:nowrap}
 @media(max-width:760px){aside{display:none}.phoneonly{display:inline-flex}.hamburger{display:inline-flex;align-items:center}main{padding:.6rem .7rem 4rem}#topbar{padding:.8rem .8rem .3rem;gap:.3rem}
   #topbar h1{font-size:1rem}
   .hbtn{font-size:.7rem;padding:.45rem .6rem}
+  /* 44px, THE ONE NUMBER THAT MATTERS ON A PHONE. The person sheet got this right — 54px tiles,
+     48px buttons — and it was never rolled out to anything else, so the top bar measured 28-32px
+     on a 390px screen and the burger, the only way into the menu, was 30. This is a ward tool used
+     one-handed. Applied by min-height/min-width so nothing has to be re-laid-out; the flex centring
+     these controls already use absorbs it. Found in the pre-launch audit, 31 Aug. */
+  .hbtn,button.btn,.segbtn,.tpi,.tpback,.navarrow,.hamburger{min-height:44px}
+  .hbtn.hicon,.hamburger,.navarrow{min-width:44px}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
   /* The name is the first thing to give up room — the icons must not wrap. */
   #btnWho{font-size:.64rem;padding:.4rem .5rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -843,7 +880,13 @@ button.btn,.hbtn{white-space:nowrap}
       <button class="navarrow" id="btnNext" title="Next week"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="btn sec" id="btnToday" style="font-size:.78rem;padding:.35rem .7rem">This week</button>
     </div>
-    <div class="rota-wrap"><div id="weekGrid"></div></div>
+    <!-- SOMETHING HAS TO BE HERE BEFORE THE DATA ARRIVES — 31 Aug pre-launch audit. load() waits on
+         a SharePoint round trip, seconds on ward wifi, and this div shipped EMPTY: two arrows either
+         side of nothing, which reads as a broken page rather than a loading one. It is the first
+         thing anybody sees. Replaced wholesale by the first renderRota(), so it costs nothing after
+         the first second, and it is deliberately a plain sentence rather than a spinner — a spinner
+         that never stops says the same thing as an empty box. -->
+    <div class="rota-wrap"><div id="weekGrid"><p style="padding:2.4rem 1rem;text-align:center;color:var(--muted);font-size:.86rem">Loading the cover…</p></div></div>
   </section>
   <section id="tab-lock" style="display:none">
     <div class="gatebox">
@@ -966,7 +1009,11 @@ const TESTMODE = window.__POD_TEST === true;
    rather than beside the feedback code, because the button is wired at the bottom of the file and a
    `const` further down is in its temporal dead zone at that point — which threw on load and took
    the whole page with it. Configuration at the top, behaviour below it. */
-const TRIAL_END = "2026-09-02";
+/* Was 2026-09-02, set when the trial was expected to start in August. Going live on 31 Aug that
+   is TOMORROW: the Feedback button would have disappeared on day two of real use, silently, with
+   nothing said to anybody. Moved to the end of November — a trial that asks for comment should
+   outlast the period people are still forming an opinion. Caught in the pre-launch audit. */
+const TRIAL_END = "2026-11-30";
 const TEST_KEY = "coverTestStore";
 /* Can an edit go anywhere? On the live site that means a save key; on the test site it means
    the browser's own sandbox, which is always there. Written once because it was written four
@@ -1201,10 +1248,16 @@ const nameOf = ini => (CR() && ((CR().names && CR().names[ini]) || (CR().map && 
 function everyone(){
   const cons = CR(); if (!cons) return [];
   const seen = new Set();
+  /* `(cons.days[d] || {})`, not `cons.days[d]`. cellHTML was hardened against a malformed day on
+     11 Aug after one took the WHOLE board down; its siblings were not, so the same bad record
+     still killed the page — just from renderFair/everyone instead, through load()'s catch, which
+     paints "Couldn't load" over a grid that had already drawn. One bad day should cost that day,
+     never the board. Found in the pre-launch audit, 31 Aug. */
   for (const d in (cons.days || {})) {
-    const c = cons.days[d].cur || {};
+    const rec = cons.days[d] || {};
+    const c = rec.cur || {};
     for (const k of ["A","B","C","D","E","oncall","cod","fgh"]) if (c[k]) seen.add(c[k]);
-    for (const i of ((cons.days[d].auto || {}).extra || [])) seen.add(i);
+    for (const i of ((rec.auto || {}).extra || [])) seen.add(i);
   }
   return [...seen].sort();
 }
@@ -1739,11 +1792,14 @@ function renderSetup(){
     const hit = Object.keys(pv).filter(d => C.days[d] &&
       SL.some(k => ((pv[d] || {})[k] || "") !== ((C.days[d].cur || {})[k] || "")));
     if (!hit.length) return;
-    if (!(await uiConfirm("This puts " + hit.length + " day" + (hit.length === 1 ? "" : "s") +
-        " back to how they were before the last sync ran. The rota itself is not changed, so the " +
-        "next sync may move them again unless you hold them.",
-        { title: "Put " + hit.length + " day" + (hit.length === 1 ? "" : "s") + " back?",
-          okLabel: "Put them back" }))) return;
+    /* `confirm`, not `uiConfirm` — there is no such function and never was (found 31 Aug in the
+       pre-launch audit). This is an async handler, so the ReferenceError became an unhandled
+       rejection: the button did nothing, said nothing, logged nothing. It is the only undo the
+       product has, and it was dead from the day it was written. */
+    if (!confirm("Put " + hit.length + " day" + (hit.length === 1 ? "" : "s") + " back?\n\n" +
+        "This puts " + (hit.length === 1 ? "it" : "them") + " back to how they were before the " +
+        "last sync ran. The rota itself is not changed, so the next sync may move them again " +
+        "unless you hold them.")) return;
     ensureWho(async () => {
       for (const d of hit) {
         for (const k of SL) {
@@ -1754,7 +1810,16 @@ function renderSetup(){
                "manual", d, "", { act: "set", subj: rowLabel(k), facet: "consultant", from: now, to: was });
         }
       }
-      cdata.savedAt = new Date().toISOString();
+      /* BANK THE STAMP. Every direct postLive writes a new savedAt, and saveCover() decides
+         whether somebody else has been in the file by comparing the live savedAt against the
+         baseline and looking it up in ourStamps. A write that skips both leaves a stamp in the
+         file that this session does not recognise as its own, so the NEXT save refuses with
+         "somebody else changed the cover" and puts the change back on screen — for the rest of
+         the sitting. Found 31 Aug in the pre-launch audit; sendFeedback had the same hole. */
+      const stamp = new Date().toISOString();
+      cdata.savedAt = stamp;
+      ourStamps.add(stamp);
+      advanceBaseline(stamp);
       cdata.savedBy = localStorage.getItem("consEditor") || "?";
       state("saving");
       try { await postLive(COVER_SAVE, JSON.stringify(cdata)); state("saved"); toast(hit.length + " day(s) put back"); }
@@ -2363,7 +2428,11 @@ async function saveName(ini, name){
     state("saving");
     try { if (!await saveCover()) return; state("saved"); toast(ini + " is now " + name); }
     catch(e){ state("unsaved"); toast("Save failed — try again"); }
-    renderAll();
+    /* renderStaff explicitly: renderAll() does NOT include it, so the name saved and the toast
+       said so while the amber "no name" outline stayed, the "N unnamed" chip did not drop and the
+       row did not re-sort. Everything on screen said it had failed. The obvious response is to
+       type it again. Found in the pre-launch audit, 31 Aug. */
+    renderAll(); renderStaff();
   });
 }
 
@@ -3091,7 +3160,7 @@ function renderFair(){
      1.0 means they sat in one pod all week, higher means they were moved about (Ali, 1 Aug). */
   const wkPods = {};
   for (const d in days){
-    const cur = days[d].cur || {};
+    const cur = (days[d] || {}).cur || {};   // one malformed day must not take the page down
     const mon = mondayOf(d);
     for (const p of ["A","B","C","D","E"]) if (cur[p]) ((wkPods[cur[p]] = wkPods[cur[p]] || {})[mon] = wkPods[cur[p]][mon] || new Set()).add(p);
     bump(cur.oncall, "oc"); bump(cur.cod, "cod"); bump(cur.fgh, "fgh");
@@ -3107,6 +3176,17 @@ function renderFair(){
     return { i, ab, cd, tot: ab + cd, pc: ab + cd ? Math.round(cd / (ab + cd) * 100) : null, t, ppw: podsPerWeek(i), wks: weeksOf(i) };
   }).filter(r => r.tot || r.wks || r.t.oc || r.t.cod || r.t.fgh)
     .sort((a,b) => b.tot - a.tot || nameOf(a.i).localeCompare(nameOf(b.i)));
+  /* EVERY LIST ON THIS PAGE HAS AN EMPTY STATE EXCEPT THE ONE THAT WENT PUBLIC — 31 Aug pre-launch
+     audit. With no rows this drew a card headed FAIRNESS containing five column headings and
+     nothing underneath, which reads as broken rather than as empty. It happens whenever the cover
+     store has not loaded or holds no allocated days yet — the first morning, and any morning the
+     read fails. Same shape and register as the Attention and Feedback empties. */
+  if (!rows.length) {
+    $("#fairBox").innerHTML = "<p style='padding:2.2rem 1rem;text-align:center;color:var(--muted);" +
+      "font-size:.86rem'>Nothing to compare yet<br><span style='font-size:.8rem'>" +
+      "Balance appears here once the cover has been worked out.</span></p>";
+    return;
+  }
   const dot = c => "<span class='dot' style='background:" + c + "'></span>";
   let out = "<table class='fair'><tr><th style='min-width:150px'>Name</th>" +
     "<th title='Career days on Pods A and B, including pre-app history'>" + dot("var(--podAb)") + dot("var(--podBb)") + "A&amp;B</th>" +
@@ -3893,7 +3973,15 @@ async function sendFeedback(entry){
   base.feedback = base.feedback || [];
   base.feedback.unshift(entry);
   if (base.feedback.length > 300) base.feedback.length = 300;
-  base.savedAt = new Date().toISOString();
+  /* Banked, for the reason spelt out at the undo-sync handler: an unbanked savedAt makes the next
+     ordinary save read the file, fail to recognise its own stamp, refuse as a phantom conflict and
+     REVERT the change on screen. Feedback is open to everyone and needs no unlock, so before this
+     was fixed (31 Aug) anyone who sent a message then made an edit watched it snap back, blamed on
+     an editor who did not exist — and then every save after it, for the rest of the session. */
+  const fbStamp = new Date().toISOString();
+  base.savedAt = fbStamp;
+  ourStamps.add(fbStamp);
+  advanceBaseline(fbStamp);
   try { await postLive(COVER_SAVE, JSON.stringify(base)); }
   catch (e) { emailFeedback(entry); return false; }
   cdata = base;
