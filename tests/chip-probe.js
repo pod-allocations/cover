@@ -358,6 +358,29 @@ setTimeout(() => {
   ok("…and every one of the five is still 44px, so the row cannot shuffle",
      !!phoneBlock.find(r => /min-height:\s*44px/.test(r.cssText)) &&
      !!phoneBlock.find(r => /min-width:\s*44px/.test(r.cssText)));
+  /* ACKNOWLEDGE IS PER MESSAGE, NOT PER VISIT — 1 Sept 2026 (Ali: "have a physical acknowelge
+     button and then grey out when clicked"). Opening the Feedback page used to mark every message
+     read for everybody, so one could not be dealt with and another left outstanding. Checked by
+     RENDERING the page rather than by reading the source, because the button is built per card and
+     the thing that matters is that an unread message gets one and a read message does not. */
+  w.eval(`cdata.feedback = [
+    { t: new Date().toISOString(), name: "A tester", kind: "problem", msg: "still to deal with" },
+    { t: new Date(Date.now() - 6e5).toISOString(), name: "B tester", msg: "already handled",
+      read: true, readBy: "AJC", readAt: new Date().toISOString() } ];
+    try { localStorage.removeItem("coverFbRead"); } catch(e){}
+    showTab("feedback");`);
+  const cards = [...w.document.querySelectorAll("#fbList > div > div")];
+  const acks = [...w.document.querySelectorAll("#fbList button")].filter(b => /Acknowledge/.test(b.textContent));
+  ok("an unread message offers an Acknowledge button", acks.length === 1, acks.length + " buttons on " + cards.length + " cards");
+  ok("…and one already dealt with says so instead",
+     /Acknowledged by AJC/.test(w.document.getElementById("fbList").textContent));
+  ok("…and opening the page no longer marks the lot read",
+     !/renderFeedback\(\); markFeedbackRead\(\);/.test(src) && /if \(t === "feedback"\) renderFeedback\(\);/.test(src));
+  /* The local half of the mark has to use the key the reader reads, or acknowledging works until
+     you reload and then the message comes back. Caught by writing consFbRead against a reader
+     looking for coverFbRead. */
+  ok("…and the local mark uses the same key the reader does",
+     (src.match(/coverFbRead/g) || []).length >= 2 && !/consFbRead/.test(src));
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
