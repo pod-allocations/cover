@@ -321,8 +321,23 @@ const SEED = `(function(){
   /* Ali, 4 Aug: "16:00–09:00 · 24h wknd — Not neeed, people know this." */
   ok("the on-call column no longer spells out the hours",
      w.eval("showTab('rota'); renderRota(); document.getElementById('weekGrid').textContent").indexOf("16:00") < 0);
-  ok("every toolbar button but the name is an icon",
-     w.eval("['btnJuniors','btnKey'].every(function(id){ var b = document.getElementById(id); return b && b.querySelector('svg') && !b.textContent.trim(); })"));
+  /* THIS ASSERTION WAS STALE AND HAD BEEN RED FOR A FORTNIGHT — corrected 1 Sept 2026. It required
+     every toolbar button to carry no text at all, and then on 17 Aug the Residents button was
+     deliberately given its word back (changelog: "Cover: the residents button says Residents"),
+     so the suite has been reporting a failure for a decision that was made on purpose. A red that
+     everybody has learned to scroll past is worse than no test, because it hides the next real one.
+     What actually matters is the rule underneath: each of these is an ICON button, its word is
+     optional chrome for a wide screen, and the word must disappear on a phone — which is where
+     the row has to fit. So: every one has an icon, and every one wraps its label in .blabel, the
+     class the phone rules hide. Edit and Done joined that set on 1 Sept. */
+  ok("every toolbar button is an icon first, with its word in a droppable label",
+     w.eval("['btnJuniors','btnKey','btnFeedback','btnEdit','btnDone'].every(function(id){ var b = document.getElementById(id);" +
+            "if (!b) return false;" +
+            "var hasIcon = !!b.querySelector('svg') || !!getComputedStyle(b, '::before').maskImage || !!getComputedStyle(b, '::before').webkitMaskImage;" +
+            "var bare = b.textContent.trim();" +
+            "return hasIcon && (!bare || !!b.querySelector('.blabel')); })"),
+     w.eval("['btnJuniors','btnKey','btnFeedback','btnEdit','btnDone'].map(function(id){ var b=document.getElementById(id);" +
+            "return id + ':' + (b ? (b.textContent.trim() || 'icon') + (b.querySelector('.blabel') ? '/label' : '') : 'MISSING'); }).join(' ')"));
 
   /* Ali, 6 Aug: "Optima sync: 1 added ... this is a useless change log. need to know who the
      person is and which pod theyre allocated to!" These two rows are what replaced it. A row
