@@ -4091,6 +4091,10 @@ function readFeedbackLocal(){
 function feedbackKey(f){ return (f && (f.t || "")) + "|" + (f && (f.name || "")); }
 function isFeedbackRead(f){ return !!(f && f.read) || readFeedbackLocal().has(feedbackKey(f)); }
 function unreadFeedback(){ return (((CR() || {}).feedback) || []).filter(f => !isFeedbackRead(f)).length; }
+/* NO LONGER CALLED — 1 Sept 2026, same change as the resident board. Kept rather than removed
+   because it is the one place that knows how to write the shared mark and this browser's local one
+   together, and it is what a "mark all" would be built from. If the count is not clearing, look at
+   ackFeedback in feedbackCards. */
 function markFeedbackRead(){
   const fb = ((CR() || {}).feedback) || [];
   if (!fb.some(f => !isFeedbackRead(f))) return;
@@ -4122,9 +4126,45 @@ function feedbackCards(list, cap){
           ";font-size:.68rem;font-weight:700;padding:.1rem .5rem;border-radius:999px" }, f.kind) : null,
         __el("span", { style: "font-size:.72rem;color:var(--muted)" },
           new Date(f.t).toLocaleString("en-GB") + " · " + (f.name || "anonymous"))),
-      __el("div", { style: "font-size:.92rem" }, f.msg)));
+      __el("div", { style: "font-size:.92rem" }, f.msg),
+      /* ACKNOWLEDGE IS A BUTTON NOW — 1 Sept 2026 (Ali: "have a physical acknowelge button and then
+         grey out when clicked"), matching the resident board, which got the same treatment the same
+         day. Opening this page used to mark every message read for everybody at once: the count
+         cleared, which is what it was for, but you could not deal with one and leave the other
+         outstanding — the list went grey in a block whether you had answered it or not.
+         One message, one button, one decision. The card already fades on `read`, so nothing new is
+         styled. Who pressed it is recorded on the message, not in the change log, which is for
+         changes to the cover — somebody reading their own post is not one.
+         Saved through ensureWho/saveCover like every other write on this page rather than a second
+         path of its own. */
+      isFeedbackRead(f)
+        ? __el("div", { style: "margin-top:.45rem;font-size:.72rem;color:var(--muted)" },
+            "\u2713 Acknowledged" + (f.readBy ? " by " + f.readBy : "") +
+            (f.readAt ? " \u00b7 " + new Date(f.readAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""))
+        : __el("div", { style: "margin-top:.5rem" },
+            __el("button", { class: "btn sec", style: "font-size:.74rem;padding:.3rem .7rem",
+              title: "Mark this one as dealt with — it greys out and comes off the count",
+              onclick: () => ackFeedback(f) }, "Acknowledge"))));
   }
   return wrap;
+}
+/* One message, marked by a named person and saved at once. Mirrors markSorted, which is the
+   Attention page's Acknowledge — same shape, same save path, so the two pages behave alike. */
+async function ackFeedback(f){
+  const cons = CR(); if (!cons) return;
+  if (!canSave()) { toast("Cover store not connected — nothing was saved"); return; }
+  ensureWho(async () => {
+    f.read = true;
+    f.readBy = localStorage.getItem("consEditor") || "?";
+    f.readAt = new Date().toISOString();
+    try { const local = readFeedbackLocal(); local.add(feedbackKey(f));
+          localStorage.setItem("coverFbRead", JSON.stringify([...local].slice(-400))); } catch(e){}
+    cdata.savedBy = localStorage.getItem("consEditor") || "?";
+    state("saving");
+    try { if (!await saveCover()) return; state("saved"); }
+    catch(e){ state("unsaved"); toast("Save failed — try again"); return; }
+    renderFeedback(); updateFbCount();
+  });
 }
 function renderFeedback(){
   const box = $("#fbList"); if (!box) return;
@@ -4156,9 +4196,10 @@ function showTab(t){
   if (t === "setup") renderSetup();
   if (t === "staff") renderStaff();
   if (t === "attn") renderAttn();
-  /* Opening the page IS reading it, so the count clears on the way in rather than needing a
-     button. Draw first, then mark — the cards have to be able to show which were unread. */
-  if (t === "feedback") { renderFeedback(); markFeedbackRead(); }
+  /* Opening the page NO LONGER marks it read (1 Sept 2026) — each message has its own Acknowledge
+     button, so one can be dealt with and another left outstanding. markFeedbackRead() is kept but
+     is called from nowhere; see the note on it. */
+  if (t === "feedback") renderFeedback();
 }
 /* The lock is a PAGE, not a dialog — the resident board's pattern, ported here on 6 Aug because
    the two shields looked and behaved differently for no reason anybody could give (Ali: "why does
