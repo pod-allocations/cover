@@ -706,6 +706,24 @@ button.btn,.hbtn{white-space:nowrap}
   .hbtn.hicon{width:32px;height:32px;padding:.38rem}
   /* The name is the first thing to give up room — the icons must not wrap. */
   #btnWho{font-size:.64rem;padding:.4rem .5rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* EDIT IS A PADLOCK ON A PHONE, NOT A WORD — 1 Sept 2026 (Ali: "annoying there are 2 lines of
+     buttons on mobile", with a photograph; option A of five mocked up).
+     Cause was mine, from the day before: the pre-launch audit gave every icon button a 44px
+     minimum so a thumb could hit it, which widened the three on the right from 32px to 44px, and
+     that was the width Edit had been living on. #topbar wraps, so Edit dropped onto a line of its
+     own — a whole row of chrome for one button, on the screen with the least room.
+     Four equal squares instead. The padlock is already drawn into this button as a ::before mask,
+     so nothing new is designed; it just grows to icon size and the word steps aside. Done gets a
+     tick in the same square, deliberately the same 44px, so the row does not change width the
+     moment you start editing — a shuffling toolbar is how you mis-tap.
+     The label is kept for desktop, where there is room and a word is kinder than a glyph. What
+     the icons mean lives in the Key, which is where rule 2 says it goes. */
+  #btnEdit,#btnDone{width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+  #btnEdit .blabel,#btnDone .blabel{display:none}
+  body:not(.editing) #btnEdit::before{width:19px;height:19px;margin-right:0;vertical-align:0}
+  #btnDone::before{content:"";display:inline-block;width:19px;height:19px;background:currentColor;
+    -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 13l4 4L19 7'/></svg>") center/contain no-repeat;
+    mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 13l4 4L19 7'/></svg>") center/contain no-repeat}
   /* THE DRAWER IS THE RESIDENT BOARD'S, BURGER AND ALL — 28 Aug, second pass. First pass made the
      team panel dismissable (`navopen` split from `teamopen` — one flag doing two jobs was the
      stuck-menu bug); then Ali: "works way better on resident rota view with burger icon and rota
@@ -869,8 +887,11 @@ button.btn,.hbtn{white-space:nowrap}
        in full-height at that exact width, so it was only ever the button that was missing. Same
        icon and same handler as the rail's, and it carries its own copy of the attention count,
        because a badge nobody can see is the same as no badge. Shown only where the rail is not. -->
-  <button class="hbtn" id="btnEdit" title="Unlock to change who covers what">Edit</button>
-  <button class="hbtn ghost" id="btnDone" title="Back to read-only">Done</button>
+  <!-- The word is in a span so the phone can drop it and leave the padlock, which is the whole of
+       option A: four equal squares on one row instead of Edit wrapping onto a second. See the
+       rules by #btnEdit. -->
+  <button class="hbtn" id="btnEdit" title="Unlock to change who covers what"><span class="blabel">Edit</span></button>
+  <button class="hbtn ghost" id="btnDone" title="Back to read-only"><span class="blabel">Done</span></button>
 </div>
 <main>
   <section id="tab-rota">
