@@ -335,6 +335,29 @@ setTimeout(() => {
   ok("…and nothing asks UTC for today any more",
      !/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/.test(code),
      (code.match(/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/g) || []).length + " left");
+  /* THE TOP BAR MUST FIT ON ONE LINE ON A PHONE — 1 Sept 2026 (Ali, with a photograph: "annoying
+     there are 2 lines of buttons on mobile"). #topbar is flex-wrap:wrap, so this fails by wrapping
+     rather than by overflowing — nothing throws, nothing looks broken in a test, you just lose a
+     whole row of a 390px screen to one button. jsdom does no layout so the wrap itself cannot be
+     measured; what can be pinned is the arithmetic that made it fit: five 44px squares plus the
+     burger plus the title, which needs Edit and Done to be squares with their words dropped.
+     Asserted through the CSSOM inside the phone media block, because a rule sitting outside that
+     block, or inside a broken comment, is present in the source and does nothing. */
+  const phoneBlock = [...w.document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch(e){ return []; } })
+    .filter(r => r.media && /760px/.test(r.conditionText || r.media.mediaText || ""))
+    .flatMap(r => [...(r.cssRules || [])]);
+  const inPhone = sel => phoneBlock.find(r => (r.selectorText || "").split(",").map(s => s.trim()).includes(sel));
+  const sqRule = inPhone("#btnEdit") || inPhone("#btnDone");
+  ok("Edit and Done are 44px squares on a phone", !!sqRule && /44px/.test(sqRule.cssText), sqRule && sqRule.cssText);
+  ok("…with their words dropped", !!phoneBlock.find(r => /#btnEdit \.blabel/.test(r.selectorText || "") && /none/.test(r.style.display)));
+  /* A square with nothing in it is worse than a word. Done's tick is a ::before mask, drawn only
+     at phone width, so check the rule carries one rather than trusting that it looks right. */
+  const doneIcon = phoneBlock.find(r => /#btnDone::before/.test(r.selectorText || ""));
+  ok("…and Done shows a tick rather than an empty square",
+     !!doneIcon && /mask/.test(doneIcon.cssText) && /path/.test(doneIcon.cssText), doneIcon && doneIcon.selectorText);
+  ok("…and every one of the five is still 44px, so the row cannot shuffle",
+     !!phoneBlock.find(r => /min-height:\s*44px/.test(r.cssText)) &&
+     !!phoneBlock.find(r => /min-width:\s*44px/.test(r.cssText)));
   ok("no thrown errors anywhere", errors.length === 0, errors.join(" | "));
   console.log("\n=== " + pass + " passed, " + fail + " failed ===");
   bad.forEach(b => console.log(" - " + b));
