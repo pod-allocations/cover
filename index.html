@@ -881,23 +881,29 @@ button.btn,.hbtn{white-space:nowrap}
    and if a laptop window ever is that short the compact layout is no loss.
    Height raised to 600 for the same reason — Safari's landscape viewport
    depends on which toolbars are showing. */
-@media (orientation:landscape) and (max-height:600px){
-  aside{display:none !important}          /* half the height, none of it rota */
+/* DRIVEN BY A CLASS, NOT A MEDIA QUERY — 11 Sept, second attempt.
+   The first version keyed off `@media (orientation:landscape) and (max-height:600px)`.
+   It was correct, it parsed, and it worked in every size I could emulate — and it
+   did not fire on Ali's actual iPhone. Rather than keep guessing which clause iOS
+   disagrees about, the page now measures itself: `innerWidth > innerHeight` and a
+   short viewport, recomputed on resize and on rotate. Plain arithmetic, no feature
+   detection, nothing a browser can interpret differently. */
 
-  #topbar{padding:.2rem .6rem !important;min-height:0 !important}
-  #topbar h1{font-size:.82rem !important}
-  #topbar h1 + div{display:none !important}                   /* the eyebrow */
-  .hbtn,button.btn,.segbtn,.tpi,.navarrow,.hamburger{min-height:30px !important}
-  .hbtn.hicon,.hamburger,.navarrow{min-width:30px !important}
-  main{padding:.2rem .6rem !important}
-  .weekbar{margin:0 0 .2rem !important;padding:.15rem .4rem !important}
-  .weekbar .navarrow{min-height:26px !important;min-width:26px !important}
+body.sideways aside{display:none !important}   /* half the height, none of it rota */
+
+body.sideways #topbar{padding:.2rem .6rem !important;min-height:0 !important}
+body.sideways #topbar h1{font-size:.82rem !important}
+body.sideways #topbar h1 + div{display:none !important}     /* the eyebrow */
+body.sideways .hbtn,body.sideways button.btn,body.sideways .segbtn,body.sideways .tpi,body.sideways .navarrow,body.sideways .hamburger{min-height:30px !important}
+body.sideways .hbtn.hicon,body.sideways .hamburger,body.sideways .navarrow{min-width:30px !important}
+body.sideways main{padding:.2rem .6rem !important}
+body.sideways .weekbar{margin:0 0 .2rem !important;padding:.15rem .4rem !important}
+body.sideways .weekbar .navarrow{min-height:26px !important;min-width:26px !important}
 
   /* The rows are the whole game: seven at 64px is 448 and the phone has 393. */
-  .rota-wrap td,.rota-wrap th{padding:4px 8px !important}
-  .rota-wrap td{font-size:13px !important}
-  .rota-wrap th{font-size:9px !important;padding:2px 8px !important}
-}
+body.sideways .rota-wrap td,body.sideways .rota-wrap th{padding:4px 8px !important}
+body.sideways .rota-wrap td{font-size:13px !important}
+body.sideways .rota-wrap th{font-size:9px !important;padding:2px 8px !important}
 </style>
 
 </head>
@@ -4427,6 +4433,22 @@ if (TESTMODE) {
   };
 }
 load().catch(e => { $("#weekGrid").innerHTML = "<p style='padding:1rem'>Couldn't load: " + esc(e.message || e) + "</p>"; });
+</script>
+
+<script>
+/* SIDEWAYS ON A PHONE. Recomputed on rotate as well as resize because iOS fires
+   orientationchange BEFORE the new dimensions are readable — hence the delay. */
+(function(){
+  function set(){
+    document.body.classList.toggle("sideways",
+      window.innerWidth > window.innerHeight && window.innerHeight <= 600);
+  }
+  addEventListener("resize", set);
+  addEventListener("orientationchange", function(){ setTimeout(set, 250); });
+  if (document.readyState === "loading") addEventListener("DOMContentLoaded", set);
+  else set();
+  setTimeout(set, 400);
+})();
 </script>
 </body>
 </html>
