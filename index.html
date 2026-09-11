@@ -4448,6 +4448,31 @@ load().catch(e => { $("#weekGrid").innerHTML = "<p style='padding:1rem'>Couldn't
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", set);
   else set();
   setTimeout(set, 400);
+
+  /* ---- ?diag=1 : what does this phone actually report? --------------------
+     Ali's iPhone did not respond to a media query OR to this arithmetic, which
+     between them cover every way of asking "is the screen sideways". Both
+     failing identically says the page is not being told it rotated at all —
+     but that is a guess, and this replaces it with a number. Behind a URL flag
+     so no one on the ward ever sees it. */
+  if (/[?&]diag=1/.test(location.search)) {
+    const box = document.createElement("div");
+    box.style.cssText = "position:fixed;top:6px;right:6px;z-index:99999;background:#16171a;" +
+      "color:#fff;font:12px/1.45 ui-monospace,Menlo,monospace;padding:8px 10px;border-radius:8px;" +
+      "box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:pre;pointer-events:none";
+    const draw = () => {
+      box.textContent =
+        "window   " + window.innerWidth + " x " + window.innerHeight + "\n" +
+        "screen   " + screen.width + " x " + screen.height + "\n" +
+        "orient   " + (screen.orientation ? screen.orientation.type : "n/a") + "\n" +
+        "media LS " + matchMedia("(orientation:landscape)").matches + "\n" +
+        "sideways " + document.body.classList.contains("sideways");
+    };
+    addEventListener("resize", draw);
+    addEventListener("orientationchange", () => setTimeout(draw, 300));
+    setTimeout(() => { document.body.appendChild(box); draw(); }, 300);
+    setInterval(draw, 1000);
+  }
 })();
 </script>
 </body>
