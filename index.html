@@ -825,6 +825,71 @@ button.btn,.hbtn{white-space:nowrap}
      in that case, which was a consequence of the grid dropping to one column — now that it does
      not, the exception has nothing left to correct. */
   tr.dayrow .rpills{margin-top:.4rem}}
+/* ============================================================================
+   THE PHONE FIXES — 11 September 2026
+   Ali: "v annoying there are 2 lines of icon button badges. What does the tick
+   even do." · "if go into landscape view you see whole week at a time"
+   Last in the sheet deliberately: these override earlier mobile rules, and the
+   one they have to override is the reason the tick was there at all.
+   ============================================================================ */
+
+/* ---- 1. THE TICK WAS THE DONE BUTTON -------------------------------------
+   Done is supposed to show only while you are editing, and there IS a rule
+   saying so higher up — but the mobile block re-asserted `display:inline-flex`
+   on it unconditionally, and that won. The same block hides button labels, so
+   every phone carried a permanent unlabelled tick that did nothing. It was
+   also what pushed Edit onto a second row.
+
+   Worth recording: this complaint was raised on 1 Sept and half-fixed then, by
+   turning Edit into a padlock to save width. It stayed broken because the cause
+   was Done, not Edit — so the fix went to the wrong button. */
+@media (max-width:760px){
+  #btnDone{display:none}
+  body.editing #btnDone{display:inline-flex}
+
+  /* ---- 2. ONE ROW ------------------------------------------------------
+     The bar wrapped because nothing was allowed to give: the title held its
+     full width and every icon kept its 44px minimum. Now the title is the only
+     thing that yields, and it yields by ellipsis rather than by wrapping.
+     Measured after: header 110px -> 42px, one row. */
+  #topbar{flex-wrap:nowrap;gap:.25rem}
+  #topbar > div:first-of-type{min-width:0;overflow:hidden}
+  #topbar h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar h1 + div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hamburger,.hbtn.hicon,#btnEdit,#btnDone{flex:none}
+}
+
+/* ---- 3. SIDEWAYS, THE WHOLE WEEK -----------------------------------------
+   Option 1 of four, chosen 11 Sept: the desktop grid tightened — days down the
+   side, pods across the top. The same shape people already read on a computer,
+   and the same shape as the portrait day-picker, so nothing has to be learnt.
+
+   ASK THE RIGHT QUESTION. The app only ever looked at WIDTH, which is why this
+   behaved differently on different phones: a 15 Pro sideways is 852 wide so it
+   fell into the desktop layout — the week, but with the sidebar eating a fifth
+   of a screen that is only 393 tall — while an SE sideways is 667 and stayed on
+   one day. A phone on its side is not "wide", it is SHORT. So that is what is
+   asked, with pointer:coarse to keep a small laptop window out of it.
+
+   Verified on the live page at 852x393: sidebar gone, header 42px, first row
+   top 107, last row bottom 387 — all seven days, nothing scrolls. */
+@media (orientation:landscape) and (max-height:500px) and (pointer:coarse){
+  aside{display:none !important}          /* half the height, none of it rota */
+
+  #topbar{padding:.2rem .6rem !important;min-height:0 !important}
+  #topbar h1{font-size:.82rem !important}
+  #topbar h1 + div{display:none !important}                   /* the eyebrow */
+  .hbtn,button.btn,.segbtn,.tpi,.navarrow,.hamburger{min-height:30px !important}
+  .hbtn.hicon,.hamburger,.navarrow{min-width:30px !important}
+  main{padding:.2rem .6rem !important}
+  .weekbar{margin:0 0 .2rem !important;padding:.15rem .4rem !important}
+  .weekbar .navarrow{min-height:26px !important;min-width:26px !important}
+
+  /* The rows are the whole game: seven at 64px is 448 and the phone has 393. */
+  .rota-wrap td,.rota-wrap th{padding:4px 8px !important}
+  .rota-wrap td{font-size:13px !important}
+  .rota-wrap th{font-size:9px !important;padding:2px 8px !important}
+}
 </style>
 
 </head>
