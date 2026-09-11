@@ -873,7 +873,15 @@ button.btn,.hbtn{white-space:nowrap}
 
    Verified on the live page at 852x393: sidebar gone, header 42px, first row
    top 107, last row bottom 387 — all seven days, nothing scrolls. */
-@media (orientation:landscape) and (max-height:500px) and (pointer:coarse){
+/* GUARD LOOSENED 17:30 — Ali: "im turning landscape and doesnt change", with the
+   tick fix from the same block working, so the CSS had arrived and this rule
+   alone was not matching. `pointer:coarse` was the one clause that cannot be
+   tested in a desktop preview, and it is the one that buys least: a landscape
+   window under 600px tall is a phone on its side in every case that matters,
+   and if a laptop window ever is that short the compact layout is no loss.
+   Height raised to 600 for the same reason — Safari's landscape viewport
+   depends on which toolbars are showing. */
+@media (orientation:landscape) and (max-height:600px){
   aside{display:none !important}          /* half the height, none of it rota */
 
   #topbar{padding:.2rem .6rem !important;min-height:0 !important}
