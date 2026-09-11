@@ -930,6 +930,14 @@ body.sideways tr.dayrow td::before{content:none !important;display:none !importa
 body.sideways tr.dayrow .cell{font-size:13px !important}
 body.sideways tr.dayrow .cellwrap{align-items:flex-start !important;gap:.2rem !important}
 body.sideways tr.dayrow .codpill,body.sideways tr.dayrow .finpill{margin-left:.3rem !important}
+/* Seen at 693 wide: "CM AB" broke onto two lines under its COD badge, and the
+   phone week bar kept its 42px arrows. Initials never wrap; the bar shrinks. */
+body.sideways tr.dayrow .cell{white-space:nowrap !important}
+body.sideways tr.dayrow .codpill,body.sideways tr.dayrow .finpill{font-size:.55rem !important;padding:.05rem .3rem !important}
+body.sideways .weekbar{padding:.15rem .5rem !important;margin-bottom:.25rem !important;border-radius:10px !important}
+body.sideways .weekbar .navarrow{width:26px !important;height:26px !important;min-width:26px !important;min-height:26px !important}
+body.sideways .weekbar b{font-size:.82rem !important}
+body.sideways .weekbar b small{display:none !important}
 </style>
 
 </head>
