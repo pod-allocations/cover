@@ -4455,7 +4455,19 @@ load().catch(e => { $("#weekGrid").innerHTML = "<p style='padding:1rem'>Couldn't
      failing identically says the page is not being told it rotated at all —
      but that is a guess, and this replaces it with a number. Behind a URL flag
      so no one on the ward ever sees it. */
-  if (/[?&]diag=1/.test(location.search)) {
+  /* OPENED BY TAPPING THE TITLE THREE TIMES, not by a URL. Ali tried the
+     ?diag=1 link on his phone and got a 404 — the question mark had been lost,
+     so Safari asked GitHub Pages for a FILE called "diag=1". Typing a URL on a
+     phone is exactly the step to remove when you are already several rounds
+     into a fault nobody can reproduce. Three taps on the title needs no typing
+     and no one will find it by accident. */
+  let taps = 0, tapTimer = null;
+  const title = document.querySelector("#topbar h1");
+  if (title) title.addEventListener("click", () => {
+    taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => { taps = 0; }, 1200);
+    if (taps >= 3) { taps = 0; showDiag(); }
+  });
+  function showDiag() {
     const box = document.createElement("div");
     box.style.cssText = "position:fixed;top:6px;right:6px;z-index:99999;background:#16171a;" +
       "color:#fff;font:12px/1.45 ui-monospace,Menlo,monospace;padding:8px 10px;border-radius:8px;" +
@@ -4473,6 +4485,7 @@ load().catch(e => { $("#weekGrid").innerHTML = "<p style='padding:1rem'>Couldn't
     setTimeout(() => { document.body.appendChild(box); draw(); }, 300);
     setInterval(draw, 1000);
   }
+  if (/[?&]diag=1/.test(location.search)) showDiag();
 })();
 </script>
 </body>
