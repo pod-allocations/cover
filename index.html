@@ -904,6 +904,32 @@ body.sideways .weekbar .navarrow{min-height:26px !important;min-width:26px !impo
 body.sideways .rota-wrap td,body.sideways .rota-wrap th{padding:4px 8px !important}
 body.sideways .rota-wrap td{font-size:13px !important}
 body.sideways .rota-wrap th{font-size:9px !important;padding:2px 8px !important}
+
+/* SIDEWAYS MEANS THE WEEK TABLE, WHATEVER THE WIDTH — 11 Sept, third attempt,
+   and the one that found the actual fault. Ali: "it turns correctly just doesnt
+   change format." The phone-mode block above keys off max-width:760px and turns
+   the week into one day of cards; on his iPhone the page is under 760 even on
+   its side (Display Zoom, Safari page zoom — either shrinks the CSS width), so
+   phone mode never let go, and everything before this only ever tightened a
+   table that was not on screen. So this puts the table BACK, and hides the
+   day strip, whenever the page is short and wide. Every declaration the phone
+   block makes to the table is undone here, in the same order, with !important
+   because they carry equal weight and this must win. */
+body.sideways .daystrip{display:none !important}
+body.sideways table.rota,body.sideways table.rota tbody{display:table !important;width:100% !important}
+body.sideways table.rota tbody{display:table-row-group !important}
+body.sideways table.rota tr:first-child{display:table-row !important}
+body.sideways tr.dayrow,body.sideways tr.dayrow.mday{display:table-row !important}
+body.sideways tr.dayrow td.rowh{display:table-cell !important}
+body.sideways tr.dayrow td{display:table-cell !important;border-radius:0 !important;
+  box-shadow:none !important;order:0 !important}
+body.sideways td.col-oncall{grid-column:auto !important;background:transparent !important}
+body.sideways td.col-fgh{background:transparent !important}
+body.sideways td.col-fgh.empty{display:table-cell !important}
+body.sideways tr.dayrow td::before{content:none !important;display:none !important}
+body.sideways tr.dayrow .cell{font-size:13px !important}
+body.sideways tr.dayrow .cellwrap{align-items:flex-start !important;gap:.2rem !important}
+body.sideways tr.dayrow .codpill,body.sideways tr.dayrow .finpill{margin-left:.3rem !important}
 </style>
 
 </head>
