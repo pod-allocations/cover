@@ -52,26 +52,38 @@ setTimeout(() => {
     window.__T = T; renderRota();
   `);
   const q = s => w.document.querySelectorAll(s);
-  // B: NW moved C→B 3h ago (log, manual, short: within 24h of shift start today) → chgpill.short
-  const bChip = w.document.querySelector("td.col-B .chgpill");
-  ok("manual move draws a chip", !!bChip);
-  ok("…which is short-notice (amber)", !!bChip && bChip.className.includes("short"));
+  /* ONE CELL, NAMED. A blank dot is drawn on every cell so the names line up, so "the first dot
+     under td.col-B" is Monday's blank one — the old selectors only worked because an unchanged
+     cell had no chip at all. Ask for the day and the pod. */
+  const DOT = k => w.document.querySelector(".chgdot[data-d='" + w.__T + "'][data-k='" + k + "']");
+  /* ONE DOT NOW, not two chips — 18 Sept. The fill says WHEN (grey = last two days, amber =
+     within a day of the shift) and the ring says THE SHEET. Every assertion below is the same
+     FACT the two chips used to carry; what changed is that one object carries both. */
+  // B: NW moved C→B 3h ago (log, manual, within 24h of shift start today) → amber fill…
+  const bChip = DOT("B");
+  ok("manual move draws a dot", !!bChip && !bChip.className.includes("blank"));
+  ok("…which is short-notice (amber fill)", !!bChip && bChip.className.includes("short"));
   ok("…title says where from and who", !!bChip && /was Pod C/.test(bChip.title) && /by AJC/.test(bChip.title), bChip && bChip.title);
-  // B: cur NW vs auto "" → off-sheet chip too, on the same cell row
-  ok("off-sheet chip beside it", !!w.document.querySelector("td.col-B .ofspill"));
-  ok("both chips share the pill row", q("td.col-B .cellwrap .chgpill, td.col-B .cellwrap .ofspill").length === 2);
-  // C: sync moved (prev C=NW, cur=JRG) → chip titled by the sync
-  const cChip = w.document.querySelector("td.col-C .chgpill");
-  ok("sync move draws a chip", !!cChip);
+  // B: cur NW vs auto "" → …AND the ring, on the SAME dot rather than a second object
+  ok("off-sheet rides the same dot", !!bChip && bChip.className.includes("ofs"));
+  ok("…so the cell carries exactly one mark", w.document.querySelectorAll(".chgdot[data-d='" + w.__T + "'][data-k='B']").length === 1);
+  ok("…and its title says both things", !!bChip && /rota sheet/.test(bChip.title), bChip && bChip.title);
+  // C: sync moved (prev C=NW, cur=JRG) → dot titled by the sync
+  const cChip = DOT("C");
+  ok("sync move draws a dot", !!cChip && !cChip.className.includes("blank"));
   ok("…credited to the sync", !!cChip && /by the sync/.test(cChip.title), cChip && cChip.title);
-  // D: only a 60h-old log entry → no chip (aged out), but cur JRG vs auto "" → off-sheet only
-  ok("48h expiry honoured", !w.document.querySelector("td.col-D .chgpill"));
-  ok("…off-sheet persists past it", !!w.document.querySelector("td.col-D .ofspill"));
-  // E: cur empty, auto JRG → taken-off chip on the empty cell, named
-  const eOfs = w.document.querySelector("td.col-E .ofspill");
-  ok("taken-off marked on the empty cell", !!eOfs && /Jonathan Goodall/.test(eOfs.title) && /taken off/.test(eOfs.title), eOfs && eOfs.title);
-  // A: untouched → no chips at all
-  ok("an unchanged cell stays clean", q("td.col-A .chgpill, td.col-A .ofspill").length === 0);
+  // D: only a 60h-old log entry → no fill (aged out), but cur JRG vs auto "" → ring only
+  const dChip = DOT("D");
+  ok("48h expiry honoured — no fill", !!dChip && !dChip.className.includes("recent") && !dChip.className.includes("short"));
+  ok("…off-sheet ring persists past it", !!dChip && dChip.className.includes("ofs"));
+  // E: cur empty, auto JRG → ring on the empty cell, named
+  const eOfs = DOT("E");
+  ok("taken-off marked on the empty cell", !!eOfs && eOfs.className.includes("ofs")
+     && /Jonathan Goodall/.test(eOfs.title) && /taken off/.test(eOfs.title), eOfs && eOfs.title);
+  // A: untouched → a blank dot holding the column, saying nothing and answering to nothing
+  const aChip = DOT("A");
+  ok("an unchanged cell stays clean", !!aChip && aChip.className.includes("blank"));
+  ok("…and a blank dot is not a button", !!aChip && !aChip.title);
   ok("no dashed diff class remains", q(".cell.diff").length === 0);
   // tap speaks — in a bubble at the badge, not the bottom toast (26.08.28)
   bChip.dispatchEvent(new w.Event("click", {bubbles:true}));
@@ -109,7 +121,10 @@ setTimeout(() => {
   ok("desktop: blank card space stays inert", !cellClicked);
   // structural: the badge tap halo and the scrollable overlay box are in the stylesheet (26.08.28)
   const src = fs.readFileSync(path.join(BASE, "index.html"), "utf8");
-  ok("badges carry an invisible tap halo", src.indexOf('.chgpill::after,.ofspill::after{content:"";position:absolute;inset:-9px}') >= 0);
+  ok("the dot carries an invisible tap halo", src.indexOf('.chgdot::after{content:"";position:absolute;inset:-11px}') >= 0);
+  ok("…which a blank dot does not claim", src.indexOf(".chgdot.blank::after{content:none}") >= 0);
+  ok("the old two-chip markup is gone, not just unused",
+     src.indexOf(".chgpill{") < 0 && src.indexOf(".ofspill{") < 0);
   ok("overlay boxes scroll within the screen", src.indexOf("max-height:86dvh;overflow-y:auto") >= 0);
   // the Key can always be closed — the pinned X (26.08.28)
   w.eval("keyDialog();");
@@ -178,18 +193,18 @@ setTimeout(() => {
            swap: [{ subj: "NW", from: "C", to: "D" }, { subj: "JRG", from: "D", to: "C" }] } }];
     renderRota();
   `);
-  ok("a swap badges the person named first in the row", !!w.document.querySelector("td.col-D .chgpill"));
+  ok("a swap badges the person named first in the row", !!DOT("D"));
   /* "Is there a badge?" is NOT enough here, and this was caught by breaking chgFor on purpose:
      with the legs ignored, the second consultant's cell STILL drew a badge — the `prev` snapshot
      fallback picked it up and credited it to the sync. The assertion has to be that the badge
      came from the swap ENTRY, which is what naming the editor and the right pod proves. */
   ok("…and the one named second, from the log rather than the sync fallback",
-     /by AJC/.test((w.document.querySelector("td.col-C .chgpill") || {}).title || ""),
-     (w.document.querySelector("td.col-C .chgpill") || {}).title);
+     /by AJC/.test((DOT("C") || {}).title || ""),
+     (DOT("C") || {}).title);
   ok("…each saying the pod they actually came from",
-     /was Pod C/.test((w.document.querySelector("td.col-D .chgpill") || {}).title || "") &&
-     /was Pod D/.test((w.document.querySelector("td.col-C .chgpill") || {}).title || ""),
-     (w.document.querySelector("td.col-D .chgpill") || {}).title);
+     /was Pod C/.test((DOT("D") || {}).title || "") &&
+     /was Pod D/.test((DOT("C") || {}).title || ""),
+     (DOT("D") || {}).title);
   ok("…and applySwap writes one row, not one per person",
      /swap " \+ rowLabel\(k1\) \+ " and " \+ rowLabel\(k2\)/.test(src) && !/clog\(nameOf\(b\)/.test(src));
   // the published window can be LOWERED from the front end, with a confirm rather than a refusal (26.08.28)

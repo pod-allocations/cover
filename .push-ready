@@ -1,0 +1,34 @@
+One change mark instead of two — 18 Sept.
+
+Ali: "these icons swaps are confusing - in the way of the initials and just not intuitive. 2
+symbols is too much anyway" · "its not the porcess of swapping its how its displayed if swapped
+short notice or if not same as rota" · "go with option one for marks".
+
+WHAT WAS WRONG. Two 15px circles carrying the SAME swap glyph, in adjacent corners of the same
+small object, told apart only by a grey-or-amber fill — and both anchored on the first letter of
+the initials, so "JR" read as "R". The eye could not separate them, so it read them as
+decoration and stopped looking.
+
+WHAT IT IS NOW. One dot, in its own column before the name, where it cannot touch a letter. One
+shape carrying two independent facts, which is what lets it say four things:
+
+    FILL = WHEN        nothing · grey, moved in the last two days · amber, within a day of the
+                       shift
+    RING = THE SHEET   amber, when the board no longer matches the rota sheet
+
+A hollow ring is "differs, nothing moved lately". A solid amber dot with a halo is "changed at
+short notice AND the sheet has not caught up" — the state that matters most, and now the loudest
+mark on the card, which it never was as two identical circles. Both sentences are joined into one
+title rather than shown as two objects, because when both are true they are one story.
+
+A blank dot is drawn on every cell so the names line up down the column. It has no title, no tap
+halo and no cursor — it is spacing, not a control.
+
+THE PROBE CAUGHT A REAL TRAP. tests/chip-probe.js asked for "td.col-B .chgdot" and got MONDAY's
+blank dot, because the old selectors only ever worked while an unchanged cell had no mark at all.
+The dot now carries data-d and data-k, and the probe asks for the day and the pod by name.
+
+Tests: chip-probe 80 passed / 0 failed (rewritten for one mark, plus three new assertions that
+the two-chip markup is gone rather than merely unused) · render 61/0 · attn-probe 19/0.
+cover-tests and consultant-tests crash on a missing repos/allocate-pull/cover_sync.py — a path
+that does not exist in this clone, unrelated to this change and failing the same way before it.

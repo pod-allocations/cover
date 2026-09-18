@@ -214,30 +214,42 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
 .cell{position:relative;cursor:pointer;border-radius:8px;padding:.15rem .4rem;display:inline-block;min-width:3.5rem;text-align:left;font-weight:700;font-size:.9rem;letter-spacing:-.01em}
 .cell:hover{background:var(--accent-bg)}
 .cell.empty{color:#c9cbd1;font-weight:400}
-/* ── THE CHANGE BADGES — 28 Aug. Corner-anchored on the initials, and on the LEFT (Ali: "bottom
-   left corner"), because the right side of every name is the pill column's — COD and the finish
-   time queue there, and a badge in their lane would collide on exactly the busy cells that need
-   both. Left side is the history, right side is the shift.
-   `.chgpill` (bottom-left, grey) — this person moved here or was added recently. Fed by the log
-                        (48h, so it ages out on its own) or by the last sync's `prev` snapshot
-                        (cleared by the next sync). Amber-filled when the change landed within 24h
-                        of the shift — same fact, louder timing: the shape stays, the colour talks.
-   `.ofspill` (top-left, amber)  — the board no longer matches the rota sheet (`cur` differs from
-                        `auto`). Persistent until the sheet agrees. Replaces the dashed amber
-                        outline and the amber initials, which put two colour systems on one name.
-   The badge itself is the resident board's move mark — same 15px circle, same fills, same swap
-   glyph — so a person who has learned one board has learned the other. Hover carries the detail;
-   tapping does the same (hard rule 14: hover does not exist on a phone). */
-.chgpill,.ofspill{position:absolute;width:15px;height:15px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
-  background:#eef1f4;border:1px solid #d9dde2;color:#5f5e5a;box-shadow:0 1px 2px rgba(20,30,45,.14)}
-.chgpill{left:-7px;bottom:-6px}
-.chgpill.short,.ofspill{background:var(--amber-bg);border-color:#fac775;color:#854f0b}
-.ofspill{left:-7px;top:-6px}
-.chgpill svg,.ofspill svg{width:9px;height:9px}
-/* The badge LOOKS 15px and ANSWERS to 33 — an invisible halo around each one, because a thumb
-   cannot hit a 15px circle and a badge that cannot be tapped does not exist on a phone (hard
-   rule 14 again). Position only, no paint, so nothing changes visually. */
-.chgpill::after,.ofspill::after{content:"";position:absolute;inset:-9px}
+/* ── THE CHANGE MARK — one dot, 18 Sept. It replaces two 15px circles (`.chgpill` bottom-left,
+   `.ofspill` top-left) that carried the SAME swap glyph in adjacent corners of the same small
+   object, told apart only by a grey-or-amber fill — and both sat on the first letter, so "JR"
+   read as "R". Ali: "these icons swaps are confusing - in the way of the initials... 2 symbols
+   is too much anyway" · "its not the porcess of swapping its how its displayed if swapped short
+   notice or if not same as rota".
+
+   The dot lives IN the flex row, before the name, so it cannot touch a letter. One shape carries
+   two independent facts, which is what lets it say four things:
+
+     FILL = WHEN    none, nothing changed · grey, moved in the last two days · amber, within a
+                    day of the shift. Fed by the log (48h, ages out on its own) or by the last
+                    sync's `prev` snapshot (cleared by the next sync).
+     RING = THE SHEET   amber, when the board no longer matches the rota sheet (`cur` differs
+                    from `auto`). Persistent until the sheet agrees.
+
+   So a hollow ring is "differs, nothing moved lately"; a solid amber dot with a halo is
+   "changed at short notice AND the sheet has not caught up" — the state that matters most, and
+   now the loudest thing on the card, which it never was as two identical circles. Hover carries
+   the detail and tapping does the same (hard rule 14: hover does not exist on a phone). */
+.chgdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;position:relative;
+  background:transparent;border:1.5px solid transparent;cursor:pointer}
+/* WHEN — the fill. Nothing, then grey, then amber: the order reads as "more recent" without a
+   legend, because a filled dot is louder than an empty one and amber is louder than grey. */
+.chgdot.recent{background:#9a9a94;border-color:#9a9a94}
+.chgdot.short{background:var(--amber);border-color:var(--amber)}
+/* THE SHEET — the ring. On its own it is a hollow amber ring (differs, but nothing moved
+   lately); over a fill it becomes a halo, so "changed at short notice AND differs from the
+   sheet" is the biggest mark on the card. It never was, when it was two identical circles. */
+.chgdot.ofs{border-color:var(--amber)}
+.chgdot.ofs.recent,.chgdot.ofs.short{box-shadow:0 0 0 2.6px var(--amber-bg)}
+/* A dot with nothing to say still takes its 8px, so the names line up down the column and the
+   eye reads a straight edge. It is not a button and does not answer to one. */
+.chgdot.blank{cursor:default}
+.chgdot::after{content:"";position:absolute;inset:-11px}
+.chgdot.blank::after{content:none}
 /* PICKED UP. Solid so it never reads as one of the change chips, and filled
    rather than outlined so it is obvious on a phone at arm's length. Only ever one on screen. */
 .cell.armed,.codpill.armed,.finpill.armed{outline:2px solid var(--accent);outline-offset:1px;
@@ -250,7 +262,7 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
 /* Outline, muted, and smaller than a pod chip: a held day is a state of the rota, not a warning
    and not a person, so it must not compete with either. */
 /* MOVED BY THE LAST SYNC — the inset accent ring retired 28 Aug. The fact it carried ("the rota
-   moved and the board followed") now rides the same `.chgpill` chip a hand-made move gets, because
+   moved and the board followed") now rides the same dot a hand-made move gets, because
    to the person working the day they are the same fact: somebody different is here. The chip's
    hover still says who was there before, and the mark still clears itself — `prev` is rewritten by
    the next sync, and log-fed chips age out at 48h. The ring was the resident board's grey-ring
@@ -2785,17 +2797,26 @@ function cellHTML(rec, key, d){
   /* The badges ride the initials themselves — corner-anchored inside the cell span, so they
      travel with the name, and the pill column to the right stays COD's and the finish time's.
      Hard rule 6 holds throughout: the badges say what changed and where somebody was, never why. */
-  let badges = "";
+  /* ONE DOT, and it says both things at once. The two sentences are joined rather than shown as
+     two objects, because when both are true they are one story: somebody changed this recently
+     and the sheet has not caught up. */
   const chg = chgFor(d, key, cur);
-  if (chg) badges += "<span class='chgpill" + (chg.short ? " short" : "") + "' title='" + esc(chg.title) + "'>" + (chg.kind === "new" ? SVG_PLUS : SVG_SWAP) + "</span>";
-  if (diff) badges += "<span class='ofspill' title='" +
-    esc(cur ? (auto ? "Differs from the rota sheet — sheet has " + nameOf(auto) : "Not on the rota sheet — added by hand")
-            : "Rota sheet has " + nameOf(auto) + " — taken off the board") + "'>" + SVG_PEN + "</span>";
-  return "<div class='cellwrap'>" +
+  const diffMsg = !diff ? "" :
+    (cur ? (auto ? "The rota sheet has " + nameOf(auto) : "Not on the rota sheet — added by hand")
+         : "The rota sheet has " + nameOf(auto) + " — taken off the board");
+  const dotCls = (chg ? (chg.short ? " short" : " recent") : "") + (diff ? " ofs" : "");
+  const dotTitle = [chg && chg.title, diffMsg].filter(Boolean).join(" · ");
+  /* The dot carries the day and the pod it belongs to. Not decoration: a blank dot is rendered on
+     EVERY cell so the names line up down the column, which means "the first dot in this column" is
+     no longer the first CHANGED one — tests and any future code have to be able to ask for a
+     particular cell rather than rely on document order. */
+  const dot = "<span class='chgdot" + (dotCls || " blank") + "' data-d='" + d + "' data-k='" + key + "'" +
+    (dotTitle ? " title='" + esc(dotTitle) + "'" : "") + "></span>";
+  return "<div class='cellwrap'>" + dot +
     "<span class='cell" + (cur ? "" : " empty") + "' data-d='" + d + "' data-k='" + key + "'" +
     (cur && podCell ? " draggable='true'" : "") + " title='" +
     esc(nameOf(cur) || "nobody assigned") + (fin ? " · finishes " + fin : "") +
-    (cur && podCell ? " · drag onto another pod to swap" : "") + "'>" + (esc(cur) || "—") + badges + "</span>" + pills + "</div>";
+    (cur && podCell ? " · drag onto another pod to swap" : "") + "'>" + (esc(cur) || "—") + "</span>" + pills + "</div>";
 }
 
 /* The chips' glyphs. The swap arrows are byte-for-byte the resident board's move-mark glyph
@@ -3043,7 +3064,7 @@ function wireGrid(root){
      26.08.28: "people wont see it at bottom of screen"). The bubble is the hovercard the resident
      pills already use, so it is one positioning rule for everything that pops up by a name.
      Tapping a chip must never fall through to the cell underneath and start an edit. */
-  root.querySelectorAll(".chgpill, .ofspill").forEach(p => p.onclick = e => { e.stopPropagation(); chipTip(p); });
+  root.querySelectorAll(".chgdot:not(.blank)").forEach(p => p.onclick = e => { e.stopPropagation(); chipTip(p); });
   /* THE WHOLE CARD IS THE TARGET ON A PHONE (Ali, 26.08.28: "there needs to be a bigger area on
      phone you can tap on, not just the initials"). On the phone layout every slot is a full-width
      card and the initials are a 60px span inside it; a thumb aims at the card, so blank card
@@ -3055,7 +3076,7 @@ function wireGrid(root){
      swap would be a misfire, not a favour. */
   root.querySelectorAll("td[data-date]").forEach(td => td.addEventListener("click", e => {
     if (window.innerWidth > 760) return;
-    if (e.target.closest(".cell,.codpill,.finpill,.chgpill,.ofspill,.rpill,select,button,a")) return;
+    if (e.target.closest(".cell,.codpill,.finpill,.chgdot,.rpill,select,button,a")) return;
     const c = td.querySelector(".cell[data-d]");
     if (c) c.click();
   }));
@@ -3966,12 +3987,14 @@ function keyDialog(){
     /* THE CHANGE CHIPS \u2014 28 Aug. They replace the dashed amber outline and the sync's inset
        ring, and every one of them speaks when TAPPED as well as hovered, so the Key can promise
        the same gesture on every form factor (hard rule 14). */
-    row("<span class='chgpill' style='position:static'>" + SVG_SWAP + "</span>",
-        "On the corner of a name: moved here or added in the last two days. Tap it to see where they were and when."),
-    row("<span class='chgpill short' style='position:static'>" + SVG_SWAP + "</span>",
+    row("<span class='chgdot recent' style='position:static'></span>",
+        "Beside a name: moved here or added in the last two days. Tap it to see where they were and when."),
+    row("<span class='chgdot short' style='position:static'></span>",
         "The same, at short notice \u2014 the change landed within a day of the shift"),
-    row("<span class='ofspill' style='position:static'>" + SVG_PEN + "</span>",
-        "No longer matches the rota sheet \u2014 changed by hand. Tap it to see what the sheet has."),
+    row("<span class='chgdot ofs' style='position:static'></span>",
+        "No longer matches the rota sheet. Tap it to see what the sheet has."),
+    row("<span class='chgdot short ofs' style='position:static'></span>",
+        "Both \u2014 changed at short notice, and the sheet has not caught up"),
     row("<span class='heldpill' style='margin:0'>held</span>",
         "This day is held to the version that was circulated, so the nightly sync leaves it alone"),
     /* The tap gesture belongs here and nowhere else. It has no on-screen label by design (rule 2),
