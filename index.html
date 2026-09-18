@@ -234,6 +234,31 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
    "changed at short notice AND the sheet has not caught up" — the state that matters most, and
    now the loudest thing on the card, which it never was as two identical circles. Hover carries
    the detail and tapping does the same (hard rule 14: hover does not exist on a phone). */
+/* ── THE SEARCH SHEET. Same overlay grammar as the Key and the person sheet. ─────────────── */
+.findsub{font-size:.72rem;color:var(--muted);margin:-.2rem 0 .6rem}
+.findq{width:100%;border:1px solid #dcdcd6;border-radius:9px;padding:.45rem .6rem;font-size:.9rem;
+  font-family:inherit;color:var(--ink);background:#fff}
+.findchips{display:flex;flex-wrap:wrap;gap:.3rem;margin:.55rem 0 .2rem}
+.findchip{font-size:.72rem;font-weight:600;border:1px solid var(--line);border-radius:999px;
+  padding:.24rem .6rem;color:#4a4d55;background:#fff;font-family:inherit;display:inline-flex;
+  align-items:center;gap:.3rem;cursor:pointer}
+.findchip.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+.findchip.zero{opacity:.45}
+.findchip .n{font-size:.64rem;font-weight:700;opacity:.6}
+.findlist{margin-top:.5rem}
+.findrow{display:flex;align-items:center;gap:.55rem;padding:.4rem 0;border-bottom:1px solid var(--hair)}
+.findrow:last-child{border-bottom:0}
+.findav{width:27px;height:27px;border-radius:99px;flex:none;display:flex;align-items:center;
+  justify-content:center;font-size:.6rem;font-weight:800;letter-spacing:-.02em}
+.findwho{flex:1;min-width:0}
+.findwho b{display:block;font-size:.89rem;font-weight:600;letter-spacing:-.01em}
+.findwho s{display:block;text-decoration:none;font-size:.68rem;color:var(--muted)}
+.findpod{font-size:.6rem;font-weight:800;border-radius:6px;padding:.14rem .42rem;white-space:nowrap}
+/* The board's own five pod colours, so a pod is found by colour rather than by reading. */
+.pA{background:#eef3fb;color:#31456a}.pB{background:#eef7f1;color:#1d5238}
+.pC{background:#fdf3ec;color:#7a4a17}.pD{background:#f3eefb;color:#4f2f79}
+.pE{background:#fdeef3;color:#7a2b45}.pN{background:#eceaf2;color:#4a4757}
+.findempty{padding:1rem .2rem;text-align:center;color:var(--muted);font-size:.85rem}
 .chgdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;position:relative;
   background:transparent;border:1.5px solid transparent;cursor:pointer}
 /* WHEN — the fill. Nothing, then grey, then amber: the order reads as "more recent" without a
@@ -963,6 +988,7 @@ body.sideways .weekbar b small{display:none !important}
        was an assurance nobody could check. Out of TEAM_TABS, so opening it does not open the
        rota-team panel — the shield still guards everything the team acts on. -->
   <button data-tab="fair"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg></span>Fairness</button>
+  <button data-feedback="1" id="btnFeedback"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5a2.5 2.5 0 01-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5z"/></svg></span>Feedback</button>
   <div class="aside-spacer"></div>
   <button class="smallb" id="btnTeam"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3.6v5c0 4.3-3 8.1-7.5 9.4-4.5-1.3-7.5-5.1-7.5-9.4v-5z"/></svg></span>Rota team</button>
   <!-- The version at the rail's foot, the resident board's .appver pattern (it shows v1.2;
@@ -1004,7 +1030,11 @@ body.sideways .weekbar b small{display:none !important}
        again on the other. FEEDBACK COMES BEFORE THE KEY — 28 Aug: the resident board's order,
        and the whole reason these buttons exist in both places is that the two rows read as one
        (Ali: "edit button different feedback icon different order etc"). -->
-  <button class="hbtn ghost hicon" id="btnFeedback" title="Feedback" aria-label="Feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5a2.5 2.5 0 01-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5z"/></svg></button>
+  <!-- FEEDBACK MOVED TO THE SIDE MENU — 18 Sept. Ali: "take the feedback out add resident
+       iicon into top on phone". Search needed a slot and the header was already four wide on
+       a phone. Feedback is the one of the four that is not about the day in front of you, and
+       it is still open to everyone in the drawer, so nothing moved behind the shield. -->
+  <button class="hbtn ghost hicon" id="btnFind" title="Search — a name, a pod or a skill" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
   <button class="hbtn ghost hicon" id="btnKey" title="What the colours and pills mean" aria-label="Key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17.5 12v3.2"/><path d="M20.5 12v2.2"/></svg></button>
   <!-- THE PHONE'S DOOR TO THE ROTA-TEAM PAGES. The rail that holds the only other shield is
        display:none below 761px, so on a phone Attention, Look ahead, Fairness, the change log,
@@ -4031,6 +4061,7 @@ function keyDialog(){
 }
 $("#btnKey").onclick = keyDialog;
 $("#btnFeedback").onclick = feedbackDialog;
+$("#btnFind").onclick = findDialog;
 /* The ask is for the trial, not for ever. After TRIAL_END the button goes and the page stays, so
    what people sent is still there to read. */
 if (!trialOn()) $("#btnFeedback").style.display = "none";
@@ -4471,6 +4502,102 @@ $("#btnTeam").onclick = () => {
     if (phone) document.body.classList.add("navopen");
   });
 };
+/* ── SEARCH — 18 Sept ──────────────────────────────────────────────────────────────────────────
+   One sheet that answers WHO. Type a name, a pod or a skill; or tap a skill chip. It never
+   redraws the board — that is what the Residents toggle is for, and keeping the two apart is the
+   whole point of the rethink.
+
+   It reads the SHOWN day, not today, because somebody looking at Friday is asking about Friday.
+   Consultants come from the map; residents and their skills come from the resident board's own
+   staff list, which this page already loads to draw the pods. */
+function findDialog(){
+  const SKILLS = [["airway","Airway"],["phoneHolder","Phone"],["transfer","Transfer"],
+                  ["picc","PICC"],["echo","Echo"]];
+  let q = "", skill = "";
+  /* THE BOARD SHOWS A WEEK, not a day, so "the shown day" has to be decided rather than read:
+     today when today is in the week on screen, and that week's Monday when it is not. Somebody
+     looking at next week is asking about next week. */
+  const wkDates = Array.from({ length: 7 }, (_, i) => addDays(curWeek, i));
+  const d = wkDates.indexOf(todayISO()) >= 0 ? todayISO() : wkDates[0];
+  const ov = document.createElement("div");
+  ov.id = "findOverlay"; ov.className = "ovl";
+  const box = document.createElement("div"); box.className = "ovlbox";
+  ov.appendChild(box);
+
+  const people = () => {
+    /* Everybody on the shown day, consultants first, then residents by pod, then nights. */
+    const out = [];
+    const cur = ((cdata.days || {})[d] || {}).cur || {};
+    ["A","B","C","D","E"].forEach(function(p){
+      if (cur[p]) out.push({ who: nameOf(cur[p]), sub: "consultant", where: "Pod " + p, pod: p, sk: {} });
+    });
+    if (cur.oncall) out.push({ who: nameOf(cur.oncall), sub: "consultant", where: "On call", pod: "N", sk: {} });
+    const j = juniorsFor(d);
+    if (j) {
+      ["A","B","C","D","E"].forEach(function(p){
+        (j.pods[p] || []).forEach(function(r){
+          const st = (data.staff || []).find(function(x){ return x.id === r.id; }) || {};
+          out.push({ who: st.name || r.name, sub: (st.grade || "") + (r.shift ? " · " + r.shift : ""),
+                     where: "Pod " + p, pod: p, sk: st });
+        });
+      });
+      (j.night || []).forEach(function(r){
+        const st = (data.staff || []).find(function(x){ return x.id === r.id; }) || {};
+        out.push({ who: st.name || r.name, sub: (st.grade || "") + " · night", where: "Night", pod: "N", sk: st });
+      });
+    }
+    return out;
+  };
+
+  const draw = () => {
+    const all = people();
+    const counts = {};
+    SKILLS.forEach(function(s){ counts[s[0]] = all.filter(function(x){ return x.sk[s[0]]; }).length; });
+    const ql = q.trim().toLowerCase();
+    const hit = all.filter(function(x){
+      if (skill && !x.sk[skill]) return false;
+      if (!ql) return true;
+      return (x.who || "").toLowerCase().indexOf(ql) >= 0
+          || (x.where || "").toLowerCase().indexOf(ql) >= 0
+          || SKILLS.some(function(s){ return x.sk[s[0]] && s[1].toLowerCase().indexOf(ql) === 0; });
+    });
+    box.innerHTML =
+      "<div class='ovlhead'><b>Search</b>" +
+      "<button class='ovlx' aria-label='Close'>\u00d7</button></div>" +
+      "<div class='findsub'>" + fmt(d) + " \u00b7 " + all.length + " on the unit</div>" +
+      "<input id='findq' class='findq' type='text' placeholder='Name, pod or skill' autocomplete='off'>" +
+      "<div class='findchips'>" + SKILLS.map(function(s){
+        return "<button class='findchip" + (skill === s[0] ? " on" : "") + (counts[s[0]] ? "" : " zero") +
+               "' data-sk='" + s[0] + "'>" + s[1] + "<span class='n'>" + counts[s[0]] + "</span></button>";
+      }).join("") + "</div>" +
+      (hit.length ? "<div class='findlist'>" + hit.map(function(x){
+        return "<div class='findrow'><span class='findav p" + x.pod + "'>" + esc(initialsOf(x.who)) + "</span>" +
+               "<span class='findwho'><b>" + esc(x.who) + "</b><s>" + esc(x.sub) + "</s></span>" +
+               "<span class='findpod p" + x.pod + "'>" + esc(x.where) + "</span></div>";
+      }).join("") + "</div>"
+      : "<div class='findempty'>Nobody on " + fmt(d) + " matches.</div>");
+
+    const inp = box.querySelector("#findq");
+    inp.value = q;
+    inp.oninput = function(){ q = inp.value; draw(); box.querySelector("#findq").focus(); };
+    box.querySelector(".ovlx").onclick = close;
+    box.querySelectorAll(".findchip").forEach(function(b){
+      b.onclick = function(){ skill = (skill === b.dataset.sk ? "" : b.dataset.sk); draw(); };
+    });
+  };
+  function close(){ ov.remove(); document.removeEventListener("keydown", onKey); }
+  function onKey(e){ if (e.key === "Escape") close(); }
+  document.addEventListener("keydown", onKey);
+  ov.onclick = function(e){ if (e.target === ov) close(); };
+  document.body.appendChild(ov);
+  draw();
+  setTimeout(function(){ const i = box.querySelector("#findq"); if (i) i.focus(); }, 30);
+}
+function initialsOf(n){
+  return (String(n || "").trim().split(/\s+/).filter(Boolean).slice(0, 2)
+    .map(function(w){ return w[0]; }).join("") || "?").toUpperCase();
+}
+
 /* Mobile hamburger → slide-out side menu (drawer). Closes on backdrop tap or when a page is
    chosen; Menu inside the team level steps back up to the rail (`railback`) rather than throwing
    you out of the section. The resident board's lines, verbatim, for the resident board's reasons. */

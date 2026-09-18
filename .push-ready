@@ -1,34 +1,31 @@
-One change mark instead of two — 18 Sept.
+Search on Cover, and Feedback moves to the side menu — 18 Sept.
 
-Ali: "these icons swaps are confusing - in the way of the initials and just not intuitive. 2
-symbols is too much anyway" · "its not the porcess of swapping its how its displayed if swapped
-short notice or if not same as rota" · "go with option one for marks".
+Ali: "theres no search button on the consultants page" · "on phone if search and resident merge
+how do you see which resitned are on. needs a rethink" · "take the feedback out add resident
+iicon into top on phone".
 
-WHAT WAS WRONG. Two 15px circles carrying the SAME swap glyph, in adjacent corners of the same
-small object, told apart only by a grey-or-amber fill — and both anchored on the first letter of
-the initials, so "JR" read as "R". The eye could not separate them, so it read them as
-decoration and stopped looking.
+THE RETHINK. Residents is NOT a list — it sets showJun and redraws the residents INSIDE each pod
+cell. It is a layer on the board. So it cannot live behind a search sheet, and my earlier
+suggestion that it could was wrong. It stays exactly where it was, on the phone, in the header.
 
-WHAT IT IS NOW. One dot, in its own column before the name, where it cannot touch a letter. One
-shape carrying two independent facts, which is what lets it say four things:
+  before   Residents · Feedback · Key · Edit
+  after    Residents · Search   · Key · Edit        Feedback in the side menu
 
-    FILL = WHEN        nothing · grey, moved in the last two days · amber, within a day of the
-                       shift
-    RING = THE SHEET   amber, when the board no longer matches the rota sheet
+Feedback is the one of the four that is not about the day in front of you, and in the side menu
+it sits beside Pods and Fairness — open to everyone, nothing moved behind the shield. Two tests
+assert exactly that: it is in `aside`, it is NOT in `#teamPanel`, and it still opens the same
+dialog.
 
-A hollow ring is "differs, nothing moved lately". A solid amber dot with a halo is "changed at
-short notice AND the sheet has not caught up" — the state that matters most, and now the loudest
-mark on the card, which it never was as two identical circles. Both sentences are joined into one
-title rather than shown as two objects, because when both are true they are one story.
+THE SEARCH SHEET answers WHO and never redraws the board — a test asserts the week grid's HTML
+is byte-identical after opening it, because "search does not do Residents' job" is the whole
+point of the rethink. Type a name, a pod or a skill, or tap one of five skill chips, each
+carrying a count. Consultants come from the map; residents and their skills from the resident
+board's staff list, which this page already loads to draw the pods — so echo accreditation is
+searchable here for free.
 
-A blank dot is drawn on every cell so the names line up down the column. It has no title, no tap
-halo and no cursor — it is spacing, not a control.
+It reads the week ON SCREEN, not today: today when today is in that week, that week's Monday
+when it is not. Somebody looking at next week is asking about next week.
 
-THE PROBE CAUGHT A REAL TRAP. tests/chip-probe.js asked for "td.col-B .chgdot" and got MONDAY's
-blank dot, because the old selectors only ever worked while an unchanged cell had no mark at all.
-The dot now carries data-d and data-k, and the probe asks for the day and the pod by name.
-
-Tests: chip-probe 80 passed / 0 failed (rewritten for one mark, plus three new assertions that
-the two-chip markup is gone rather than merely unused) · render 61/0 · attn-probe 19/0.
-cover-tests and consultant-tests crash on a missing repos/allocate-pull/cover_sync.py — a path
-that does not exist in this clone, unrelated to this change and failing the same way before it.
+Tests: render 66 passed / 0 failed (five new) · chip-probe 80/0 · attn-probe 19/0.
+The stale toolbar assertion was updated rather than deleted — btnFeedback left that set on
+purpose, btnFind took its place, and the comment says so.

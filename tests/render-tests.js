@@ -329,15 +329,43 @@ const SEED = `(function(){
      What actually matters is the rule underneath: each of these is an ICON button, its word is
      optional chrome for a wide screen, and the word must disappear on a phone — which is where
      the row has to fit. So: every one has an icon, and every one wraps its label in .blabel, the
-     class the phone rules hide. Edit and Done joined that set on 1 Sept. */
+     class the phone rules hide. Edit and Done joined that set on 1 Sept.
+
+     18 Sept: btnFeedback LEFT this set rather than failing it. Search needed a slot, the header
+     was already four wide on a phone, and Feedback is the one of the four that is not about the
+     day in front of you — so it moved to the side menu, where it is a normal worded button and
+     these rules do not apply. btnFind took its place. Ali: "take the feedback out add resident
+     iicon into top on phone" — Residents stays exactly where it was. */
   ok("every toolbar button is an icon first, with its word in a droppable label",
-     w.eval("['btnJuniors','btnKey','btnFeedback','btnEdit','btnDone'].every(function(id){ var b = document.getElementById(id);" +
+     w.eval("['btnJuniors','btnFind','btnKey','btnEdit','btnDone'].every(function(id){ var b = document.getElementById(id);" +
             "if (!b) return false;" +
             "var hasIcon = !!b.querySelector('svg') || !!getComputedStyle(b, '::before').maskImage || !!getComputedStyle(b, '::before').webkitMaskImage;" +
             "var bare = b.textContent.trim();" +
             "return hasIcon && (!bare || !!b.querySelector('.blabel')); })"),
-     w.eval("['btnJuniors','btnKey','btnFeedback','btnEdit','btnDone'].map(function(id){ var b=document.getElementById(id);" +
+     w.eval("['btnJuniors','btnFind','btnKey','btnEdit','btnDone'].map(function(id){ var b=document.getElementById(id);" +
             "return id + ':' + (b ? (b.textContent.trim() || 'icon') + (b.querySelector('.blabel') ? '/label' : '') : 'MISSING'); }).join(' ')"));
+
+  /* FEEDBACK MOVED, NOT REMOVED — 18 Sept. Taking a button out of a row is easy to do and easy
+     to do too well; the thing that matters is that everyone can still reach it without the
+     password. So: it is in the side menu, it still opens the same dialog, and it is NOT inside
+     the rota-team panel. */
+  ok("feedback left the toolbar for the side menu",
+     w.eval("!!document.querySelector('aside #btnFeedback') && !document.querySelector('#topbar #btnFeedback')"));
+  ok("...and is still open to everyone, not behind the shield",
+     w.eval("!document.querySelector('#teamPanel #btnFeedback')"));
+  ok("search took its place in the toolbar",
+     w.eval("!!document.querySelector('#topbar #btnFind')"));
+  ok("...the search sheet really opens, with a box and five skill chips",
+     w.eval("(function(){ findDialog(); var o=document.getElementById('findOverlay');" +
+            "var r = !!o && !!o.querySelector('#findq') && o.querySelectorAll('.findchip').length === 5;" +
+            "if (o) o.remove(); return r; })()"));
+  /* THE WHOLE POINT OF THE RETHINK: search answers a question, Residents redraws the board.
+     Opening one must not do the other's job. */
+  ok("...and opening it does not redraw the board or toggle Residents",
+     w.eval("(function(){ var before = document.getElementById('weekGrid').innerHTML;" +
+            "findDialog(); var o = document.getElementById('findOverlay');" +
+            "var same = document.getElementById('weekGrid').innerHTML === before;" +
+            "if (o) o.remove(); return same; })()"));
 
   /* Ali, 6 Aug: "Optima sync: 1 added ... this is a useless change log. need to know who the
      person is and which pod theyre allocated to!" These two rows are what replaced it. A row
