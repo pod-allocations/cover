@@ -282,6 +282,11 @@ td.rowh .bar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-
 .cellwrap{display:flex;align-items:center;gap:.42rem}
 .codpill{flex:0 0 auto;display:inline-block;text-align:center;font-size:.6rem;border-radius:6px;padding:.08rem .35rem;font-weight:600;letter-spacing:.04em;background:transparent;border:1px solid #b4b2a9;color:#444441;cursor:grab}
 .codpill:active{cursor:grabbing}
+/* ACTING UP — 26.09.29. A resident on Allocate's "Overnight- Acting Up" duty, shown under the on-call
+   consultant whether or not residents are showing: they are covering at registrar level, so the
+   consultant on call needs to know. The pill is the resident pill with the tag in the page's accent. */
+.rpill.au{margin-top:.28rem}
+.rpill.au .sh{background:var(--accent);padding:0 .3rem;letter-spacing:.04em}
 .finpill{flex:0 0 auto;display:inline-block;min-width:20px;text-align:center;font-size:.6rem;border-radius:6px;padding:.08rem .3rem;font-weight:600;letter-spacing:.04em;background:transparent;border:1px solid #fac775;color:#854f0b;cursor:grab}
 .finpill:active{cursor:grabbing}
 /* Outline, muted, and smaller than a pod chip: a held day is a state of the rota, not a warning
@@ -857,6 +862,7 @@ button.btn,.hbtn{white-space:nowrap}
      Double-barrelled names are the only ones that run out of room, so they ellipsis rather than
      push the column wide and break the grid. */
   body.showjun tr.dayrow .rpill{min-width:0}
+  tr.dayrow .rpill.au{min-width:0}
   body.showjun tr.dayrow .rpill .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   /* On call spans the full width whether or not residents are showing. It used to stop spanning
      in that case, which was a consequence of the grid dropping to one column — now that it does
@@ -2706,6 +2712,21 @@ function pickWho(cb){
 }
 $("#btnWho").onclick = () => pickWho(() => renderAll());
 
+/* Who is acting up overnight on a date, from the resident store's roster: code "AU" is what the
+   Allocate sync writes for "Overnight- Acting Up" (transform.py). Read-only, like everything else
+   this page takes from that store, and independent of the Residents toggle. */
+function actingUpFor(dateISO){
+  const wk = ((data && data.weeks) || {})[mondayOf(dateISO)];
+  const r = wk && wk.roster && wk.roster[dateISO];
+  if (!r) return [];
+  return Object.entries(r).filter(([id, v]) => v && v.code === "AU")
+    .map(([id]) => (data.staff || []).find(x => x.id === id)).filter(Boolean)
+    .map(st => ({ id: st.id, name: st.name.split(" ").pop(), airway: !!st.airway }));
+}
+const auPills = list => (list && list.length) ? list.map(r =>
+  "<span class='rpill au' data-rid='" + esc(r.id) + "' title='" + esc(r.name) + " \u2014 acting up overnight'>" +
+  "<b class='sh'>AU</b><span class='nm'>" + esc(r.name) + "</span>" + (r.airway ? "<i class='aw'>A</i>" : "") + "</span>").join("") : "";
+
 function juniorsFor(dateISO){
   const wk = (data.weeks || {})[mondayOf(dateISO)];
   if (!wk) return null;
@@ -2950,7 +2971,7 @@ function weekTableHTML(mondayISO){
        so the td carries no mark of its own — one fact, one place. */
     for (const [p] of PODROWS)
       h += "<td class='col-" + p + "' style='background:var(--pod" + p + ")' data-date='" + d + "' data-pod='" + p + "'>" + cellHTML(cons[d], p, d) + (j ? resPills(j.pods[p]) : "") + "</td>";
-    h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + (j ? resPills(j.night) : "") + "</td>";
+    h += "<td class='col-oncall' data-date='" + d + "'>" + cellHTML(cons[d], "oncall", d) + auPills(actingUpFor(d)) + (j ? resPills(j.night) : "") + "</td>";
     h += "<td class='col-fgh" + ((cons[d] && (cons[d].cur || {}).fgh) ? "" : " empty") + "' data-date='" + d + "'>" + cellHTML(cons[d], "fgh", d) + "</td></tr>";
   });
   return "<div class='daystrip-slot'></div>" + h + "</table>";
@@ -4051,7 +4072,8 @@ function keyDialog(){
     /* "Hover for their profile" was the only instruction here, and on a phone or tablet there is
        no hover — so the Key was telling three quarters of the form factors to do something that
        does not exist (hard rule 14). Say where it works rather than pretending it works anywhere. */
-    row("<span class='rpill'>Name</span>", "A resident in that pod. On a computer, hover for their profile. Use the people button to show or hide them."));
+    row("<span class='rpill'>Name</span>", "A resident in that pod. On a computer, hover for their profile. Use the people button to show or hide them."),
+    row("<span class='rpill au'><b class='sh'>AU</b>Name</span>", "A resident acting up overnight, from Allocate. Always shown."));
   const btn = document.createElement("button");
   btn.className = "btn"; btn.style.cssText = "width:100%;margin-top:1rem"; btn.textContent = "Close";
   btn.onclick = () => ov.remove();
