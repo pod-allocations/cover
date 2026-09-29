@@ -87,7 +87,8 @@ const SEED = `(function(){
   data.weeks[K] = { days: Array.from({length:7}, function(){ return { pods:{A:{assign:[],super:[],student:""},B:{assign:[],super:[],student:""},C:{assign:[],super:[],student:""},D:{assign:[],super:[],student:""},E:{assign:[],super:[],student:""}}, night:{phone:null,AB:[],CDE:[],E:[],super:[]}, shadow:[], extras:[], phone:null }; }), roster:{} };
   const di = Math.round((new Date(T) - new Date(K)) / 86400000);
   data.weeks[K].days[di].pods.A.assign.push({ id:"r1", shift:"LD" });
-  data.weeks[K].roster[T] = { r1:{code:"LD",kind:"day"}, r2:{code:"SD",kind:"day"} };
+  data.weeks[K].roster[T] = { r1:{code:"LD",kind:"day"}, r2:{code:"SD",kind:"day"}, r3:{code:"AU",kind:"off",src:"a"} };
+  data.staff.push({ id:"r3", name:"Priya Okonkwo", grade:"ST", airway:true, active:true, aliases:[] });
   curWeek = K;
   const now = new Date().toISOString();
   /* A COVER store, in the shape the carve leaves behind: the allocation at the top level and
@@ -167,6 +168,15 @@ const SEED = `(function(){
   ok("resident pills drawn on the grid",
      w.eval("showTab('rota'); renderRota(); document.querySelectorAll('#weekGrid .rpill').length") >= 1,
      w.eval("document.querySelectorAll('#weekGrid .rpill').length") + " pills");
+  /* ACTING UP — 26.09.29. Roster code "AU" draws under the on-call consultant with residents
+     HIDDEN, because that is the whole point: the consultant on call sees it without a toggle. */
+  ok("acting up shows in the on-call cell with residents hidden",
+     w.eval("showJun = false; document.body.classList.remove('showjun'); renderRota(); (function(){ const c = document.querySelector('#weekGrid td.col-oncall .rpill.au'); return !!c && c.textContent.indexOf('Okonkwo') >= 0 && !!c.querySelector('.sh') && document.querySelectorAll('#weekGrid .rpill:not(.au)').length === 0; })()"),
+     w.eval("document.querySelectorAll('#weekGrid .rpill').length") + " pills");
+  ok("…and only the AU person, never a plain night resident",
+     w.eval("document.querySelectorAll('#weekGrid td.col-oncall .rpill.au').length") === 1);
+  ok("…and stays when residents are shown",
+     w.eval("showJun = true; document.body.classList.add('showjun'); renderRota(); !!document.querySelector('#weekGrid td.col-oncall .rpill.au')"));
   ok("hover profile card can be built",
      w.eval("(function(){ try { showCard(document.querySelector('.rpill') || document.body, 'r1'); return document.getElementById('hovercard').textContent.indexOf('Alice Ring') >= 0; } catch(e){ return 'ERR ' + e.message; } })()") === true);
 
