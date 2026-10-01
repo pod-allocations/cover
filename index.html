@@ -2748,7 +2748,7 @@ function juniorsFor(dateISO){
     out.pods[p] = (((day.pods || {})[p] || {}).assign || [])
       .map(a => rec(a.id, { shift: a.shift, phone: day.phone === a.id })).filter(Boolean);
   }
-  out.night = [].concat((day.night || {}).AB || [], (day.night || {}).CDE || [], (day.night || {}).E || [])
+  out.night = [].concat((day.night || {}).AB || [], (day.night || {}).CDE || [], (day.night || {}).E || [], (day.night || {}).F || [])
     .map(id => rec(id, { shift: "N", phone: (day.night || {}).phone === id })).filter(Boolean);
   return out;
 }
