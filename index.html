@@ -4,6 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pod Allocations - consultant</title>
+<!-- INSTALLABLE + TEAMS TAB (26.10.02). Microsoft retired the Website tab in Teams
+     channels in mid-2024 — the tab the consultants opened this from vanished, and the
+     app to re-add it is gone from the gallery. Two replacements, both here:
+       1. The site installs on its own: Share → Add to Home Screen on a phone, or the
+          install button in Chrome's address bar on a Mac. Manifest, icons, iOS meta —
+          the same four tags consultant-rota/app has carried since 26.09.29.
+       2. It is the content of our OWN Teams tab app (teams-app/ in the project folder):
+          a static tab whose contentUrl is this page. Teams loads it in a frame and
+          waits for the page to say it is ready — the SDK handshake below. Without
+          that call Teams shows a spinner and then "something went wrong"; outside
+          Teams the SDK rejects and nothing else happens.
+     Icon is C5 from icon-options — the family square with a pod mark. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pods">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f6f4">
+<script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js" crossorigin="anonymous"></script>
+<script>
+(function(){
+  if (!window.microsoftTeams || window === window.top) return;
+  try {
+    microsoftTeams.app.initialize().then(function(){ microsoftTeams.app.notifySuccess(); }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
 <!-- The ?v= is a cache-buster, and it MUST be bumped whenever core.css or core.js changes.
      Missed on 6 Aug when the change log's rules moved into core.css: the file changed, the version
      did not, so every browser holding the old copy carried on using it — and that copy has no log
