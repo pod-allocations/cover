@@ -2856,7 +2856,15 @@ function cellHTML(rec, key, d){
      of one malformed record is a far worse failure than a rota with one blank cell. */
   const rc = (rec && rec.cur) || {}, ra = (rec && rec.auto) || {};
   const cur = rc[key] || "", auto = ra[key] || "";
-  const diff = rec && cur !== auto;
+  /* A MOVE BETWEEN PODS IS NOT A DIFFERENCE FROM THE SHEET (Ali, 5 Oct 2026: "dont think it needs
+     any warning if its just a swap on allocations other than to say changed in last 48 hours").
+     The rota sheet says who is ON, never which pod — the pod was the allocator's suggestion. So
+     the amber "differs from the sheet" ring is kept for what the sheet can actually disagree
+     with: somebody on the board who is not on the sheet that day, or a pod emptied of somebody
+     who is. Somebody swapped from A to C carries only the 48-hour mark. */
+  const sheetOn = new Set(["A","B","C","D","E","oncall","cod","fgh"].map(x => ra[x]).filter(Boolean)
+                          .concat(Array.isArray(ra.extra) ? ra.extra : []));
+  const diff = rec && cur !== auto && !(cur && sheetOn.has(cur));
   const fin = (rc.fin || {})[cur];
   const isCod = cur && rc.cod === cur && "ABCDE".includes(key);
   const podCell = "ABCDE".includes(key);
